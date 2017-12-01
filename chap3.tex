@@ -1,0 +1,234 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%                                                                 %
+%                            CHAPTER THREE                         %
+%                                                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
+\chapter{Matrix-free Preconditioners}
+During the execution of Algorithm~\ref{alg:pc}, the tangent linear system and
+Newton update are solved many times.  Therefore, in order for the
+predictor-corrector algorithm to be competitive, these systems must be
+(inexactly) solved with high efficiency.  Both systems, \eqref{eq:predictorx}
+and \eqref{eq:cor}, take the form
+\begin{equation}\label{eq:linsys}
+  (\nabla_q H) x = b,
+\end{equation}
+where $b \in
+\mathbb{R}^{N}$ is either $F - G$, in the case \eqref{eq:predictorx} for the tangential step or $-H$ in the case of \eqref{eq:cor} for a Newton step.  We inexactly solve these systems using a preconditioned
+Krylov-iterative method.  The primary challenge with this approach, as discussed
+in the introduction, is that the preconditioner itself must be matrix free.
+
+In this section, the bulk of the content focuses on
+the matrix-free preconditioner for the two linear systems. 
+
+% \section{Krylov iterative solver}
+
+% \section{Matrix-free preconditioner}
+As $\mu$ approaches zero, the system \eqref{eq:linsys} becomes an increasingly
+ill-conditioned saddle-point problem.  Consequently, solving this problem with
+an iterative Krylov solver like FGMRES requires an effective preconditioner.
+
+Many specialized preconditioners have been developed for saddle-point
+problems~\cite{benzi2005numerical}, including those arising in full-space
+PDE-constrained optimization; see, for example,~\cite{Rees2010optimal}.
+However, most full-space PDE-constrained optimization preconditioners rely on
+the availability of a matrix-based preconditioner for the state Jacobian. There
+is no analogous matrix-based preconditioners for the total Jacobian $\nabla_x g$
+in the reduced-space, and, as explained in the introduction, forming $\nabla_x
+g$ explicitly is not feasible.  Therefore, one of the primary contributions of
+this work is a matrix-free\footnote{In this context, matrix-free means that we
+  do not require a matrix whose size is the same size as $\nabla_x g$; however,
+  we do use low-rank matrices.} preconditioner for reduced-space PDE-constrained
+optimization with state-based constraints.
+
+An effective preconditioner should be inexpensive to apply and approximate the
+action of the inverse Jacobian in some sense: $P_j(u) \approx (\nabla_q H)^{-1}
+u$ where $u \in \mathbb{R}^{N}$ is arbitrary.  To motivate our preconditioner,
+we begin by examining the exact Jacobian $\nabla_q H$ in  \eqref{eq:predictorx} and \eqref{eq:cor}, 
+\begin{equation}\label{eq:dHdq}
+\begin{aligned}
+\nabla_q H &= (1 - \mu) \nabla_{q} F(q) + \mu \nabla_q G(q,q_0) \\
+&=  (1-\mu)\begin{bmatrix}
+ \nabla_{xx} \mathcal{L}   & \boldsymbol{0} & \mathcal{A}^T_h   & \mathcal{A}^T_g   \\
+\boldsymbol{0}     &   -\mathcal{S} \mat{\Lambda}_g   & \boldsymbol{0} & -\mathcal{S}     \\
+\mathcal{A}_h  &  \boldsymbol{0}   & \boldsymbol{0} &  \boldsymbol{0}  \\
+\mathcal{A}_g  & -\mathcal{S}  &  \boldsymbol{0}  & \boldsymbol{0}   \\
+\end{bmatrix}
++ \mu \begin{bmatrix}
+\mathcal{I} & \boldsymbol{0} & \boldsymbol{0} & \boldsymbol{0} \\
+\boldsymbol{0}  & \mathcal{S}  & \boldsymbol{0} & \boldsymbol{0} \\
+\boldsymbol{0} & \boldsymbol{0} & -\mathcal{I} &  \boldsymbol{0} \\
+\boldsymbol{0} & \boldsymbol{0} &   \boldsymbol{0} & -\mathcal{I} 
+\end{bmatrix} \\
+& = \begin{bmatrix}
+	\mat{W}_\mu & \phantom{-}\mat{0} & \phantom{-}\mat{A}_{h,\mu}^T  & \phantom{-}\mat{A}_{g,\mu}^T \\
+	\mat{0}  & -\mat{\Lambda}_\mu & \phantom{-}\mat{0}   & -\mat{S}_\mu \\
+	\mat{A}_{h, \mu} & \phantom{-}\mat{0} &  -\mu \mat{I} & \phantom{-}\mat{0}  \\
+	\mat{A}_{g, \mu} & -\mat{S}_\mu &  \phantom{-}\mat{0}     &   -\mu \mat{I}
+\end{bmatrix}
+\end{aligned}
+\end{equation}
+where $\mat{I}$ is the $m\times m$ identity matrix and the sub-Jacobians are
+defined by
+\begin{gather*}
+	\mat{W}_{\mu} \equiv (1-\mu) \left[\nabla_x^2 f + \lambda^T \nabla_x^2 g\right] + \mu \mat{I},\qquad
+	\mat{A}_{h, \mu} \equiv (1-\mu) \nabla_x h, \\
+	\mat{A}_{g, \mu} \equiv (1-\mu) \nabla_x g, \qquad 
+	\mat{S}_{\mu} \equiv (1-\mu)\mat{S},\qquad
+	\mat{\Lambda}_\mu \equiv (1-\mu) \mat{S} \mat{\Lambda}_g - \mu \mat{S}. 
+\end{gather*}
+
+In the ideal case, a preconditioner application corresponds to solving the
+linear system
+\begin{equation}\label{eq:ideal_precond}
+  \begin{bmatrix} 
+	\mat{W}_\mu & \phantom{-}\mat{0} & \phantom{-}\mat{A}_{h,\mu}^T  & \phantom{-}\mat{A}_{g,\mu}^T \\
+	\mat{0}  & -\mat{\Lambda}_\mu & \phantom{-}\mat{0}   & -\mat{S}_\mu \\
+	\mat{A}_{h, \mu} & \phantom{-}\mat{0} &  -\mu \mat{I} & \phantom{-}\mat{0}  \\
+	\mat{A}_{g, \mu} & -\mat{S}_\mu &  \phantom{-}\mat{0}     &   -\mu \mat{I}
+\end{bmatrix}
+\begin{bmatrix} v_x \\ v_s \\ v_{h} \\  v_{g} \end{bmatrix} 
+= 
+\begin{bmatrix} u_x \\ u_s \\ u_{h} \\ u_{g}  \end{bmatrix},
+\end{equation}
+where $u_x \in \mathbb{R}^n$, $u_s \in \mathbb{R}^{m}$, and $u_h \in
+\mathbb{R}^{l}$,  $u_g \in \mathbb{R}^{m}$. As $\mu \rightarrow 0$, the complementary product 
+at the solution $ \mat{S} \mat{\Lambda}_g = 0$, and the Jacobian matrix is singular.  
+however, for the moment, we consider the case $\mu > 0$ and derive two different types of preconditioners based on the system reduction type. 
+
+\section{Schur Complement of the Inequality Constraint Block}
+\begin{equation}\label{eq:ideal_precond}
+  \begin{bmatrix} 
+	\mat{W}_\mu & \phantom{-}\mat{0} &  \phantom{-}\mat{A}_\mu^T \\
+	\mat{0}  & -\mat{\Lambda}_\mu & -\mat{S}_\mu \\
+	\mat{A}_\mu & -\mat{S}_\mu & -\mu \mat{I}
+\end{bmatrix}
+\begin{bmatrix} v_x \\ v_s \\ v_\lambda \end{bmatrix} 
+= 
+\begin{bmatrix} u_x \\ u_s \\ u_\lambda \end{bmatrix},
+\end{equation}
+
+
+\begin{gather*}
+	\mat{W}_{\mu} \equiv (1-\mu) \left[\nabla_x^2 f + \lambda^T \nabla_x^2 g\right] + \mu \mat{I},\qquad
+	\mat{A}_{h, \mu} \equiv (1-\mu) \nabla_x h, \\
+	\mat{A}_{g, \mu} \equiv (1-\mu) \nabla_x g, \qquad 
+	\mat{S}_{\mu} \equiv (1-\mu)\mat{S},\qquad
+	\mat{\Lambda}_\mu \equiv (1-\mu) \mat{S} \mat{\Lambda}_g - \mu \mat{S}. 
+\end{gather*}
+
+
+%Using applications of the Schur complement to solving linear equations, 
+%\begin{equation}
+%\begin{bmatrix}
+%\mat{A} & \mat{B} \\
+%\mat{C} & \mat{D}
+%\end{bmatrix}
+%\begin{bmatrix}
+%x \\ y 
+%\end{bmatrix}
+%=
+%\begin{bmatrix}
+%a \\ b 
+%\end{bmatrix}
+%\end{equation}
+%
+%\begin{align}
+%\left( \mat{A} - \mat{B}\mat{D}^{-1}\mat{C}  \right) x &= a - \mat{B}\mat{D}^{-1}b \\
+%\mat{C}x + \mat{D}y &=  b 
+%\end{align}
+%
+%\begin{align}
+%\mat{B} &= \left[ \mat{0}    \phantom{-}\mat{A}_\mu^T  \right] \\
+%\mat{D} &= \begin{bmatrix}
+%-\mat{\Lambda}_\mu & -\mat{S}_\mu  \\
+%-\mat{S}_\mu & -\mu \mat{I} 
+%\end{bmatrix}  
+%\end{align}
+
+So the first step is to solve for $v_x$
+\begin{equation}\label{eq:schur}
+\left[\mat{W}_\mu + \mat{A}_\mu^T \mat{C}_\mu^{-1} \mat{\Lambda}_\mu \mat{A}_\mu
+  \right] v_x = u_x - \mat{A}_\mu^T \mat{C}_{\mu}^{-1} \left[  \mat{S}_\mu  u_s -
+  \mat{\Lambda}_\mu u_\lambda \right].
+\end{equation}
+
+Then, $v_s$ and $v_\lambda$ can be expressed as functions of $v_x$:
+\begin{equation}\label{eq:vs_and_vlam}
+  \begin{bmatrix} v_s \\ v_\lambda \end{bmatrix}
+  =
+  \begin{bmatrix}
+    \mat{C}_\mu^{-1} & \mat{0} \\
+    \mat{0} & \mat{C}_\mu^{-1}
+  \end{bmatrix}
+  \begin{bmatrix}
+    -\mu \mat{I} & \mat{S}_\mu \\
+    \mat{S}_\mu & -\mat{\Lambda}_\mu 
+  \end{bmatrix}
+  \begin{bmatrix} u_s \\ u_\lambda - \mat{A}_\mu v_x \end{bmatrix},
+\end{equation}
+where 
+\begin{equation*}
+  \mat{C}_{\mu} \equiv \mu \mat{\Lambda}_\mu - \mat{S}_\mu^2
+  = \mu (1-\mu) \mat{\Lambda} \mat{S}- \mu^2 \mat{S} - (1-\mu)^2 \mat{S}^2
+\end{equation*}
+
+
+
+%\begin{equation}\label{eq:reduce1}
+%\begin{bmatrix}
+%\left( \mat{W}_\mu + \mat{A}_\mu^T \mat{C}_\mu^{-1} \mat{\Lambda}_\mu \mat{A}_\mu
+%  \right)   & \phantom{-}\mat{A}_{h,\mu}^T \\
+%\mat{A}_{h,\mu} & -\mu \mat{I}
+%\end{bmatrix}
+%\begin{bmatrix}
+%v_x \\ v_h
+%\end{bmatrix} = \\
+%\begin{bmatrix}
+%u_x - \mat{A}_\mu^T \mat{C}_\mu^{-1} \left[\mat{S}_{\mu} u_s - \mat{\Lambda}_\mu u_\lambda \right] \\
+%u_h 
+%\end{bmatrix}
+%\end{equation}
+
+% After solving $v_x$ and $v_h$, $v_s$ and $v_g$ can be retrieved by:
+
+
+
+\section{Schur Complement of the Hessian Block}
+
+\begin{equation}
+\begin{bmatrix}
+A_h W^{' -1} A^T_h  - I' & A_h W^{'-1} A^T_g \\
+A_g W^{' -1} A^T_h  &   A_g  W^{' -1}A^T_g +  I'' \Lambda^{' -1} S' - I' 
+\end{bmatrix} 
+\begin{bmatrix}
+v_h \\ v_g 
+\end{bmatrix} =
+\begin{bmatrix}
+ -u_h +  A_h W^{'-1} u_x \\ - u_g  + I''\Lambda^{' -1} u_s + A_g  W^{' -1} u_x
+\end{bmatrix}
+\end{equation}
+
+
+After getting $v_g$, $v_s$ and $v_x$ can be obtained by:
+\begin{equation}
+\begin{aligned}
+v_s &=  \Lambda^{' -1} ( -S'v_g + u_s)  =\left( -(1-\mu) \Lambda_g + \mu  \mathcal{I}   \right)^{-1} \left( (1-\mu)\mathcal{S}v_g + u_s \right)  \\
+v_x &= W^{' -1} \left( - A^T_g v_g + u_x \right)=\left( (1-\mu) \tilde{\mathcal{W}} + \mu \mathcal{I}  \right)^{-1} \left( - (1-\mu) \tilde{\mathcal{A}}^T_g  v_g + u_x  \right)
+\end{aligned}
+\end{equation}
+
+
+\begin{equation}
+\begin{aligned}
+v_s &=  \Lambda^{' -1} ( -S'v_g + u_s)  =\left( -(1-\mu) \Lambda_g + \mu  \mathcal{I}   \right)^{-1} \left( (1-\mu)\mathcal{S}v_g + u_s \right)  \\
+v_x &= W^{' -1} \left( - A^T_g v_g + u_x \right)=\left( (1-\mu) \tilde{\mathcal{W}} + \mu \mathcal{I}  \right)^{-1} \left( - (1-\mu) \tilde{\mathcal{A}}^T_g  v_g + u_x  \right)
+\end{aligned}
+\end{equation}
+
+
+use this block to express $v_s$ and $v_\lambda$ as functions of $v_x$:
+
+
+
+

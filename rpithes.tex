@@ -1,0 +1,94 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%                                                                 %
+%                            ROOT FILE                            %
+%                                                                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%
+%  Run LaTeX or pdfLaTeX on this file to produce your thesis.
+%  To produce the abstract title page followed by the abstract,
+%  see the file abstitle-phd.tex or abstitle-mas.tex.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[chap,openright]{thesis}  %twoside,   12pt, 
+% Use the first command below if you want captions over 1 line indented. A side
+% effect of this is to remove the use of bold for captions (thesis default).
+% To restore bold, also include the second line below.
+%\usepackage[hang]{caption}      % to indent subsequent lines of captions
+%\renewcommand{\captionfont}{\bfseries} % bold caption (needed with caption 
+                                       % package to restore boldface.)
+% \setstretch{1.5} 
+% \renewcommand\chaptersize{\large}
+% \renewcommand\sectionsize{\large}
+% \renewcommand\subsectionsize{\normalsize}
+% \renewcommand\subsubsectionsize{\normalsize}
+% \renewcommand{\bibalign}{}
+
+% \usepackage{subcaption}
+%\captionsetup{compatibility=false}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{commath}
+\usepackage{rotating}
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\SetKwInOut{Parameter}{parameter}
+\usepackage[textsize=small,textwidth=1.75in]{todonotes}
+% \usepackage{setspace}
+\usepackage{xspace} % needed for \eg, \ie, \etc
+% hyperref must be last
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+
+\usepackage{graphicx}
+\usepackage{float}
+%\usepackage{subcaption}    % clashes with \subfig package below
+\usepackage[caption=false]{subfig}
+\usepackage{url}
+
+\newcommand{\etal}[0]{{\em et~al.\@}\xspace}
+\newcommand{\eg}[0]{{e.g.\@}\xspace}
+\newcommand{\ie}[0]{{i.e.\@}\xspace}
+\newcommand{\viz}[0]{{viz.\@}\xspace}
+\newcommand{\resp}[0]{{resp.\@}\xspace}
+\DeclareMathOperator{\mydiag}{diag}
+\newcommand{\comment}[1]{}
+\newcommand{\mat}[1]{\ensuremath{\mathsf{#1}}}
+\newcommand{\nsig}[0]{\ensuremath{n_{\mat{\Sigma}}}}
+\PassOptionsToPackage{usenames,dvipsnames}{xcolor}
+% \usepackage[usenames,dvipsnames]{xcolor}
+ \usepackage{xcolor}
+\newcommand{\padd}[1]{{\leavevmode\color{blue}{#1}}}
+
+
+% \includeonly{rpichap1}  % use \includeonly to process only
+                         % the file(s) listed inside the braces        
+% \begin{singlespace}
+% \end{singlespace}
+
+               
+\begin{document}
+\include{rpititle-phd}   % titlepage material for PhD thesis 
+\include{rpiack}  % include for acknowledgements
+\include{rpiabs} % abstract
+\include{chap1} % chapter 1
+\include{chap2} % chapter 2
+\include{chap3}
+\include{chap4}
+\include{chap5}
+\include{rpibib} % bibliography
+%\include{rpiapp} % appendix
+ 
+\end{document}

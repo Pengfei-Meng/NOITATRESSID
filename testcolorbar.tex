@@ -1,0 +1,22 @@
+\documentclass{standalone}
+\usepackage{pgfplots}
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    hide axis,
+    scale only axis,
+    height=0pt,
+    width=0pt,
+    colormap/jet,
+    colorbar vertical,
+    point meta min=18,
+    point meta max=45,
+    colorbar style={
+        width=10cm,
+        xtick={18,20,25,...,45}
+    }]
+    \addplot [draw=none] coordinates {(0,0)};
+\end{axis}
+\end{tikzpicture}
+
+\end{document}
