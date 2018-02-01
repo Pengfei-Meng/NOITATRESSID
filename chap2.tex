@@ -81,7 +81,7 @@ those that begin near the maximizer $x=0$.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{./figs/paths.png}
+  \includegraphics[width=\textwidth]{./figs/chap2/paths.png}
   \caption{Solution curves of $H(x,x_0,\mu) = 0$ (left side of figure) for
     different values of $x_0$.  The paths begin at $\mu=1$ and converge to the
     local minimizers at $\mu=0$.  The function to be minimized is plotted on the
@@ -164,12 +164,12 @@ with the inertia of the Jacobian $\nabla_q F$ at a local solution to
 \begin{equation*}
   G(q,q_0) \equiv \begin{bmatrix}
     (x - x_0)^T &
-    (s - g(x_0))^T &
+    (s - s_0)^T &
     -\lambda_h^T & 
     -\lambda_g^T
   \end{bmatrix}^T, 
 \end{equation*}
-for which $q_0 = \begin{bmatrix} x_0^T & g(x_0)^T & 0^T & 0^T \end{bmatrix}$.
+for which $q_0 = \begin{bmatrix} x_0^T & s_0^T & 0^T & 0^T \end{bmatrix}$.
 We note that $G(q,q_0)$ satisfies the requirements of
 Theorem~\ref{thm:homotopy}. 
 
@@ -186,7 +186,7 @@ first-order necessary conditions in this work:
     + \mu
     \begin{bmatrix}
       x - x_0 \\
-      s - g(x_0) \\
+      s - s_0 \\
       -\lambda_h \\
       -\lambda_g
     \end{bmatrix}.
@@ -202,8 +202,8 @@ first-order necessary conditions in this work:
 The homotopy map \eqref{eq:homo0} is a favorable in the context of optimization
 for several reasons.  First, the term $\mu(x-x_0)$ helps to address nonconvexity
 by adding a positive diagonal matrix to the Lagrangian Hessian during the early
-stages of convergence.  Furthermore, the term $\mu(s - g(x_0)$ generates a path
-that remains feasible with respect to the inequality constraints.  Finally, the
+stages of convergence.  Furthermore, the term $\mu(s - s_0) with s_0 > 0$ generates a path
+that remains feasible with respect to the slack boundaries $s>0$.  Finally, the
 term $-\mu\lambda_{h} \text{and}  -\mu\lambda_{g}$ improves the conditioning of the
 KKT matrix; even when the constraint Jacobian is rank deficient the homotopy map
 will remain invertible.
@@ -221,8 +221,18 @@ Figure \ref{fig:pc} illustrates the predictor and corrector phases at iteration
 $k$.  The iteration begins by computing an inexact tangent to the path,
 $q_{k+1}'$, and using this tangent to predict the next point on the path.
 Subsequently, the homotopy parameter $\mu$ is fixed and a correction is found
-that gives an inexact root of the homotopy.  This cycle is repeated until $\mu$
-is equal to zero, and the solution of the primal-dual system is recovered.
+that gives an inexact root of the homotopy.  This cycle is repeated until $\mu <
+\epsilon_\mu$, where $\epsilon_\mu > 0$ is a specificed tolerance.  Once $\mu$ is
+sufficiently close to zero an approximate solution of the primal-dual system is
+recovered.
+
+\begin{remark}
+  We use a default value of $\epsilon_\mu = 10^{-9}$ in our algorithm, which we
+  have found works well for most problems; however, for difficult problems, \eg,
+  with rank-deficient constraint Jacobians, it may be necessary to use larger
+  thresholds.  For example, we use $\epsilon_\mu = 10^{-6}$ in the structural
+  optimization problem presented later.
+\end{remark}
 
 \begin{figure}[tbp]
   \centering
@@ -256,7 +266,7 @@ is equal to zero, and the solution of the primal-dual system is recovered.
     \end{equation*}
     where $\tau \in [0,1)$ is the desired relative tolerance.  Further details
       on the inexact solution of \eqref{eq:predictorx} are provided in
-      Section~\ref{sec:matfree}.
+      Chapter~\ref{chap:linsys}.
     
     After (inexactly) solving \eqref{eq:predictorx} for $q_{k}'$, the predictor
     step is given by
@@ -277,7 +287,8 @@ is equal to zero, and the solution of the primal-dual system is recovered.
         \\ -1 \end{bmatrix}.
     \end{equation*}
     Note that the negative signs in the definition of $t_k$ account for
-    decreasing $\mu$ as the path moves from $\mu=1$ to $\mu=0$.
+    decreasing $\mu$ as the path moves from $\mu=1$ to $\mu <
+\epsilon_\mu$.
 
   \item[Corrector:] In the corrector phase, we fix the homotopy parameter
     at $\mu=\mu_{k+1}$ based on the predictor, and use a Newton-Krylov method to
@@ -303,7 +314,7 @@ is equal to zero, and the solution of the primal-dual system is recovered.
     $\nabla_q H$, that appears in \eqref{eq:cor} also appears in
     \eqref{eq:predictorx} during the predictor phase; again, further details
     regarding the solution of the linear systems that involve $\nabla_q H$ are
-    provided in Section~\ref{sec:matfree}.
+    provided in Chapter~\ref{chap:linsys}.
 
 \end{description}
 
@@ -367,7 +378,6 @@ allowable step $\alpha_{\max}$.
 \end{remark}
 
 \subsubsection{Safeguards on the slacks and inequality multipliers}\label{sec:fraction}
-
 One of the differences between solving \eqref{eq:opt00x} and solving a generic
 nonlinear system of equations is that the slacks and inequality multipliers must
 remain nonnegative and nonpositive, respectively.  To cope with this additional
@@ -375,30 +385,51 @@ set of requirements, the following safeguards are implemented in the
 predictor-corrector scheme.
 \begin{itemize}
   \item During the predictor phase, the maximum allowable step size is bounded
-    using the fraction-to-the-boundary rule~\cite{Nocedal2006NO}.
-    \begin{align*}
-      \alpha_{\max}^{\textsf{prim}} &= \max\left\{ \alpha \in (0,1] \;|\; s + \alpha s' \geq (1-\tau) s \right\}, \\
-        \alpha_{\max}^{\textsf{dual}} &= \max\left\{ \alpha \in (0,1] \;|\; \lambda_g + \alpha \lambda_g' \geq (1-\tau) \lambda_g \right\}.
-    \end{align*}
-    As is common, we use the first bound for both the design and slack
-    variables, and we use the second bound for the multipliers.
+    using a fraction-to-the-boundary-like rule~\cite{Nocedal2006NO} defined
+    below.
     
-  \item After solving for the correction $\Delta q_{k+1} = q_{k+1} -
-    \hat{q}_{k+1}$, the slacks and inequality multipliers are clipped to ensure
-    they have the correct signs:
-    \begin{equation*}
-      s_{k+1} = \max(\hat{s}_{k+1} + \Delta s_{k+1}, 0)
-      \qquad\text{and}\qquad      
-      \lambda_{g,k+1} = \min(\hat{\lambda}_{g,k+1} + \Delta \lambda_{g,k+1}, 0),
-    \end{equation*}
-    where the $\max$ and $\min$ functions in the above expressions are to be
+  \begin{equation}\label{eq:f2b}
+      \alpha_{\max} = \max\left\{
+      \alpha \in (0,1] \;|\; s + \alpha s' \geq \tau_s .\right\}.
+    \end{equation}
+where $\tau_s = 10^{-6}$. If a particular slack variable gets close to zero, 
+   \begin{equation*}
+   0 <  s \leq \tau_s
+   \end{equation*}
+  then its value is frozen and it is excluded from the above
+    calculation of $\alpha_{\max}$.
+
+In our algorithm, we make sure the slack variables $s \geq \tau_s$ at the very beginning 
+to the initial slack $s_0$ as well as at the last point of the corrector step 
+by applying the following clipping rule : 
+   \begin{equation}\label{eq:sclip}
+      \hat{s} = \max(s, \tau_s)
+   \end{equation}
+
+
+    The maximum step size is enforced for all variables, including the design
+    variables $x$.  We have found that synchronizing the step size across the
+    design, slack and multipliers improves the performance of the algorithm.
+    
+  \item After the predictor step, and the corrector step,
+  the inequality multipliers are clipped to
+    ensure they remain non-positive:
+    \begin{equation}\label{eq:lclip}
+      \hat{\lambda}_{k+1} = \min(\lambda_{k} + \alpha_k (t_k)_{\lambda}, 0),
+    \end{equation}
+    where $(t_k)_{\lambda}$ denotes the multiplier component of the normalized
+    tangent, and the $\min$ function in the above expression is to be
     interpreted elementwise.
+    
 \end{itemize}
 
-\begin{remark}
-  We assume that a solution to \eqref{eq:opt00x} satisfies strict
-  complementarity, that is, either $s_i = 0$ or $\lambda_{g,i}=0$, but not both
-\end{remark}
+While the slacks and multipliers both have bound constraints, their treatment is
+slightly different in the above safeguards.  Our motivation for bounding the
+slacks away from zero, in both the predictor corrector phases, is to avoid
+severe ill-conditioning in the system matrix and its preconditioner; see
+Section~\ref{sec:matfreepc} for further details.  The multipliers, in contrast,
+do not lead to conditioning problems if they vanish, so we can clip the
+multipliers to zero.
 
 \subsection{Algorithm Summary}
 
@@ -406,11 +437,10 @@ With most of its elements described, we summarize the predictor-corrector method
 in Algorithm~\ref{alg:pc}.  The solution of the tangent step,
 line~\ref{line:tang}, and the solution of the Newton step, line
 \ref{line:newton}, are the only components of the algorithm that require further
-explanation.  The solution of these linear systems is detailed in the next
-section.
+explanation.  The solution of these linear systems is detailed in the next chapter.
 
 \LinesNumberedHidden
-\begin{algorithm}[tbp]\setstretch{1.35}
+\begin{algorithm}[tbh]\setstretch{1.35}
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
 \SetKwInOut{Parameter}{Parameters}
@@ -419,24 +449,24 @@ section.
 \SetEndCharOfAlgoLine{}
 %\SetKwRepeat{Do}{do}{while} %
 
-\Parameter{$K_{\max}$, $J_{\max}$, $\epsilon_F$, $\epsilon_H$, $\alpha_0$, $\delta_{\text{targ}}$, $\phi_{\text{targ}}$, $\Delta \mu_{\max}$}
-\Input{$x_0$}
+\Parameter{$K_{\max}$, $J_{\max}$, $\epsilon_F$, $\tau$, $\epsilon_H$, $\alpha_0$, $\delta_{\text{targ}}$, $\phi_{\text{targ}}$, $\Delta \mu_{\max}$}
+\Input{$x_0$, $s_0$}
 \Output{$q^{*} = \begin{bmatrix} x^{*T} & s^{*T} & \lambda_h^{*T} & \lambda_g^{*T}   \end{bmatrix}^T$, the solution of \eqref{eq:opt00x}}
 \BlankLine
-Set $q_0 = \begin{bmatrix} x_0^T & g(x_0)^T & 0^T  & 0^T \end{bmatrix}$,
-$\delta_{0} \leftarrow \delta_{\text{targ}}$ and
-$\phi_{0} \leftarrow \phi_{\text{targ}}$\\
+Clip $s_0$ if necessary: $s_0 \leftarrow \max(s_0,\tau_s)$  \\
+Set $q_0 = \begin{bmatrix} x_0^T & s_0^T& 0^T & 0^T \end{bmatrix}$, $q  \leftarrow q_0 $  \\
+compute state $u$,  adjoint $\psi$ for $\boldsymbol{q}_0$ \\
+inexactly solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k}$ 
+ for $q_{k}'$ to required tolerance $\tau$ \label{line:initPred} \\
+compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
+
 \For{$k = 0,1,2,\ldots,K_{\max}$}{
-  \lIf{$\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$,  $s_{i} \geq 0$,
-    and $\lambda_{gi} \leq 0$}{\Return $q_{k}$}
-  \ShowLn
-  inexactly solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k}$
-  for $q_{k}'$ \label{line:tang} \\
-  $\zeta_{k} = \max\left( \sqrt{\delta_k/\delta_{\text{targ}}}, \phi_k / \phi_{\text{targ}} \right)$\\
-  compute $\alpha_{k} = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right)$\\
-  apply \eqref{eq:pred} (the predictor) to get $\hat{q}_{k+1}$ and $\mu_{k+1}$\\
-  %update state $u$, adjoint $\psi$ at $\boldsymbol{q}_{k+1}'$ \\
+ compute $\alpha_{k} (\alpha_0 \text{~if~} k==0) = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right)$\\
+  use \eqref{eq:pred} to update $\hat{q}_{k+1}$ and $\mu_{k+1}$\\
+  clip $\lambda_{k+1}$ if necessary:  $\hat{\lambda}_{k+1} = \min(\lambda_{k} + \alpha_k (t_k)_{\lambda}, 0)$  \\
+  update state $u$, adjoint $\psi$ at $\boldsymbol{q}_{k+1}'$ \\
   set $q_{k+1} \leftarrow \hat{q}_{k+1}$\\
+  
   \For{$j = 0,1,2,\ldots,J_{\max}$}{ 
     \lIf{$\lVert H(q_{k+1},q_0,\mu_{k+1}) \rVert \leq \epsilon_{H} \lVert
       H(\hat{q}_{k+1},q_0,\mu_{k+1}) \rVert$}{%
@@ -445,14 +475,25 @@ $\phi_{0} \leftarrow \phi_{\text{targ}}$\\
     \ShowLn
     inexactly solve $\left(\nabla_q H \right)_{k+1} \Delta q_{k+1} =
     -H_{k+1}$ for $\Delta q_{k+1}$ \label{line:newton} \\
-    $q_{k+1} \leftarrow q_{k+1} + \Delta q_{k+1}$
+    $q_{k+1} \leftarrow q_{k+1} + \Delta q_{k+1}$ \\
+     \lIf{ $\mu_{k+1} < \epsilon_{\mu}$ and $\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$,  $s_{i} \geq 0$}
+     {\Break \Break} 
   }
-  clip if necessary: $s_{k+1} \leftarrow \max(s_{k+1},0)$ and
-  $\lambda_{g, k+1} \leftarrow \min(\lambda_{g, k+1},0)$ \\
+  update state $u$, adjoint $\psi$ at $\boldsymbol{q}_{k+1}$ \\ 
+    \lIf{$\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$,  $s_{i} \geq 0$ ,
+   and $\lambda_{i} \leq 0$}{\Return $q_{k}$}
+  \ShowLn
+   inexactly solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k}$
+  for $q_{k}'$ to required tolerance $\tau$   \label{line:tang} \\
+  compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
+  compute the step scaling factor: $\zeta_{k} = \max\left( \sqrt{\delta_k/\delta_{\text{targ}}}, \phi_k / \phi_{\text{targ}} \right)$\\
+  compute $\alpha_{k} = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right)$\\
+  clip $\lambda_{k+1}$ and $s_{k+1}$ if necessary: $s_{k+1} \leftarrow \max(s_{k+1},\tau_s)$ and
+  $\lambda_{k+1} \leftarrow \min(\lambda_{k+1},0)$ \\
   update $\delta_k$ and $\phi_{k}$ according to \eqref{eq:delta_k} and
   \eqref{eq:phi_k} \\
-}
-\caption{Inexact-Newton predictor-corrector algorithm for constrained
+  $k \leftarrow k+1$
+  }
+\caption{Inexact-Newton predictor-corrector algorithm for PDE-Constrained
   optimization.\label{alg:pc}}
 \end{algorithm}
-

@@ -26,7 +26,8 @@
 
 % \usepackage{subcaption}
 %\captionsetup{compatibility=false}
-
+% \usepackage{float}
+% \usepackage{caption}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -47,10 +48,18 @@
   citecolor=blue,
   urlcolor=blue
 }
-
+\usepackage{multirow}
 \newtheorem{definition}{Definition}[section]
 \newtheorem{theorem}{Theorem}
 \newtheorem{remark}{Remark}
+
+\usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{lscape}
+
 
 \usepackage{graphicx}
 \usepackage{float}
@@ -72,7 +81,6 @@
  \usepackage{xcolor}
 \newcommand{\padd}[1]{{\leavevmode\color{blue}{#1}}}
 
-
 % \includeonly{rpichap1}  % use \includeonly to process only
                          % the file(s) listed inside the braces        
 % \begin{singlespace}
@@ -80,15 +88,17 @@
 
                
 \begin{document}
-\include{rpititle-phd}   % titlepage material for PhD thesis 
-\include{rpiack}  % include for acknowledgements
-\include{rpiabs} % abstract
-\include{chap1} % chapter 1
-\include{chap2} % chapter 2
+\include{rpititle-phd}   
+\include{rpiack}   
+\include{rpiabs}  
+\include{chap1}  
+\include{chap2} 
 \include{chap3}
 \include{chap4}
 \include{chap5}
-\include{rpibib} % bibliography
-%\include{rpiapp} % appendix
+\include{chap6}
+\include{chap7}
+\include{chap8}
+\include{rpibib}   
  
 \end{document}

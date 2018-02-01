@@ -4,7 +4,7 @@
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{Matrix-free Preconditioners}
+\chapter{Matrix-free, Inexact Solution of The Linear Systems}\label{chap:linsys}
 During the execution of Algorithm~\ref{alg:pc}, the tangent linear system and
 Newton update are solved many times.  Therefore, in order for the
 predictor-corrector algorithm to be competitive, these systems must be
@@ -18,15 +18,68 @@ where $b \in
 Krylov-iterative method.  The primary challenge with this approach, as discussed
 in the introduction, is that the preconditioner itself must be matrix free.
 
-In this section, the bulk of the content focuses on
+In this Chapter, the Krylov iterative solver is briefly reviewed; then the bulk of the content focuses on
 the matrix-free preconditioner for the two linear systems. 
 
-% \section{Krylov iterative solver}
+\section{Krylov iterative solver}
+We use the flexible generalized minimal residual method,
+FGMRES~\cite{Saad1993fgmres}, to solve~\eqref{eq:linsys}.  One advantage of
+FGMRES, compared to most Krylov-based methods, is that is permits nonstationary
+preconditioners that vary from one Krylov iteration to the next.  While we do
+not take advantage of nonstationary preconditioners in this work, we have found
+this flexibility invaluable in the solution of multidisciplinary optimization
+problems~\cite{dener:idf2017, dener:2014}.
 
-% \section{Matrix-free preconditioner}
+To find an approximate solution to \eqref{eq:linsys}, FGMRES orthonormalizes a
+sequence of matrix-vector products using a generalized form of Arnoldi's
+method~\cite{saad:2003}.  Starting with $v_{1} = b/\|b\|$, the generalized
+Arnoldi's method produces the following relation at the $i$th iteration:
+\begin{equation}\label{eq:arnoldi}
+  (\nabla_q H) \mat{Z}_{i} = \mat{V}_{i+1} \bar{\mat{H}}_{i},
+\end{equation}
+where $\mat{V}_{i+1} \in \mathbb{R}^{N\times (i+1)}$ has orthogonal columns and
+$\bar{\mat{H}}_{i} \in \mathbb{R}^{(i+1)\times i}$ is upper Hessenberg.  The
+vectors in $\mat{Z}_{i} \in \mathbb{R}^{N\times i}$ form the subspace from which
+the approximate solution to \eqref{eq:linsys} is drawn (see below).  These
+vectors are related to the vectors in $\mat{V}_{i+1}$ by
+\begin{equation*}
+  z_{j} = P_j(v_{j}), \qquad \forall j = 1,2,\ldots,i,
+\end{equation*}
+where $P_j(\cdot)$ denotes the preconditioning operation at iteration $j$.    
+
+The FGMRES solution is given by $x_{i} = \mat{Z}_{i} y_{i}$, where $y_{i}$ is
+chosen to minimize the 2-norm of the residual, $r_i \equiv b -  (\nabla_q H) x_i = b -  (\nabla_q H)\mat{Z}_i y_i$, as
+follows:
+\begin{align*}
+  y_{i} = \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
+  \lVert b -  (\nabla_q H) \mat{Z}_i y \| 
+  &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
+  \lVert \mat{V}_{i+1} (\|b\| e_1 - \bar{\mat{H}}_{i} y \| \\
+  &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
+  \lVert \|b\| e_1 - \bar{\mat{H}}_{i} y \|,
+  \qquad\qquad\text{(since $\mat{V}_{i+1}^T \mat{V}_{i+1} = \mat{I}$)}
+\end{align*}
+where $e_{1} \in \mathbb{R}^{i+1}$ is the first column of the $(i+1)\times(i+1)$
+identity. The minimization problem on the final line is inexpensive to solve in
+practice, since $i$ is usually less than 100.
+
+Like most Krylov iterative methods, the FGMRES algorithm described above does
+not require the Jacobian $(\nabla_q H)$ explicitly.  From the user's
+perspective, the algorithm only requires matrix-vector products and
+preconditioning operations.  In this work, matrix-vector products involving
+$(\nabla_q H)$ are computed using second-order adjoints~\cite{wang:1992,
+  hicken:inexact2014}.  Briefly, each product with $(\nabla_q H)$ requires the
+solution of two discretized linear PDEs: a linear forward problem and a linear
+adjoint problem.  See \cite{dener:scitech2015} for further details regarding
+second-order adjoints in the context of reduced-space problems with state
+constraints.  The second required operation, preconditioning, is described in
+the next subsection.
+
+
+\section{Matrix-free preconditioner}\label{sec:matfreepc}
 As $\mu$ approaches zero, the system \eqref{eq:linsys} becomes an increasingly
 ill-conditioned saddle-point problem.  Consequently, solving this problem with
-an iterative Krylov solver like FGMRES requires an effective preconditioner.
+an iterative Krylov solver like FGMRES requires an effective preconditioner.  
 
 Many specialized preconditioners have been developed for saddle-point
 problems~\cite{benzi2005numerical}, including those arising in full-space
@@ -50,13 +103,13 @@ we begin by examining the exact Jacobian $\nabla_q H$ in  \eqref{eq:predictorx} 
 \nabla_q H &= (1 - \mu) \nabla_{q} F(q) + \mu \nabla_q G(q,q_0) \\
 &=  (1-\mu)\begin{bmatrix}
  \nabla_{xx} \mathcal{L}   & \boldsymbol{0} & \mathcal{A}^T_h   & \mathcal{A}^T_g   \\
-\boldsymbol{0}     &   -\mathcal{S} \mat{\Lambda}_g   & \boldsymbol{0} & -\mathcal{S}     \\
+\boldsymbol{0}     &   - \mat{\Lambda}_g   & \boldsymbol{0} & -\mathcal{S}     \\
 \mathcal{A}_h  &  \boldsymbol{0}   & \boldsymbol{0} &  \boldsymbol{0}  \\
-\mathcal{A}_g  & -\mathcal{S}  &  \boldsymbol{0}  & \boldsymbol{0}   \\
+\mathcal{A}_g  & -\mathcal{I}  &  \boldsymbol{0}  & \boldsymbol{0}   \\
 \end{bmatrix}
 + \mu \begin{bmatrix}
 \mathcal{I} & \boldsymbol{0} & \boldsymbol{0} & \boldsymbol{0} \\
-\boldsymbol{0}  & \mathcal{S}  & \boldsymbol{0} & \boldsymbol{0} \\
+\boldsymbol{0}  & \mathcal{I}  & \boldsymbol{0} & \boldsymbol{0} \\
 \boldsymbol{0} & \boldsymbol{0} & -\mathcal{I} &  \boldsymbol{0} \\
 \boldsymbol{0} & \boldsymbol{0} &   \boldsymbol{0} & -\mathcal{I} 
 \end{bmatrix} \\
@@ -64,7 +117,7 @@ we begin by examining the exact Jacobian $\nabla_q H$ in  \eqref{eq:predictorx} 
 	\mat{W}_\mu & \phantom{-}\mat{0} & \phantom{-}\mat{A}_{h,\mu}^T  & \phantom{-}\mat{A}_{g,\mu}^T \\
 	\mat{0}  & -\mat{\Lambda}_\mu & \phantom{-}\mat{0}   & -\mat{S}_\mu \\
 	\mat{A}_{h, \mu} & \phantom{-}\mat{0} &  -\mu \mat{I} & \phantom{-}\mat{0}  \\
-	\mat{A}_{g, \mu} & -\mat{S}_\mu &  \phantom{-}\mat{0}     &   -\mu \mat{I}
+	\mat{A}_{g, \mu} & -(1-\mu)\mat{I} &  \phantom{-}\mat{0}     &   -\mu \mat{I}
 \end{bmatrix}
 \end{aligned}
 \end{equation}
@@ -75,7 +128,7 @@ defined by
 	\mat{A}_{h, \mu} \equiv (1-\mu) \nabla_x h, \\
 	\mat{A}_{g, \mu} \equiv (1-\mu) \nabla_x g, \qquad 
 	\mat{S}_{\mu} \equiv (1-\mu)\mat{S},\qquad
-	\mat{\Lambda}_\mu \equiv (1-\mu) \mat{S} \mat{\Lambda}_g - \mu \mat{S}. 
+	\mat{\Lambda}_\mu \equiv (1-\mu)  \mat{\Lambda}_g - \mu \mat{I}. 
 \end{gather*}
 
 In the ideal case, a preconditioner application corresponds to solving the
@@ -85,77 +138,38 @@ linear system
 	\mat{W}_\mu & \phantom{-}\mat{0} & \phantom{-}\mat{A}_{h,\mu}^T  & \phantom{-}\mat{A}_{g,\mu}^T \\
 	\mat{0}  & -\mat{\Lambda}_\mu & \phantom{-}\mat{0}   & -\mat{S}_\mu \\
 	\mat{A}_{h, \mu} & \phantom{-}\mat{0} &  -\mu \mat{I} & \phantom{-}\mat{0}  \\
-	\mat{A}_{g, \mu} & -\mat{S}_\mu &  \phantom{-}\mat{0}     &   -\mu \mat{I}
+	\mat{A}_{g, \mu} &  -(1-\mu)\mat{I} &  \phantom{-}\mat{0}     &   -\mu \mat{I}
 \end{bmatrix}
 \begin{bmatrix} v_x \\ v_s \\ v_{h} \\  v_{g} \end{bmatrix} 
 = 
 \begin{bmatrix} u_x \\ u_s \\ u_{h} \\ u_{g}  \end{bmatrix},
 \end{equation}
 where $u_x \in \mathbb{R}^n$, $u_s \in \mathbb{R}^{m}$, and $u_h \in
-\mathbb{R}^{l}$,  $u_g \in \mathbb{R}^{m}$. As $\mu \rightarrow 0$, the complementary product 
-at the solution $ \mat{S} \mat{\Lambda}_g = 0$, and the Jacobian matrix is singular.  
-however, for the moment, we consider the case $\mu > 0$ and derive two different types of preconditioners based on the system reduction type. 
+\mathbb{R}^{l}$,  $u_g \in \mathbb{R}^{m}$.  The following subsections first derive the 
+solutions for inequality-only constrained systems, then extend to both equality and inequality 
+constrained systems. 
 
-\section{Schur Complement of the Inequality Constraint Block}
-\begin{equation}\label{eq:ideal_precond}
+\subsection{Inequality-only Constrained Problems}
+When only inequality constraints are present, the linear system \eqref{eq:ideal_precond} 
+can be reduced to: 
+
+\begin{equation}\label{eq:ideal_precond_ineq}
   \begin{bmatrix} 
-	\mat{W}_\mu & \phantom{-}\mat{0} &  \phantom{-}\mat{A}_\mu^T \\
+	\mat{W}_\mu & \phantom{-}\mat{0} &  \phantom{-}\mat{A}_{g,\mu}^T \\
 	\mat{0}  & -\mat{\Lambda}_\mu & -\mat{S}_\mu \\
-	\mat{A}_\mu & -\mat{S}_\mu & -\mu \mat{I}
+	\mat{A}_{g,\mu} &  -(1-\mu)\mat{I} & -\mu \mat{I}
 \end{bmatrix}
-\begin{bmatrix} v_x \\ v_s \\ v_\lambda \end{bmatrix} 
+\begin{bmatrix} v_x \\ v_s \\ v_g \end{bmatrix} 
 = 
-\begin{bmatrix} u_x \\ u_s \\ u_\lambda \end{bmatrix},
+\begin{bmatrix} u_x \\ u_s \\ u_g \end{bmatrix},
 \end{equation}
 
-
-\begin{gather*}
-	\mat{W}_{\mu} \equiv (1-\mu) \left[\nabla_x^2 f + \lambda^T \nabla_x^2 g\right] + \mu \mat{I},\qquad
-	\mat{A}_{h, \mu} \equiv (1-\mu) \nabla_x h, \\
-	\mat{A}_{g, \mu} \equiv (1-\mu) \nabla_x g, \qquad 
-	\mat{S}_{\mu} \equiv (1-\mu)\mat{S},\qquad
-	\mat{\Lambda}_\mu \equiv (1-\mu) \mat{S} \mat{\Lambda}_g - \mu \mat{S}. 
-\end{gather*}
-
-
-%Using applications of the Schur complement to solving linear equations, 
-%\begin{equation}
-%\begin{bmatrix}
-%\mat{A} & \mat{B} \\
-%\mat{C} & \mat{D}
-%\end{bmatrix}
-%\begin{bmatrix}
-%x \\ y 
-%\end{bmatrix}
-%=
-%\begin{bmatrix}
-%a \\ b 
-%\end{bmatrix}
-%\end{equation}
-%
-%\begin{align}
-%\left( \mat{A} - \mat{B}\mat{D}^{-1}\mat{C}  \right) x &= a - \mat{B}\mat{D}^{-1}b \\
-%\mat{C}x + \mat{D}y &=  b 
-%\end{align}
-%
-%\begin{align}
-%\mat{B} &= \left[ \mat{0}    \phantom{-}\mat{A}_\mu^T  \right] \\
-%\mat{D} &= \begin{bmatrix}
-%-\mat{\Lambda}_\mu & -\mat{S}_\mu  \\
-%-\mat{S}_\mu & -\mu \mat{I} 
-%\end{bmatrix}  
-%\end{align}
-
-So the first step is to solve for $v_x$
-\begin{equation}\label{eq:schur}
-\left[\mat{W}_\mu + \mat{A}_\mu^T \mat{C}_\mu^{-1} \mat{\Lambda}_\mu \mat{A}_\mu
-  \right] v_x = u_x - \mat{A}_\mu^T \mat{C}_{\mu}^{-1} \left[  \mat{S}_\mu  u_s -
-  \mat{\Lambda}_\mu u_\lambda \right].
-\end{equation}
-
-Then, $v_s$ and $v_\lambda$ can be expressed as functions of $v_x$:
+If at least one constraint is active, it is easy to show that
+the lower right $2m \times 2m$ block in the Jacobian will become singular as
+$\mu \rightarrow 0$; however, for the moment, we consider the case $\mu > 0$ and
+use this block to express $v_s$ and $v_g$ as functions of $v_x$:
 \begin{equation}\label{eq:vs_and_vlam}
-  \begin{bmatrix} v_s \\ v_\lambda \end{bmatrix}
+  \begin{bmatrix} v_s \\ v_g \end{bmatrix}
   =
   \begin{bmatrix}
     \mat{C}_\mu^{-1} & \mat{0} \\
@@ -163,71 +177,446 @@ Then, $v_s$ and $v_\lambda$ can be expressed as functions of $v_x$:
   \end{bmatrix}
   \begin{bmatrix}
     -\mu \mat{I} & \mat{S}_\mu \\
-    \mat{S}_\mu & -\mat{\Lambda}_\mu 
+    (1-\mu)\mat{I} & -\mat{\Lambda}_\mu 
   \end{bmatrix}
-  \begin{bmatrix} u_s \\ u_\lambda - \mat{A}_\mu v_x \end{bmatrix},
+  \begin{bmatrix} u_s \\ u_g - \mat{A}_{g, \mu} v_x \end{bmatrix},
 \end{equation}
 where 
 \begin{equation*}
-  \mat{C}_{\mu} \equiv \mu \mat{\Lambda}_\mu - \mat{S}_\mu^2
-  = \mu (1-\mu) \mat{\Lambda} \mat{S}- \mu^2 \mat{S} - (1-\mu)^2 \mat{S}^2
+  \mat{C}_{\mu} \equiv \mu \mat{\Lambda}_\mu - (1-\mu) \mat{S}_\mu
+  = \mu (1-\mu) \mat{\Lambda}_g - \mu^2 \mat{I}- (1-\mu)^2 \mat{S}
 \end{equation*}
+is a diagonal matrix.  Substituting the expression for $v_g$ from
+\eqref{eq:vs_and_vlam} into the first row of \eqref{eq:ideal_precond_ineq}, we find
+\begin{equation}\label{eq:schur}
+\left[\mat{W}_\mu + \mat{A}_{g, \mu}^T \mat{C}_\mu^{-1} \mat{\Lambda}_\mu \mat{A}_{g,\mu}
+  \right] v_x = u_x - \mat{A}_{g,\mu}^T \mat{C}_{\mu}^{-1} \left[(1-\mu) u_s -
+  \mat{\Lambda}_\mu u_g \right].
+\end{equation}
 
-
-
-%\begin{equation}\label{eq:reduce1}
-%\begin{bmatrix}
-%\left( \mat{W}_\mu + \mat{A}_\mu^T \mat{C}_\mu^{-1} \mat{\Lambda}_\mu \mat{A}_\mu
-%  \right)   & \phantom{-}\mat{A}_{h,\mu}^T \\
-%\mat{A}_{h,\mu} & -\mu \mat{I}
-%\end{bmatrix}
-%\begin{bmatrix}
-%v_x \\ v_h
-%\end{bmatrix} = \\
-%\begin{bmatrix}
-%u_x - \mat{A}_\mu^T \mat{C}_\mu^{-1} \left[\mat{S}_{\mu} u_s - \mat{\Lambda}_\mu u_\lambda \right] \\
-%u_h 
-%\end{bmatrix}
-%\end{equation}
-
-% After solving $v_x$ and $v_h$, $v_s$ and $v_g$ can be retrieved by:
-
-
-
-\section{Schur Complement of the Hessian Block}
-
-\begin{equation}
+\begin{remark}
+To derive \eqref{eq:vs_and_vlam} and \eqref{eq:schur}, the system matrix in \eqref{eq:ideal_precond_ineq} can be partitioned into a $2 \times 2$ block matrix. 
+\begin{equation}\label{eq:sch}
+\left[
+\begin{array}{c | c c} 
+	   \mat{W}_\mu   &   \phantom{-}\mat{0}  &   \phantom{-}\mat{A}_{g,\mu}^T   \\
+	   \hline
+	   \mat{0}    &   -\mat{\Lambda}_\mu & -\mat{S}_\mu \\
+	  \mat{A}_{g,\mu}     &  -(1-\mu)\mat{I} & -\mu \mat{I}   
+\end{array}  
+\right]
+\left[  \begin{array}{c} v_x \\ \hline v_s \\ v_g \end{array} \right]
+= 
+\left[ \begin{array}{c} u_x \\  \hline u_s \\ u_g \end{array} \right]
+\end{equation}
+Assuming that $\mat{D}$ is invertible, the solution of the following linear system
+\begin{equation*}
 \begin{bmatrix}
-A_h W^{' -1} A^T_h  - I' & A_h W^{'-1} A^T_g \\
-A_g W^{' -1} A^T_h  &   A_g  W^{' -1}A^T_g +  I'' \Lambda^{' -1} S' - I' 
+\mat{A}  & \mat{B} \\
+\mat{C}  & \mat{D} 
 \end{bmatrix} 
 \begin{bmatrix}
-v_h \\ v_g 
-\end{bmatrix} =
+x \\ y
+\end{bmatrix}
+= 
 \begin{bmatrix}
- -u_h +  A_h W^{'-1} u_x \\ - u_g  + I''\Lambda^{' -1} u_s + A_g  W^{' -1} u_x
+a \\ b
+\end{bmatrix}
+\end{equation*}
+can be obtained by: 
+\begin{equation}\label{eq:schx}
+\begin{aligned}
+\left( \mat{A} - \mat{B} \mat{D}^{-1}\mat{C}  \right)x &= a - \mat{B} \mat{D}^{-1}b \\
+\mat{C}  x +  \mat{D} y &= b 
+\end{aligned}
+\end{equation}
+Note that the inverse of the lower right block matrix in \eqref{eq:sch} is equivalent to the 
+system matrix in \eqref{eq:vs_and_vlam}. 
+\begin{equation*}
+\begin{bmatrix}
+ -\mat{\Lambda}_\mu & -\mat{S}_\mu \\ 
+ -(1-\mu)\mat{I} & -\mu \mat{I}  
+\end{bmatrix}^{-1} 
+= 
+\begin{bmatrix}
+  \mat{C}_\mu^{-1} & \mat{0} \\
+    \mat{0} & \mat{C}_\mu^{-1}
+  \end{bmatrix}
+  \begin{bmatrix}
+   -\mu \mat{I} & \mat{S}_\mu \\
+    (1-\mu)\mat{I} & -\mat{\Lambda}_\mu 
+  \end{bmatrix}
+\end{equation*}
+with $\mat{C}_\mu$ being its determinant. Then  \eqref{eq:vs_and_vlam} and 
+\eqref{eq:schur} can be derived by filling the corresponding blocks from \eqref{eq:sch} 
+to \eqref{eq:schx}.   
+\end{remark}
+
+The boundedness of the system \eqref{eq:schur} depends on the behavior of the
+matrix $\mat{C}_{\mu}$.  Assuming strict complementarity, as $\mu\rightarrow 0$
+we have two situations:
+\begin{enumerate}
+\item If the constraint is inactive at the solution, then $\lambda_{g,i} = 0$ and
+  $\lim_{\mu\rightarrow 0} \left[\mat{C}_\mu^{-1} \mat{\Lambda}_\mu \right]_{ii}
+  = 0$.  This has the effective of eliminating the corresponding constraint from
+  the reduced system \eqref{eq:schur}.
+
+\item If the constraint is active, then $s_i = 0$ and $\lim_{\mu\rightarrow 0}
+  \left[\mat{C}_\mu^{-1} \mat{\Lambda}_\mu \right]_{ii} = \infty$.
+\end{enumerate}
+The first situation is desirable, since the constraint is inactive and should
+not influence the step $v_x$.  The second situation is obviously undesirable;
+however, the safeguards in place during the predictor-corrector phases bound the
+slacks away from zero, so the inverse of $\mat{C}_{\mu}$ remains well defined in practice.
+
+To cope with the second situation, we use the fraction-to-the-boundary rule 
+at the predictor step and the explicit clipping at the end of the corrector step to make sure 
+the slack variables are kept away from $\tau_s$ . 
+The fraction-to-the-boundary rule we use is slightly 
+different than~\cite{Nocedal2006NO} in that we use a fixed absolute value $\tau_s$ as the boundary 
+instead of a fixed fraction boundary. 
+
+\begin{remark}
+  Consider the case where all the inequality constraints are active.  Then, as
+  $\mu\rightarrow 0$, the matrix in \eqref{eq:schur} becomes the Hessian for an
+  augmented-Lagrangian-like function with linearized constraints:
+  \begin{equation*}
+    \lim_{\mu\rightarrow 0} W_{\mu} + \mat{A}_{g,\mu}^T \mat{C}_{\mu}^{-1}
+    \mat{\Lambda}_\mu \mat{A}_{g,\mu} = \nabla_x^{2} f + \lambda^T \nabla_x^2 g +
+    \frac{1}{\tau_s}\mat{A}_g^{T} \mat{\Lambda}_g \mat{A}_g.
+  \end{equation*}
+\end{remark}
+
+Having established that \eqref{eq:schur} is well defined for all iterates, we
+now seek to approximately invert this system.  To this end, we replace
+$\mat{W}_{\mu}$ by an approximation denoted by $\mat{B}_{\mu}$:
+\begin{equation*}
+\mat{W}_{\mu} \approx \mat{B}_{\mu},
+\end{equation*}
+where $\mat{B}_{\mu}$ is either a scaled identity, $\mat{B}_{\mu} = \beta
+\mat{I}$, or an L-BFGS quasi-Newton approximation~\cite{liu:1989}.  In addition,
+we use the Lanczos algorithm~\cite{saad:1992} to construct a low-rank
+approximation of $\mat{A}_{g,\mu}^T \mat{C}_\mu^{-1} \mat{\Lambda}_\mu
+\mat{A}_{g,\mu}$ for nonlinear constraints; that is
+\begin{equation}\label{eq:svd}
+  \mat{A}_\mu^T  \mat{C}_\mu^{-1}  \mat{\Lambda}_{\mu}\mat{A}_\mu
+  \approx \mat{U} \mat{\Sigma} \mat{V}^T,
+\end{equation}
+where $\mat{\Sigma} = \textsf{diag}(\sigma_1,\sigma_2,\ldots,\sigma_{\nsig}) \in
+\mathbb{R}^{\nsig\times \nsig}$ is a diagonal matrix holding estimates for the
+$\nsig$ largest singular values, and $\mat{U} \in \mathbb{R}^{m\times \nsig}$ and
+$\mat{V} \in \mathbb{R}^{m\times \nsig}$ are corresponding approximations to the
+left and right singular vectors. 
+
+\begin{remark}
+  The Lanczos algorithm is advantageous in this context, because it only
+  requires matrix-vector products with $\mat{A}_{g,\mu}^T \mat{C}_\mu^{-1}
+  \mat{\Lambda}_\mu \mat{A}_{g,\mu}$.  Such products can be evaluated using
+  second-order adjoints; again, see \cite{hicken:inexact2014} or
+  \cite{dener:scitech2015} for further details regarding second-order adjoints.
+  Furthermore, by replacing accurate second-order adjoint PDE solves with
+  corresponding preconditioner applications, the cost of the Lanczos-based SVD
+  can be significantly reduced.  This idea is explored in the numerical
+  experiments.  In our preconditioner, we use a parameter $\mu_e$ 
+   to delimit using exact or approximate second-order adjoints. Only after 
+   $\mu \leq \mu_e $ the exact second-order adjoints are used in the preconditioner 
+   to save computational cost. 
+\end{remark}
+
+%\begin{remark}
+%  The constraint Jacobian for bound and linear constraints is readily available,
+%  so the Lanczos algorithm is not necessary to approximate $\mat{A}_{g,\mu}^T
+%  \mat{C}_\mu^{-1} \mat{\Lambda}_{\mu}\mat{A}_{g,\mu}$ in this case.
+%  \todo[inline]{But the matrix $\mat{A}_\mu^T \tilde{\mat{C}}_\mu^{-1}
+%    \mat{\Lambda}^{-1}\mat{A}_\mu$ involves products between the nonlinear and
+%    linear constraints; how do you account for this in Lanczos?  
+%   \padd{ By zeroing the corresponding portions in the middle term  $C_{\mu}*\Lambda$, 
+%   the products AXA would be only for the nonlinear constraint part.   The bound constraint
+%   part of AXA, which is $C_{\mu}*\Lambda$ times Identity matrix, is added to the Hessian
+%   W part.  $B_{\mu}$ is the sum of the Hessian and bound constraint. 
+%     }}
+%\end{remark}
+
+\begin{remark}
+ At the beginning of the homotopy iterations when the activeness of the constraints are far from 
+determined, it happens sometimes that  $ \mat{C}_\mu^{-1}  \mat{\Lambda}_{\mu}$ are close to 
+vector of zeros, resulting in rank dependent matrix-vector products in Lanczos iterations. To deal 
+with this issue, at the beginning, we use $  \mat{A}_\mu^T \mat{A}_\mu
+  \approx \mat{U} \mat{\Sigma} \mat{V}^T $ in the preconditioner at the beginning of the homotopy iteration. 
+  When $\mu$ gets smaller than $\Sigma_e$, we use \eqref{eq:svd} in the preconditioner. 	
+\end{remark}
+
+Using the above approximations, the (approximate) inverse of the matrix in
+\eqref{eq:schur} can be found using the Sherman-Morrison-Woodbury formula:
+\begin{align}
+\left[\mat{W}_\mu + \mat{A}_\mu^T \mat{C}_\mu^{-1}  \mat{\Lambda}_\mu  \mat{A}_\mu \right]^{-1}
+&\approx
+\left[\mat{B}_{\mu} + \mat{U} \mat{\Sigma} \mat{V}^T \right]^{-1} \notag \\
+&= \mat{B}_\mu^{-1} - \mat{B}_\mu^{-1} \mat{U}  \left(  \mat{I}_{\nsig} +  \mat{\Sigma} \mat{V}^{T} \mat{B}_\mu^{-1} 
+\mat{U} \right)^{-1} \mat{\Sigma} \mat{V}^{T} \mat{B}_\mu^{-1}.
+\label{eq:smw}
+\end{align}
+where $\mat{B}_\mu^{-1}$ is either $(1/\beta)\mat{I}$ or the L-BFGS
+approximation.  Note that, in the above expression, $\left(\mat{I}_{\nsig} +
+\mat{\Sigma} \mat{V}^{T} \mat{B}_{\mu}^{-1} \mat{U} \right)$ is an $\nsig\times
+\nsig$ matrix.  In the proposed preconditioner, we assume that the number of
+singular values in the truncated SVD, \ie $\nsig$, is sufficiently small that we
+can invert this matrix explicitly using an $LU$ factorization.
+
+In summary, to approximately solve \eqref{eq:schur} we evaluate
+\begin{equation}\label{eq:vx}
+  v_x = \left[\mat{B}_\mu^{-1} - \mat{B}_\mu^{-1} \mat{U}  \left(  \mat{I}_{\nsig} +  \mat{\Sigma} \mat{V}^{T} 
+  \mat{B}_\mu^{-1} \mat{U} \right)^{-1} \mat{\Sigma} \mat{V}^{T} \mat{B}_\mu^{-1} \right]
+  \left\{ u_x - \mat{A}_\mu^T \mat{C}_{\mu}^{-1} \left[(1-\mu) u_s -
+  \mat{\Lambda}_\mu u_g \right]\right\}.
+\end{equation}
+
+%Note that, in addition to using the approximate inverse \eqref{eq:smw}, we have
+%replaced $\mat{C}_{\mu}$ with $\tilde{\mat{C}}_\mu$ on the right hand side.
+
+After obtaining $v_x$, we use it in \eqref{eq:vs_and_vlam} to
+find $v_s$ and $v_\lambda$;
+\begin{align}
+  v_s &= \mat{C}_\mu^{-1}\left[-\mu u_s + \mat{S}_\mu \left( u_g - \mat{A}_\mu v_x\right) \right], \label{eq:vs} \\
+  v_\lambda &= \mat{C}_\mu^{-1}\left[(1-\mu)u_s - \mat{\Lambda}_\mu \left( u_\lambda - \mat{A}_\mu v_x \right) \right]. 
+  \label{eq:vlam}
+\end{align}
+
+\comment{
+Note the use of $\mat{C}_\mu^{-1}$ in the first equation and the use of
+$\tilde{C}_\mu^{-1}$ in the second equation.  For the first equation,
+$\lim_{\mu\rightarrow 0} \mat{C}_\mu = -\mat{S}$, so
+\begin{equation*}
+  \lim_{\mu\rightarrow 0} v_s = 
+  \lim_{\mu\rightarrow 0} \mat{C}_\mu^{-1}\left[-\mu u_s + \mat{S}_\mu \left( u_\lambda - \mat{A}_\mu v_x\right) \right]
+  = \mat{A} v_x - u_\lambda,
+\end{equation*}
+which is consistent with the equation $\mat{A} v_x - v_s = u_\lambda$ that we
+obtain from \eqref{eq:ideal_precond}.  In contrast, the update for $v_\lambda$
+would be unbounded for active constraints if $\mat{C}_\mu$ were used.
+}
+
+We conclude this section by summarizing the complete matrix-free preconditioner
+in Algorithm~\ref{alg:precond}.  Note that the approximate SVD can be performed
+before each Krylov iterative solve, or it can be performed periodically to
+reduce cost, possibly at the risk of descreasing the effectiveness of the
+preconditioner.
+
+\LinesNumberedHidden
+\begin{algorithm}[tbp]\setstretch{1.35}
+\SetKwInOut{Input}{Input}
+\SetKwInOut{Output}{Output}
+\SetKwInOut{Parameter}{Parameters}
+\SetKw{Return}{return}
+\SetEndCharOfAlgoLine{}
+
+\Parameter{$c_{\min}$, $\nsig$, and values at which to evaluate matrices, $x$, $s$,
+  $\lambda$, and $\mu$}
+\Input{vectors to precondition, $u_x$, $u_s$, $u_\lambda$}
+\Output{preconditioned vectors, $v_x$, $v_s$, $v_\lambda$}
+\BlankLine
+Build the truncated and approximate SVD \eqref{eq:svd}, possibly using preconditioner
+applications in place of exact second-order adjoint solves \\
+Solve for $v_x$ using \eqref{eq:vx}\\
+Solve for $v_s$ using \eqref{eq:vs}\\
+Solve for $v_\lambda$ using \eqref{eq:vlam}\\
+\Return $v_x$, $v_s$, and $v_\lambda$
+\caption{Matrix-free, approximate SVD preconditioner. \label{alg:precond}}
+\end{algorithm}
+
+\subsection{Both Inequality and Equality Constrained Problems}
+When both the equality and inequality constraints are present, it is not obvious to reduce the system in 
+\eqref{eq:ideal_precond} using the Schur complement method. However, by using a basic row block by 
+row block variable elimination method, a similar reduced system like \eqref{eq:schur} can be obtained. 
+\begin{equation}\label{eq:2}
+  \begin{bmatrix} 
+	\mat{W}_\mu & \phantom{-}\mat{0} & \phantom{-}\mat{A}_{h,\mu}^T  & \phantom{-}\mat{A}_{g,\mu}^T \\
+	\mat{0}  & -\mat{\Lambda}_\mu & \phantom{-}\mat{0}   & -\mat{S}_\mu \\
+	\mat{A}_{h, \mu} & \phantom{-}\mat{0} &  -\mu \mat{I} & \phantom{-}\mat{0}  \\
+	\mat{A}_{g, \mu} &  -(1-\mu)\mat{I} &  \phantom{-}\mat{0}     &   -\mu \mat{I}
+\end{bmatrix}
+\begin{bmatrix} v_x \\ v_s \\ v_{h} \\  v_{g} \end{bmatrix} 
+= 
+\begin{bmatrix} u_x \\ u_s \\ u_{h} \\ u_{g}  \end{bmatrix},
+\end{equation}
+The slack variable $v_s$ can be represented by the inequality multipliers $v_g$ using 
+the second row block of \eqref{eq:2}: 
+% \begin{equation}
+\begin{align}
+ -\mat{\Lambda}_\mu  v_s  - \mat{S}_\mu v_g  &= u_s  \notag \\
+   -v_s &=   \mat{\Lambda}_\mu ^{-1} \left[ \mat{S}_\mu v_g + u_s  \right]  
+ \label{eq:vs2}
+\end{align}
+% \end{equation}
+By plugging \eqref{eq:vs2} into the last row block of \eqref{eq:2}, the inequality multiplier $v_g$ is 
+left to be represented by $v_x$ only: 
+  %\label{eq:vg}
+\begin{align}
+\mat{A}_{g,\mu} v_x -(1-\mu)\mat{I} v_s -\mu \mat{I} v_g  &= u_g  \notag \\
+\mat{A}_{g,\mu} v_x   +  (1-\mu)   \mat{\Lambda}_\mu ^{-1} \left[ \mat{S}_\mu v_g + u_s  \right] -\mu \mat{I} v_g &= u_g  \notag  \\
+ v_g = \left[ (1-\mu)   \mat{\Lambda}_\mu ^{-1} \mat{S}_\mu   -\mu \mat{I} \right]^{-1} & \left[   u_g -    (1-\mu)   \mat{\Lambda}_\mu ^{-1} u_s  -   \mat{A}_{g,\mu} v_x   \right] 
+ \label{eq:vg2x}
+\end{align}
+The first row block of \eqref{eq:2} can be rewritten using $v_g$ as in \eqref{eq:vg2x}:
+\begin{equation*}
+ \mat{W}_\mu v_x +  \mat{A}_{h,\mu}^T v_h  + \mat{A}_{g,\mu}^T  \left[ (1-\mu)   \mat{\Lambda}_\mu ^{-1} \mat{S}_\mu   -\mu \mat{I} \right]^{-1} \left[  u_g -    (1-\mu) \mat{\Lambda}_\mu ^{-1} u_s  -   \mat{A}_{g,\mu} v_x   \right] =u_x 
+ \end{equation*}
+\begin{equation*} 
+\begin{aligned}
+\left[ \mat{W}_\mu +  \mat{A}_{g,\mu}^T \left[ (1-\mu) \mat{\Lambda}_\mu ^{-1} \mat{S}_\mu   -\mu \mat{I} \right]^{-1} (-\mat{A}_{g,\mu})  \right]v_x  +  \mat{A}_{h,\mu}^T v_h &= \\
+u_x - \mat{A}_{g,\mu}^T \left[ (1-\mu)  \mat{\Lambda}_\mu ^{-1} \mat{S}_\mu   -\mu \mat{I} \right]^{-1}  &\left[ u_g -   (1-\mu)  \mat{\Lambda}_\mu ^{-1} u_s  \right] 
+\end{aligned}
+\end{equation*}
+The reduced system becomes: 
+\begin{multline}\label{eq:schur_equ}
+\begin{bmatrix}
+\mat{W}_\mu +  \mat{A}_{g,\mu}^T \left[(1-\mu)  \mat{\Lambda}_\mu ^{-1} \mat{S}_\mu   -\mu \mat{I} \right]^{-1} (-\mat{A}_{g,\mu})    & \phantom{-}\mat{A}_{h,\mu}^T   \\
+\phantom{-}\mat{A}_{h,\mu}  & \phantom{-}-\mu \mat{I}
+\end{bmatrix}
+\begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
+= \\
+\begin{bmatrix} u_x - \mat{A}_{g,\mu}^T \left[ (1-\mu)  \mat{\Lambda}_\mu ^{-1} \mat{S}_\mu   -\mu \mat{I} \right]^{-1} \left[ u_g -    (1-\mu)  \mat{\Lambda}_\mu ^{-1} u_s  \right] \\ u_h  \end{bmatrix} 
+\end{multline}
+Now pay attention that in $\mat{C}_\mu^{-1} \mat{\Lambda}_\mu $ in  \ref{eq:schur} is equivalent to : 
+\begin{equation*}
+\begin{aligned}
+\mat{C}_\mu^{-1} \mat{\Lambda}_\mu &=\left[ \mu \mat{\Lambda}_\mu - (1-\mu) \mat{S}_\mu \right]^{-1}  \mat{\Lambda}_\mu \\
+	&=  \left[ \mu \mat{I} -   (1-\mu) \mat{S}_\mu \mat{\Lambda}_\mu^{-1} \right]^{-1}
+\end{aligned}
+\end{equation*}
+Then \eqref{eq:schur_equ} is equivalent to: 
+\begin{equation}\label{eq:schur_equ2}
+\begin{bmatrix}
+\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu    \mat{A}_{g,\mu}    & \mat{A}_{h,\mu}^T   \\
+\mat{A}_{h,\mu}  & -\mu \mat{I}
+\end{bmatrix}
+\begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
+=
+\begin{bmatrix} u_x - \mat{A}_{g,\mu}^T \mat{C}_\mu^{-1}  \left[(1-\mu) u_s  - \mat{\Lambda}_\mu u_g     \right]  \\ u_h  \end{bmatrix} 
+\end{equation}
+Therefore, when both equality and inequality constraints present, we need to solve \eqref{eq:schur_equ2}, then 
+$v_s$ and $v_g$ can be recovered by \eqref{eq:vs_and_vlam} the same way as in inequality-only case.
+The focus is how to solve the following system using matrix-free methods: 
+\begin{equation}\label{eq:reduce}
+\begin{bmatrix}
+\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}    & \mat{A}_{h,\mu}^T   \\
+\mat{A}_{h,\mu}  & -\mu \mat{I}
+\end{bmatrix}
+\begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
+=
+\begin{bmatrix} \text{rhs}   \\ u_h  \end{bmatrix} 
+\end{equation}
+Note that the first row block in the right-hand-side of \eqref{eq:schur_equ2} is denoted by $\text{rhs}$ in \eqref{eq:reduce}.  
+Once again we draw our insights from the Schur complement equation. 
+\begin{remark}
+Assuming that $\mat{D}$ is invertible, the solution of the following linear system 
+\begin{equation*}
+\begin{bmatrix}
+\mat{A}  & \mat{B} \\
+\mat{C}  & \mat{D} 
+\end{bmatrix} 
+\begin{bmatrix}
+x \\ y
+\end{bmatrix}
+= 
+\begin{bmatrix}
+a \\ b
+\end{bmatrix}
+\end{equation*}
+can be obtained by, 
+\begin{equation*}
+\begin{bmatrix}
+x \\ y
+\end{bmatrix}=
+\begin{bmatrix}
+\mat{A}  & \mat{B} \\
+\mat{C}  & \mat{D} 
+\end{bmatrix} ^{-1}
+\begin{bmatrix}
+a \\ b
+\end{bmatrix}
+\end{equation*}
+where 
+\begin{equation}\label{eq:schur_inv}
+\begin{bmatrix}
+A & B \\ C & D 
+\end{bmatrix} ^{-1}
+= \begin{bmatrix}
+I  & 0 \\
+-D^{-1}C  & I 
+\end{bmatrix}
+ \begin{bmatrix}
+( A-BD^{-1}C )^{-1}   &  0 \\
+ 0   & D^{-1} 
+\end{bmatrix}
+\begin{bmatrix}
+I  &   -BD^{-1} \\
+0  &  I 
 \end{bmatrix}
 \end{equation}
-
-
-After getting $v_g$, $v_s$ and $v_x$ can be obtained by:
+\end{remark}
+To apply the Schur complement inverse to \eqref{eq:reduce}, we have to consider two situations: 
+\begin{enumerate}
+\item When $\mu$ is not so small, e.g. $\mu > \tau_{\mu}$ then $- \mu \mat{I}$ is invertible and we can use \eqref{eq:schur_inv}. 
+\item When $\mu$ gets close to zero, e.g. $\mu < \tau_{\mu}$, we enforce the following clipping rule $\mu = \max(\mu, \tau_{\mu}) $ 
+to prevent $\mu$ from being too small in the preconditioner, where we use $\tau_{\mu} = 10^{-4}$ in the numerical experiments. This way \eqref{eq:schur_inv} can still be used.
+\end{enumerate}
+This way, $v_x$ and $v_h$ can be solved by: 
+\begin{equation}\label{eq:core_equ}
+\begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
+=
+\begin{bmatrix}
+I & 0 \\
+\frac{1}{\mu} \mat{A}_{h,\mu}  &  I 
+\end{bmatrix}
+\begin{bmatrix}
+\left(\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
++ \frac{1}{\mu}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} \right)^{-1}    & 0 \\
+0  &  -\frac{1}{\mu}\mat{I} 
+\end{bmatrix}
+\begin{bmatrix}
+I  & \frac{1}{\mu} \mat{A}_{h,\mu}^T  \\
+0  &  I
+\end{bmatrix}
+\begin{bmatrix}
+rhs  \\ u_h
+\end{bmatrix}
+\end{equation}
+where the major component is the following operation besides the matrix-vector product operations with $\mat{A}_{h,\mu}$: 
+\begin{equation}
+\left(\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
++ \frac{1}{\mu}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} \right)^{-1}  y
+\end{equation}
+where $y$ refers to 
+\begin{equation}
+y = \text{rhs} + \frac{1}{\mu} \mat{A}_{h,\mu}^T u_h
+\end{equation}
+By stacking $ \mat{A}_{h,\mu} $ and $\mat{A}_{g,\mu}$ together, 
+the following expressions can be derived: 
+\begin{equation}
+\mat{W}_\mu  +  \mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu = 
+\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
++ \frac{1}{\mu}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} 
+\end{equation}
+where 
 \begin{equation}
 \begin{aligned}
-v_s &=  \Lambda^{' -1} ( -S'v_g + u_s)  =\left( -(1-\mu) \Lambda_g + \mu  \mathcal{I}   \right)^{-1} \left( (1-\mu)\mathcal{S}v_g + u_s \right)  \\
-v_x &= W^{' -1} \left( - A^T_g v_g + u_x \right)=\left( (1-\mu) \tilde{\mathcal{W}} + \mu \mathcal{I}  \right)^{-1} \left( - (1-\mu) \tilde{\mathcal{A}}^T_g  v_g + u_x  \right)
-\end{aligned}
+ \mat{A}_\mu &= 
+ \begin{bmatrix}
+ \mat{A}_{h,\mu} \\
+ \mat{A}_{g,\mu}
+ \end{bmatrix} \\
+  \Sigma_{\mu} &= 
+  \begin{bmatrix}  
+  \frac{1}{\mu} \mat{I}  & 0 \\
+  0   &  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu 
+  \end{bmatrix}
+ \end{aligned}
 \end{equation}
+This way we can use Sherman-Morrison to compute the inverse of 
+$\mat{W}_\mu  +  \mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, and use Lanczos method to find the SVD 
+approximation of $\mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, in the same manner as in the previous section. 
 
-
-\begin{equation}
-\begin{aligned}
-v_s &=  \Lambda^{' -1} ( -S'v_g + u_s)  =\left( -(1-\mu) \Lambda_g + \mu  \mathcal{I}   \right)^{-1} \left( (1-\mu)\mathcal{S}v_g + u_s \right)  \\
-v_x &= W^{' -1} \left( - A^T_g v_g + u_x \right)=\left( (1-\mu) \tilde{\mathcal{W}} + \mu \mathcal{I}  \right)^{-1} \left( - (1-\mu) \tilde{\mathcal{A}}^T_g  v_g + u_x  \right)
-\end{aligned}
-\end{equation}
-
-
-use this block to express $v_s$ and $v_\lambda$ as functions of $v_x$:
 
 
 

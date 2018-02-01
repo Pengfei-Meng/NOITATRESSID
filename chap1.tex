@@ -13,27 +13,24 @@ The thesis is interested in solving engineering design optimization problems tha
 \begin{figure}[H]
 \centering
 \subfloat[Aero-Structure Optimization~\cite{as_opt}]{
-  \includegraphics[clip,width=0.5\columnwidth]{./figs/1_as.png}\label{fig:A}  %
+  \includegraphics[clip,width=0.5\columnwidth]{./figs/chap1_intro/1_as.png}\label{fig:A}  %
 }
 \subfloat[Topology Optimization~\cite{topo_opt}]{ %
-  \includegraphics[clip,width=0.5\columnwidth]{./figs/1_topo.png}\label{fig:B}
+  \includegraphics[clip,width=0.5\columnwidth]{./figs/chap1_intro/1_topo.png}\label{fig:B}
 }
 \caption{Large-Scale PDE-constrained Optimization}
 \label{fig:1_mot}
 \end{figure}
 
-In such applications, an optimization library is coupled with a PDE solver. The simulation problem solves the PDEs for state variables, e.g. the pressure distribution along the surface mesh node points on the wing in Figure~\ref{fig:A}, the displacement distribution among the solid mesh node points in Figure~\ref{fig:B}, at certain design variables. The performance of the physics system is evaluated in the form of objective function given certain constraints, and the objective and some of the constraints are computed via the state variables. The optimizer will choose a design point, request the PDE solver for state variables, and compute the functional values and the gradients at that point. The optimizer will process all the information and yield a better design point using detailed mathematical algorithms. The process is repeated until certain criteria is met for optimality.  
+In such applications, an optimization library is coupled with a PDE solver. The simulation problem solves the PDEs for state variables, e.g. the pressure distribution along the surface mesh node points on the wing in Figure~\ref{fig:A}, the displacement distribution among the solid mesh node points in Figure~\ref{fig:B}, at certain design variables. The performance of the physics system is evaluated in the form of objective function bounded by certain constraints, while the objective and the constraints depend on both the state variables and the design variables. The optimizer will choose a design point, inquire the PDE solver for state variables, and compute the functional values and the gradients of the objective and constraints at that point. The optimizer will process all the information and yield a better design point using mathematical algorithms. The process is repeated until certain criteria is met for optimality.  
 
-The optimization framework is simple, and has been used successfully in many application fields. The difficulty in PDE-constrained optimization is that the PDE solution (or state equation), which itself is a complicated topic to which intensive effort has been devoted, is just a subproblem of the optimization problem. In large-scale engineering, the PDE solve and gradient evaluation can be very expensive. In addition, storing the necessary matrix or vectors 
+The optimization framework is simple, and has been used successfully in many application fields. The difficulty in PDE-constrained optimization is that the PDE solution (or state equation), which itself is a complicated topic to which intensive effort has been devoted, is a subproblem of the optimization problem. During the optimization process, the optimizer will query the PDE solver many times for the state variables and gradients at different design points; in addition to that, the optimizer need to compute and store the gradients of the constraints and objective in order to determine the next design point. In large-scale engineering, the PDE solve and gradient evaluation can be very expensive even with the advancement in modern computer power. Moreover, storage of the necessary matrices can impose a heavy burden on computational resources.    
 
+General-purpose optimization algorithms are unsuitable for large-scale PDE-constrained optimization problems, because their matrix-based approaches require the computation and storage of the total constraint Jacobians, which in turn would result in poor scalability performance with ever-increasing size of problems. In addition, the commonly used limited-memory quasi-Newton methods in general-purpose algorithms usually brings linear asymptotic convergence rates, which is not ideal for large-scale optimization problems. 
 
-can be very demanding.  To find the optimal design, the optimizer may request the PDE solution and calculate the gradients for many different design points, and will need to store a certain amount of large state vectors.    
+This thesis intends to address these challenges by proposing a scalable optimization algorithm specially for large-scale PDE-constrained design problems. 
 
-General-purpose optimization algorithms are unsuitable, because their matrix-based approaches need to compute the total constraint Jacobians as well as store them, resulting in poor scalability performance. In addition, their limited-memory quasi-Newton methods have linear asymptotic convergence rates. For large-scale optimization problems with thousands of design variables or constraints, the computational cost is unmanageable.
-
-This thesis intends to address these challenges by proposing a scalable optimization framework specially for large-scale PDE-constrained design problems. 
-
-\section{Solving PDE-constrained Optimization Problem}
+\section{Solving PDE-constrained Optimization Problem}\label{sec:pde_mot}
 A generic PDE-constrained optimization problem can be stated as
 \begin{equation}\label{eq:gen1}
 \begin{aligned}
@@ -85,7 +82,7 @@ In contrast, reduced-space algorithms treat the states $u$ and the adjoints $\ps
 h  \\
 g - s 
 \end{bmatrix} =0,\\
-\text{subject to} \quad s_i \geq 0, \quad \text{and} \lambda_{gi} \leq 0. \\
+\text{subject to} \quad s_i \geq 0, \quad \text{and} \quad \lambda_{gi} \leq 0. \\
 \end{gathered}
 \end{equation}
 
@@ -142,73 +139,30 @@ optimization has been disappointing.
 Applying Newton's method to \eqref{eq:opt00x}, the KKT system, also called primal-dual system is obtained:
 \begin{equation}\label{eq:kkt0}
 \begin{bmatrix} \nabla_{xx} \mathcal{L} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
-    0 & -\mathcal{S} \Lambda_g & 0 & -\mathcal{S} \\
-    \mathcal{A}_{h} & 0 & 0 & 0 \\
-    \mathcal{A}_{g} & -\mathcal{S} & 0 & 0 
-    \end{bmatrix}
-    \begin{bmatrix} p_x \\ \tilde{p_s} \\ p_h \\ p_g \end{bmatrix}
-    = - \begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g e \\ h \\ g - s \end{bmatrix}
-\end{equation}
-where $\mathcal{L}$ the Lagrangian is defined in \eqref{eq:lag}, $\mathcal{S}$ and $\Lambda_g$ are as defined previously. 
-
-NK method solves \eqref{eq:kkt0} using Krylov method, and thus only need the matrix-vector product of the system matrix. However, while NK methods can avoid the cost associated with forming the explicit constraint Jacobian, this extension faces several significant challenges. First, active-set and interior-point algorithms that make use of an explicit basis for the null space of the constraint Jacobian cannot be used, because such a basis requires the Jacobian to be explicitly available.  Second, the primal-dual saddle-point system raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge to a sufficient tolerance, hurting the convergence rate of Newton's method. Third, dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task. 
-
-The formula \eqref{eq:kkt0} takes the same form as the classical interior point method in Chapter 19 in Nocedal's book \cite{Nocedal2006NO}, which will be reviewed below. 
-
-\section{Review on Interior Point Method  }
-The difficulty in extending the Newton Krylov methods to handle inequality constraints, to solve \eqref{eq:opt00x} lies in the nonlinear complementarity condition: for each inequality constraint, either the slack or Lagrangian multiplier is strictly zero if we assume strict complementarity is satisfied at the solution. The slack has to be non-negative to guarantee feasibility of the inequality constraints, and the multipliers has to be non-positive in respect to the property of a local minimization point following the formula convention. For inequality constraints that are active at the solution, slack variable is zero and the multiplier is negative, while for inactive inequality constraints, slack variable is positive and the multiplier is negative. Therefore, the complementarity condition, in combined with the sign requirement on slack and multipliers, contains information on optimal active set of the inequality constraints at the solution.   
-
-Currently there are two most powerful algorithms for general nonlinear constrained problems: active-set SQP methods and interior point methods \cite{Nocedal2006NO}. Determining the inequality constraint sets that are active at the solution is the main challenge facing active-set methods. Especially when the number of inequality constraints is large, the method may need many iterations to locate the active-set of inequality constraints. While for interior point methods, there are two varieties based on globalization strategies: Newton-Lagrangian line-search and trust-region SQP on the barrier problems. The former is more for illustration purpose, and the latter is actually implemented in practical optimization software libraries IPOPT \cite{Wächter2006}, and KNITRO \cite{Byrd:1999:IPA:588897.589167}. 
-
-The trust-region SQP method builds a quadratic model on the barrier formulation, employs direct linear algebra, uses explicit constraint Jacobians to first compute the multipliers that deliver minimum linearized constraint violations, then compute the design and slack update steps that minimize the quadratic model. In both subproblems, a trust region bound is imposed on the design and slack components, with the slack variable scaled properly to prevent it away from the nonnegative bound. A proper merit function mimic the quadratic objective function is used to estimate the quality of the steps and control the trust-region radius for next iteration. 
-
-To handle nonlinearities and nonconvexities, regularization terms can be added to the Hessian block and the equality constraint Jacobian on the diagonal of the KKT matrix. The proper amount of regularization is computed at each iteration by trial and error such that the inertia of the regularized KKT matrix is $(n+m, l+m, 0)$, under which condition the total Hessian block of design and slack will be positive definite on the null space of the combined constraint matrix, therefore the resulted Newton step will be a guaranteed descent direction for a large class of merit functions. 
-
-Using the proper barrier parameter $\mu$ updating strategy is crucial to the performance of interior point methods: A slowly decreasing $\mu$ will result in large number of outer iterations, making the algorithm less efficient. While a quickly decreasing $\mu$ may make some slack or inequality multipliers approach zero prematurely, hurting the convergence. Some simple implementations of interior point methods use a constant fraction updating scheme, while some chooses the fraction value based on the recent iterations' progress towards the solution. Making the fraction value close to zero near the solution can yield a superlinear convergence rate. More robust strategies update $\mu$ based on the progress of the current complementarity products. Predictor strategy first calculates a predictor direction by setting $\mu=0$, then calculates the tentative complementarity product along this direction using the step size from fraction to boundary rule. The updating fraction value is based on the ratio of this tentative and current complementarity product. 
-
-
-The former Newton-Lagrangian line-search method solves a perturbed KKT system at each homotopy parameter, also called the barrier parameter $\mu$:
-
-\begin{equation}\label{eq:kkt1}
-\begin{aligned}
-\nabla f(x) + \lambda_h^T \nabla h(x) + \lambda_g^T \nabla g(x) &= 0 \\
--\mathcal{S} \Lambda_g - \mu e &= 0\\
-h(x) &= 0 \\
-g(x) - s &= 0 \\
-s \geq 0, \quad &\lambda_g \leq 0 \\
-\end{aligned}
-\end{equation}
-The barrier parameter $\mu$, is a sequence of strictly positive numbers and converges to zero. The perturbed KKT system \ref{eq:kkt1} is solved for each $\mu$, and the solution trajectory converges to the KKT point of the original problem in the limit.  
-
-Newton's method is used to solve \ref{eq:kkt1} for each $\mu$, where each Newton step is as follows:
-\begin{equation}
-\begin{bmatrix} \mathcal{W} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
     0 & -\Lambda_g & 0 & -\mathcal{S} \\
     \mathcal{A}_{h} & 0 & 0 & 0 \\
     \mathcal{A}_{g} & -\mathcal{I} & 0 & 0 
     \end{bmatrix}
     \begin{bmatrix} p_x \\ p_s \\ p_h \\ p_g \end{bmatrix}
-    = -\begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g - \mu e  \\ h(x) \\ g(x) - s \end{bmatrix}
+    = - \begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g e \\ h \\ g - s \end{bmatrix}
 \end{equation}
-After the Newton step direction is computed, fraction to the boundary rule is applied to determine the maximum allowable step size to keep the slack and inequality multipliers away from the 0 bound. Then a backtracking line search is performed to find the step length that delivers sufficient decrease in the merit function or accepted by the filter. The barrier parameter is then updated for the next iteration. 
+where $\mathcal{L}$ the Lagrangian is defined in \eqref{eq:lag}, $\mathcal{S}$ and $\Lambda_g$ are as defined previously. 
 
-There are potential drawbacks when using interior point methods for PDE-constrained optimization. For instance, to ensure progress towards global minimum, either trust-region or line-search globalization techniques have to be implemented. The former judges the quality of a computed step by calculating the merit function value and adjust the trust-region radius accordingly, while the latter computes the step-length along a step direction that satisfies the Wolfe condition. In either case, extra computation is needed. Dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task; possible solutions include adding a proper regularization term to enforce a positive definite Hessian, see \cite{hicken:flecs2014} and Algorithm B.1 \cite{Nocedal2006NO}. Moreover, the saddle-point matrix raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge. 
+NK method solves \eqref{eq:kkt0} using Krylov method, so it only need the matrix-vector product of the system matrix. The products are formed in a matrix-free way by solving two second-adjoint systems, for details, see~\cite{hicken:inexact2014, dener:idf2017} and the references therein.  However, while NK methods can avoid the cost associated with forming the explicit constraint Jacobian, the extension to inequality constraints faces several significant challenges. First, active-set and interior-point algorithms that make use of an explicit basis for the null space of the constraint Jacobian cannot be used, because such a basis requires the Jacobian to be explicitly available.  Second, the primal-dual saddle-point system raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge to a sufficient tolerance, hurting the convergence rate of Newton's method. Third, dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task. 
 
-% \section{Homotopy Methods}
+\section{Preconditioners for Optimization}
+As is well known, Krylov iterative methods suffer from slow convergence rate when the spectral property of the system matrix is not favorable, e.g. the ratio of the largest to the smallest singular value is huge ($10^5$ to $10^9$). In such cases, a preconditioner that transforms the linear system into another one with favorable spectral properties is necessary for fast convergence of the iterative methods.  For saddle point systems, standard preconditioners like incomplete factorizations are often ineffective, as the indefiniteness of the system, or equivalently the zeros on the diagonal of the matrix would cause the preconditioner to breakdown in the pivoting operation steps \cite{saad:2003}. In addition, incomplete factorization involves direct operations to the entries of the matrix, which is not preferable as we do not have the matrix entries available in matrix-free method. One popular type of solver or preconditioner used in optimization is close to the null space approach, which involves computing the null space of constraint Jacobians, and finding the step update in that null space that would reduce the objective function values. The null space approach is not ideal either, as computing the column orthonormal vectors that span the null space involves operations to the matrix entries. In this thesis, a matrix-free preconditioner that makes use of the matrix vector products with the system matrix is proposed. 
 
-% \section{Krylov Iterative Method}
+The solution to the optimization problem \eqref{eq:opt00x} is a saddle point for the Lagrangian \eqref{eq:lag}, as the optimal design point minimizes the Lagrangian, while the optimal multipliers maximizes the Lagrangian ~\cite{benzi2005numerical}. 
+Note that the matrix in  \eqref{eq:kkt0} is nonsymmetric \footnote{By using a scaled slack block, $\tilde{p_s} = \mathcal{S}^{-1}e p_s $,  the system \eqref{eq:kkt0} can be turned into a symmetric one. We adopt the nonsymmetric version, as we think the preconditioner for this form has better numerical properties, see the section on preconditioner later}. 
+%Basic algebraic properties of the saddle point system like invertibility and conditioning in optimization can be analyzed through the Schur complement factorization form. Suppose the saddle point system is notated as
 
-% \section{KKT Matrix Vector Products}
 
-\section{Preconditioner}
+\section{Thesis Objective and Outline}
 
-\section{Tools}
-
-\section{Challenges and Contributions}
-
-Our long-term goal is to develop an efficient inexact-Newton algorithm that is
+The objective of this thesis is to develop an efficient inexact-Newton algorithm that is
 suitable for reduced-space PDE-constrained optimization problems of the
-form~\eqref{eq:gen_reduced}.  This goal faces two significant challenges, which
+form~\eqref{eq:gen1}.  This goal faces two significant challenges, which
 we seek to address in this work.
 \begin{description}
 \item[Nonconvexity:] The system $F(q) =0$ does not distinguish between different
@@ -229,7 +183,7 @@ we seek to address in this work.
   the full-space.
 \end{description}
 
-Our approach to addressing globalization is to introduce a homotopy map that
+The approach to addressing globalization is to introduce a homotopy map that
 implicitly defines a solution curve that connects the solution to an easy
 problem to the solution of the desired problem.  We then use a
 predictor-corrector algorithm to follow the curve from the easy to the desired
@@ -239,36 +193,68 @@ address the conditioning of the KKT matrix, we propose a low-rank approximation
 of the Schur complement that is constructed by applying a few iterations of the
 Lanczos method with approximate adjoints.
 
-%The remaining paper is organized as follows. In Section \ref{sec:homotopy}, we
-%review homotopy-based globalization and the homotopy map we adopt in this work.
-%Section~\ref{sec:pc} describe our predictor-corrector path-following algorithm
-%for tracing the homotopy zero curve.  Section~\ref{sec:matfree} begins by
-%reviewing Krylov iterative methods, but the focus of the section is the proposed
-%low-rank SVD preconditioner.  Section~\ref{sec:results} includes three test
-%problems that verify and demonstrate the algorithm.  Finally,
-%Section~\ref{sec:conclude} provides our summary and conclusions.
-
-\newpage
-
-\section{Thesis Objectives and Outline}
-The objective of this thesis is to develop a scalable matrix-free optimization algorithm suitable for PDE-constrained design problems, together with proper preconditioners accelerating the convergence of the iterative kernel solver. The objectives are summarized as follows:
-
+The following contents are organized as follows: 
 \begin{itemize}
-  \item Develop an efficient scalable matrix-free optimization algorithm for PDE-constrained optimization problems
-  \item Develop proper preconditioners for the iterative solver
-  \item Verify the accuracy and scalability of the optimization algorithm on analytical problems
-  \item Verify the algorithm and preconditioner on a structural PDE-constrained problems
-  \item Verify the algorithm and preconditioner on an aerodynamic shape optimization problem
+\item Chapter 2 reviews homotopy-based globalization and the homotopy map adopted in this work. Then it describes the predictor-corrector path-following algorithm that traces the homotopy zero curve. The proposed new optimization algorithm is called Homotopy RSNK method. 
+
+\item Chapter 3 begins by reviewing Krylov iterative methods, but the focus is the proposed matrix-free preconditioner, firstly for solving inequality constrained problems, then for solving problems with both equality and inequality constraints. 
+  
+\item Chapter 4 begins with briefly introducing the optimization environment Kona, a state-of-the-art optimization algorithm SNOPT against which the performance of the new method is compared, and the parameter settings for the new method.  Then the optimization algorithm and preconditioners are tested on two analytical problems: 1) An indefinite problem to examine the algorithm's ability to bypass local maximum points. 2) A constructed quadratic problem with linear inequality constraints to investigate the scalability performance of the algorithm and effectiveness of the inequality-only preconditioner. 
+
+\item Chapter 5 tests the Homotopy RSNK method, the inequality-only and mixed equality and inequality preconditioners on a subset of the CUTEr test problems. This Chapter briefly introduces CUTEr problems, the CUTEr problem classification and the Kona-CUTEr interface. Then it presents a table of numerical examples results using the new method and preconditioner, SNOPT.   
+  
+\item Chapter 6 applies the algorithm and preconditioner on a mass minimization stress-constrained structural problem. The results and the convergence history of the algorithm are compared with that of SNOPT.
+  
+\item Chapter 7 the new algorithm and preconditioner is applied on an aerodynamic shape optimization problem. The results and the convergence history of the algorithm are compared with that of SNOPT.
+
+\item Chapter 8 provides conclusions and some suggestions for future works. 
 \end{itemize}
 
-The thesis is organized as follows: Chapter 2 describes the matrix-free optimization algorithm. Chapter 3 describes the preconditioners for the linear system of the algorithm. Chapter 4 verifies the optimization method and preconditioner on constructed problems. Chapter 5 applies the optimization method and preconditioner on a stress-constrained mass-minimization problem. Chapter 6 applies the method and preconditioner on an aerodynamic shape optimization problem. In all the applications, Chapters 4,5,6, the results from the new method are benchmarked with a popular large-scale matrix-based active -set augmented-Lagrangian optimization method SNOPT.  
+
+% a popular large-scale matrix-based active -set augmented-Lagrangian optimization method SNOPT.  
+
+%\begin{equation}\label{eq:saddle}
+%\mathcal{A} = \begin{bmatrix}
+%A & B \\
+%C & D
+%\end{bmatrix}
+%\end{equation}
+%One type of Schur complement can be obtained by performing the following LDU decomposition 
+%\begin{equation}\label{eq:saddle:ldu}
+%\mathcal{A} = \begin{bmatrix}
+%A & B \\
+%C & D
+%\end{bmatrix} = 
+%\begin{bmatrix}
+%I_p & BD^{-1} \\
+%0 & I_q
+%\end{bmatrix}
+%\begin{bmatrix}
+%A-BD^{-1}C  & 0 \\
+%0  & D 
+%\end{bmatrix}
+%\begin{bmatrix}
+%I_p  & 0 \\
+%D^{-1}C  & I_q 
+%\end{bmatrix}
+%\end{equation}
+
+% which is indefinite, poor spectral properties (ill-conditioned) 
+% Direct solvers, however, are still the preferred method in optimization and other areas. Furthermore, direct methods are often used in the solution of subproblems, for example as part of a preconditioner solve.
+%The preconditioners developed here are tailored for PDE-constrained optimization problem. 
+% matrix-vector products with A can be performed efficiently
+% approximate its action on a vector with (nearly) linear complexity,
+% the convergence of the iterates to the optimal solution of problem
+% gain efficient, save on storage
+%words from the paper ~\cite{benzi2005numerical} Benzi block preconditioners, 
+% As the iterates approaches the solution,  the entries in A tend to zero, or infinity, KKT matrix ill-conditioned
+% the norm of the inverse Schur complement goes to infinity
+
+% Schur complement reduction 
+% null space methods, the null space of the constraint Jacobian, the column of Z span the null space of constraint Jacobian
+% popular in optimization, projection of the problem onto the constraint set; 
 
 
-
-
-
-
- 
 % \begin{table}
 % \caption[This is the Caption for Table 1]
 %            {This is the Caption for Table 1\cite{thisbook}}
@@ -301,3 +287,46 @@ The thesis is organized as follows: Chapter 2 describes the matrix-free optimiza
 %%% mode: latex
 %%% TeX-master: t
 %%% End: 
+
+%The formula \eqref{eq:kkt0} takes the same form as the classical interior point method in Chapter 19 in Nocedal's book \cite{Nocedal2006NO}, which will be reviewed below. 
+
+%\section{Review on Interior Point Method  }
+%The difficulty in extending the Newton Krylov methods to handle inequality constraints, to solve \eqref{eq:opt00x} lies in the nonlinear complementarity condition: for each inequality constraint, either the slack or Lagrangian multiplier is strictly zero if we assume strict complementarity is satisfied at the solution. The slack has to be non-negative to guarantee feasibility of the inequality constraints, and the multipliers has to be non-positive in respect to the property of a local minimization point following the formula convention. For inequality constraints that are active at the solution, slack variable is zero and the multiplier is negative, while for inactive inequality constraints, slack variable is positive and the multiplier is negative. Therefore, the complementarity condition, in combined with the sign requirement on slack and multipliers, contains information on optimal active set of the inequality constraints at the solution.   
+%
+%Currently there are two most powerful algorithms for general nonlinear constrained problems: active-set SQP methods and interior point methods \cite{Nocedal2006NO}. Determining the inequality constraint sets that are active at the solution is the main challenge facing active-set methods. Especially when the number of inequality constraints is large, the method may need many iterations to locate the active-set of inequality constraints. While for interior point methods, there are two varieties based on globalization strategies: Newton-Lagrangian line-search and trust-region SQP on the barrier problems. The former is more for illustration purpose, and the latter is actually implemented in practical optimization software libraries IPOPT \cite{Wächter2006}, and KNITRO \cite{Byrd:1999:IPA:588897.589167}. 
+%
+%The trust-region SQP method builds a quadratic model on the barrier formulation, employs direct linear algebra, uses explicit constraint Jacobians to first compute the multipliers that deliver minimum linearized constraint violations, then compute the design and slack update steps that minimize the quadratic model. In both subproblems, a trust region bound is imposed on the design and slack components, with the slack variable scaled properly to prevent it away from the nonnegative bound. A proper merit function mimic the quadratic objective function is used to estimate the quality of the steps and control the trust-region radius for next iteration. 
+%
+%To handle nonlinearities and nonconvexities, regularization terms can be added to the Hessian block and the equality constraint Jacobian on the diagonal of the KKT matrix. The proper amount of regularization is computed at each iteration by trial and error such that the inertia of the regularized KKT matrix is $(n+m, l+m, 0)$, under which condition the total Hessian block of design and slack will be positive definite on the null space of the combined constraint matrix, therefore the resulted Newton step will be a guaranteed descent direction for a large class of merit functions. 
+%
+%Using the proper barrier parameter $\mu$ updating strategy is crucial to the performance of interior point methods: A slowly decreasing $\mu$ will result in large number of outer iterations, making the algorithm less efficient. While a quickly decreasing $\mu$ may make some slack or inequality multipliers approach zero prematurely, hurting the convergence. Some simple implementations of interior point methods use a constant fraction updating scheme, while some chooses the fraction value based on the recent iterations' progress towards the solution. Making the fraction value close to zero near the solution can yield a superlinear convergence rate. More robust strategies update $\mu$ based on the progress of the current complementarity products. Predictor strategy first calculates a predictor direction by setting $\mu=0$, then calculates the tentative complementarity product along this direction using the step size from fraction to boundary rule. The updating fraction value is based on the ratio of this tentative and current complementarity product. 
+%
+%
+%The former Newton-Lagrangian line-search method solves a perturbed KKT system at each homotopy parameter, also called the barrier parameter $\mu$:
+%
+%\begin{equation}\label{eq:kkt1}
+%\begin{aligned}
+%\nabla f(x) + \lambda_h^T \nabla h(x) + \lambda_g^T \nabla g(x) &= 0 \\
+%-\mathcal{S} \Lambda_g - \mu e &= 0\\
+%h(x) &= 0 \\
+%g(x) - s &= 0 \\
+%s \geq 0, \quad &\lambda_g \leq 0 \\
+%\end{aligned}
+%\end{equation}
+%The barrier parameter $\mu$, is a sequence of strictly positive numbers and converges to zero. The perturbed KKT system \ref{eq:kkt1} is solved for each $\mu$, and the solution trajectory converges to the KKT point of the original problem in the limit.  
+%
+%Newton's method is used to solve \ref{eq:kkt1} for each $\mu$, where each Newton step is as follows:
+%\begin{equation}
+%\begin{bmatrix} \mathcal{W} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
+%    0 & -\Lambda_g & 0 & -\mathcal{S} \\
+%    \mathcal{A}_{h} & 0 & 0 & 0 \\
+%    \mathcal{A}_{g} & -\mathcal{I} & 0 & 0 
+%    \end{bmatrix}
+%    \begin{bmatrix} p_x \\ p_s \\ p_h \\ p_g \end{bmatrix}
+%    = -\begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g - \mu e  \\ h(x) \\ g(x) - s \end{bmatrix}
+%\end{equation}
+%After the Newton step direction is computed, fraction to the boundary rule is applied to determine the maximum allowable step size to keep the slack and inequality multipliers away from the 0 bound. Then a backtracking line search is performed to find the step length that delivers sufficient decrease in the merit function or accepted by the filter. The barrier parameter is then updated for the next iteration. 
+%
+%There are potential drawbacks when using interior point methods for PDE-constrained optimization. For instance, to ensure progress towards global minimum, either trust-region or line-search globalization techniques have to be implemented. The former judges the quality of a computed step by calculating the merit function value and adjust the trust-region radius accordingly, while the latter computes the step-length along a step direction that satisfies the Wolfe condition. In either case, extra computation is needed. Dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task; possible solutions include adding a proper regularization term to enforce a positive definite Hessian, see \cite{hicken:flecs2014} and Algorithm B.1 \cite{Nocedal2006NO}. Moreover, the saddle-point matrix raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge. 
+
+

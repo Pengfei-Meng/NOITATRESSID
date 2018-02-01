@@ -1,0 +1,11 @@
+*.log 
+*.synctex.gz
+*.bbl
+*.blg
+*.lof
+*.lot
+*.out
+*.toc
+*.aux
+*.DS_Store
+rpithesis-doc.pdf

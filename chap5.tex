@@ -1,173 +1,136 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %                                                                 %
-%                            CHAPTER FIVE                         %
+%                            CHAPTER FIVE                        %
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{Stress-Constrained Mass Minimization}
-%\resetfootnote %this command starts footnote numbering with 1 again.
-Our final numerical experiment is a PDE-constrained structural sizing problem
-with state-based constraints.  The problem was previously considered by the
-authors in \cite{dener:scitech2016}, and the geometry and boundary conditions
-are illustrated in Figure~\ref{fig:struct}.  Informally, the problem consists of
-minimizing the plate mass, with respect to the thickness distribution, subject
-to bound constraints and von Mises stress criteria. 
-\begin{figure}[tbp]
-  \centering
-  \includegraphics[width=0.6\textwidth]{./figs/newres2/struct.png}
-  \caption{Plate thickness design problem}
-  \label{fig:struct}
-\end{figure}
+\chapter{Cuter Test Problems}
+\section{Problem Description}\label{sec:cuter1}
+The \textbf{CUTEr} Test Problem Set~\cite{cuter_opt, cuter_gould} is a huge collection of test problems to test new optimization codes and develop new algorithms. The problem set ranges from small differentiable unconstrained problem to large scale dense and sparse problems with both equality and inequality constraints, nonlinear systems, and network problems etc.  Some of the test problems exhibit numerical difficulties observable in practice like bad scaling in objective and constraint functions, ill-conditioned problems, multiple local solutions, non-regular solutions where the constraint qualification is not satisfied etc. A number of optimization packages have interfaced with CUTEr~\cite{cuter_interface} like Ipopt, Knitro, Minos, SNOPT etc.  
 
-The response of the plate to the applied force is modeled using the equations of
-linear elasticity assuming 2D plane stress.  The governing equations are
-discretized using the finite element method with bilinear elements.
-A uniform mesh of $n_x \times n_y$ elements is employed, and the thickness
-distribution is piecewise constant over each element.  These thickness values
-are taken to be the design variables, so there are $n = n_x n_y$ design
-variables.
+The problems are written in Standard Input Format (SIF)~\cite{Conn1992}. A decoder works to translate the problems written in SIF to data files in Fortran77, which would provide tools to access the function values, Jacobians, and sometimes Hessians to the optimization packages. It is important for a developing optimization algorithm to test on a good, quality, and suitable subset of problems in CUTEr/CUTEst to validate its accuracy and robustness. 
 
-The formal optimization statement is
+\subsection{A quick introduction to CUTEr test problems}\label{sec:cuternm}
+CUTEr provides access to the objective function and the constraint function, together with the gradients for the test problems. The objective value is a real scalar: 
 \begin{equation*}
-  \begin{alignedat}{2}
-    \underset{x}{\text{min}} \quad &\textsf{mass}(x) = \sum_{i=1}^{n} m_i x_i, & &\\
-    \text{subject to} \quad &\textsf{stress}_i(x) \leq \sigma_{\max}, &
-    &\forall\; i = 1,2,\ldots,n \\
-      & x_l \leq x_i \leq  x_u, \qquad & &\forall\; i = 1,2,\ldots,n,
-  \end{alignedat}
+y = f(x) 
 \end{equation*}
-where $\textsf{mass}(x)$ is the plate mass, and $\textsf{stress}_{i}(x)$ is the
-von Mises stress criterion on the $i$th element. \padd{ The thickness of each element
-is bounded by the lower and upper values, $x_l = 0.02$ and $x_u = 0.98$. }  
+where  $x \in \mathbb{R}^n, y \in \mathbb{R}$. $x_i$ is the i-th component of x. 
 
-The mass is a linear function
-of the design variables and is given by
+The constraints include bound constraints on the variable and other types of constraints. The variable $x$ are subject to simple bounds:
 \begin{equation*}
-  \textsf{mass}(x) = \sum_{i=1}^{n} m_i x_i,
+\text{bl}_i \leq x_i \leq \text{bu}_i  
 \end{equation*}
-where $m_i$ is the mass per unit thickness of the $i$th element of the
-structure.
-\padd{ The objective function 
-$\text{mass}(x)$, is a sum of all the elements' mass. Each element's mass
-is a weighted summation of the design variables in a surrounding conic area, 
-with the weights determined by $1-\frac{r}{r_0}$ } \todo[inline]{please help me
-paraphrase here.  It's directly from reading the code. }
+where $\text{bl}_i$ and $\text{bu}_i$ are the lower and upper bound on $x_i$. When there is no lower or upper bound on $x_i$, then $\text{bl}_i = -1e20$ or $\text{bu}_i = 1e20$. 
 
-The von Mises stress
-criterion on the $i$th element can be expressed as
+Besides bound constraints, all the other constraints are gathered in a single vector-valued function $c(x) \in \mathbb{R}^m$, and constrained in the form:    
 \begin{equation*}
-  \textsf{stress}_i(x) = 1 - u(x)^T \mat{B}_i^T \mat{G} \mat{B}_i u(x),
+\text{cl}_i \leq c_i(x) \leq \text{cu}_i  
 \end{equation*}
-where $\mat{B}_i u(x)$ gives the strain as a function of the displacement,
-$u(x)$, and $\mat{G}$ is a positive-definite matrix.  The displacement is a
-function of the design variables through the discretized governing equation
+where either $\text{cl}_i$ or $\text{cu}_i$ is always infinite. This means that the inequality constraint must take just one of the form below for a certain problem:
 \begin{equation*}
-  R(x,u) = \mat{K}(x) u - b,
+c_i(x) \geq 0   \quad  \text{or}  \quad  c_i(x) \leq 0
 \end{equation*}
-where $\mat{K}(x)$ is the stiffness matrix and $b$ is the force vector.
 
-We consider a set of three mesh sizes by varying $n_x$ and $n_y$.  Table
-\ref{tab:mesh_sizes} lists the mesh dimensions and number of design variables
-for the three cases, which we will refer to as the small, medium, and large
-cases.
+For equality constraints $\text{cl}_i$ and $\text{cu}_i$ are both equal to 0. There is also a bool vector $\text{Equatn} \in \mathbb{R}^m$ indicating whether a constraint is an equality constraint or not. 
 
-\begin{table}[tbp]
-  \begin{center}
-    \caption{Mesh dimensions ($n_x$ and $n_y$), number of design variables ($n =
-      n_x n_y$), and size of the approximate SVD preconditioner
-      ($n_{\mat{\Sigma}}$) for the plate-thickness optimization
-      problem \label{tab:mesh_sizes}}
-  \begin{tabular}{ l c c c c}
-    \textbf{Case} & $\mathbf{n_x}$  & $\mathbf{n_y}$ & $\mathbf{n}$
-    & $\mathbf{{n_{\mat{\Sigma}}}}$
-    \\ \hline
-    \rule{0ex}{3ex}%
-    Small  &   16 & 8  & 128  & 20 \\ 
-    Medium &   32 & 16 & 512  & 80 \\  
-    Large  &   64 & 32 & 2048 & 320  
-  \end{tabular}
-  \end{center}
-\end{table}
+It is possible to order CUTEr to place equality constraints before inequality constraints, or linear constraints before nonlinear constraints by reordering the components of $c(x)$. Likewise, components of $x$ can be reordered such that nonlinear variables appear before linear ones. 
 
-Table~\ref{tab:mesh_sizes} also lists the number of approximate singular values
-used in Algorithm~\ref{alg:precond}.  As the number of design variables
-increases in this structural optimization problem, the number of singular values
-in the SVD approximation also has to increase accordingly, \padd{at about $\frac{1}{6}$
-of the number of design variables}.
-Figure~\ref{fig:svdrank} shows the convergence history of the Krylov iterative
-method applied to \eqref{eq:linsys}.  
+In addition, CUTEr also outputs the Lagrangian function value, the gradient of the objective function and the Lagrangian, the Jacobian matrix and the Hessian matrix of the constraints. 
 
-\padd{To show the effectiveness of the proposed preconditioner, 
-Figure~\ref{fig:svdrank} shows the convergence history of the Krylov
-method when the Lanczos-based preconditioner uses 
-increasing number of SVD ranks. The KKT system is extracted from 
-the first Newton step of the final Corrector phase 
-at $\mu = 0$ for the small case. }
+\subsection{Kona-CUTEr Interface}
+By using a python interface to CUTEr~\cite{cuter_python}, one can access the test problems in Python environment and build the Kona-CUTEr interface. As described in~\cite{dener:scitech2016}, a Kona solver interface essentially asks for matrix-vector products with the system matrix for PDE solvers, and matrix-vector products with constraint Jacobians for equality and inequality constraints separately. As CUTEr test problems do not possess state vectors, and not governed by physics system, the matrix-vector products with the system matrix for PDE solvers are not needed. For the constraint Jacobian products, the explicit Jacobian matrices from CUTEr can be readily used to calculate their products with an arbitrary incoming vector. 
 
-\begin{figure}[tbp]
-  \centering
-  \includegraphics[width=0.7\textwidth]{./figs/newres2/SVD_Ranks.eps}
-  \caption{Impact of $\nsig$, the rank of the approximate SVD in
-    Algorithm~\ref{alg:precond}, on the Krylov iterative method.
-  \label{fig:svdrank}}
-\end{figure}
+As discussed in chapter \ref{sec:kona_mv}, Kona might not be able to solve CUTEr problems as fast as conventional optimization methods like SNOPT, because the total Jacobian matrix are readily available in CUTEr problems and there is no state variables.  Nonetheless, CUTEr problems are still valuable to validate Kona's accuracy, and capability to overcome other numerical difficulties, and to handle non-convex problems. 
 
-The structural optimization problem was solved using the proposed algorithm,
-with and without the preconditioner. Its convergence history were compared with 
-that of SNOPT, see Figures \ref{fig:small}, \ref{fig:med}, and \ref{fig:large} for the 
-small, medium, and larges cases, respectively. The cost on the horiztonal axis 
-measures the equivalent number of PDE solves, 
-\ie, the total CPU time divided by the time needed for one
-forward solution.  The vertical axis measures the change in relative optimality and
-absolute feasiblity.    
-  
-The final optimal thickness distribution, for the large problem, is plotted in
-Figure~\ref{fig:thick}. \padd{The thickness distribution is in agreement with physical
-intuition of the problem}. 
-  
-\begin{figure}[tbp]
-  \begin{center}
-    \includegraphics*[clip,width=0.8\textwidth]{./figs/newres2/medium_thickness_color.pdf}%
-    \caption{Optimal thickness distribution obtained using Algorithm~\ref{alg:pc}.
-      \label{fig:thick}}
-  \end{center}
-\end{figure}  %trim=20 70 0 70, 
+\subsection{Problem Classification}
+Each problem in CUTEr is classified following the Hock and Schittkowski scheme~\cite{cuterScheme} by the string: 
+\begin{equation*}
+X \ X \ X \ r \ - \ X \ X \ - \ n \ - \ m
+\end{equation*}
 
-The results in Figure~\ref{fig:struct2} highlight the need for preconditioning
-on this particular problem: without the approximate-SVD preconditioner the
-proposed algorithm is ineffective. 
-In contrast, when the approximate-SVD preconditioner is effective, the
-proposed inequality optimization algorithm can successfully reduce the optimality 
-and feasibility to the desired tolerance.
+The first character defines the problem objective function type, with the following options: 
+\textbf{U}: undefined, \textbf{C}: constant, \textbf{L}: linear, \textbf{Q}: quadratic, \textbf{S}: sum of squares, \textbf{O}: none of the above. 
 
-Figures \ref{fig:small}--\ref{fig:large} also show that the performance of SNOPT
-degrades as the problem size increases; on the small problem, optimality is
-reduced by only three orders of magnitude, while on the large problem the optimality
-fluctuates and struggles to come down.  The feasibility achieved by SNOPT is somewhat better
-than its optimality, but it also degrades with problem size.  The proposed
-predictor-corrector algorithm is able to converge the optimality and feasiblity
-$10^{-5}$ orders of magnitude on all three problems. We see that the
-optimization cost increases approximately linearly with problem size on this
-problem, and the cost is driven primarily by the increasing number of singular values used
-in the preconditioner. 
+The second character defines the constraint function type, with the options: 
+\textbf{U}: unconstrained, \textbf{X}: fixed variables, \textbf{B}: bounds on the variables, \textbf{N}: adjacency matrix of a linear network, \textbf{L}: linear, \textbf{Q}: quadratic, \textbf{O}: more general constraints. 
 
-\begin{figure}[tbp]
-  \centering
-   \subfloat[small \label{fig:small}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/newres2/tiny_color.eps} }
-  \hspace{1em}
-  \subfloat[medium \label{fig:med}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/newres2/small_color.eps} }
-  \hspace{1em}
-    \subfloat[large \label{fig:large}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/newres2/medium_color.eps} }
-    \caption{Convergence histories for the three sizes of the structural
-      optimization problem. \label{fig:struct2}}
-\end{figure}
+The third character shows the smoothness of the problem, with the option of \textbf{R} indicating the problem is regular, and its first and second derivatives exist and continuous everywhere; and \textbf{I}: the problem is irregular. The third character \textbf{r} holds an integer among 0, 1 and 2, indicating the highest derivatives provided analytically.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The first character after the hyphen indicates the origin of the problem, with the option of \textbf{A}: the problem is academic, mainly used by researchers to test algorithms; \textbf{M}: the problem is a modeling exercise, with the solution not used in practical application; \textbf{R}: the solution of the problem has been used in real application.  
 
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: t
-%%% End: 
+The next character shows whether the problem contains internal variables, with the option of \textbf{Y} and \textbf{N}. 
+
+The last two characters \textbf{n} and \textbf{m} indicate the number of variables and constraints (fixed variables and bound constraints excluded) in the problem respectively, with the option of \textbf{V}: an integer chosen by the user, or a constant integer giving the fixed numbers. 
+
+\section{Results}
+As the CUTEr test problem set contains a huge collection of problems with assorted features, due to limited time and resources, only a subset of the problems are considered here. Users can select subsets of the problems that belong to a certain category as described in Section~\ref{sec:cuter1} by using Python CUTEr interface. Problems with the following features are selected:
+\begin{equation*}
+Q \ L \ R \ 2 \ - \ A \ X \ - \ [1,500] \ - \ [1,500]
+\end{equation*}
+that is, problems with quadratic objective function (convex, non convex, or indefinite), linear constraint function, with second order derivatives and continuous everywhere, from academic area, used by researchers to test algorithms, finally the number of design variables in $[1,500]$ and the number of constraints in $[1,500]$.  Table~\ref{tab:cuter} lists the results on the selected subset of the Cuter problems. The first column 'Name'  are the name of the problems as in \cite{cuter_probs}, where the ascii files are also available that contains information on the problem including problem origin, authors, classifications, SIF problem cards, and sometimes the solutions. The second column 'n, m' are the number of design variable $x$ and constraints as described in~\ref{sec:cuternm}. The third column 'n,  $m_{\text{eq}}$,  $m_{\text{ineq}}$' are the number of $x$, equality constraints and inequality constraints interpreted in Kona's way. The fourth column describes the key word for the origin or origin of the problem. The fifth column lists the major parameters used in the Homotopy RSNK algorithm, the initial step size $\textbf{$\alpha_0$}$, the nominal distance  $\delta_{\text{targ}}$  and nominal angle $\phi^{\circ}_{\text{targ}}$ as defined in Section~\ref{sec:step}, and the rank of the SVD approximation in Lanczos method used in the preconditioner~\ref{eq:svd}. The sixth column is the optimized objective function value using Kona, while the seventh column is that using SNOPT. The last column is the optimized objective function value as shown in the ascii file of~\cite{cuter_probs}. Note that some problems do not provide solutions, thus 'N/A' is used. 
+
+\begin{landscape}
+\begin{longtable}{l | l |  l  |  >{\footnotesize}p{3.5cm} | l | c | c | c  }      %\toprule      % |  >{\centering}m{3.5cm}
+\caption{Subsets of Cuter Problem Results}\label{tab:cuter} \\
+ \hline 
+Name   &                 n,   m       &  n,  $m_{\text{eq}}$,  $m_{\text{ineq}}$        &     Origin      &\textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $\mathbf{{n_{\mat{\Sigma}}}}$      & $ f_{\text{kona}} $   & $ f_{\text{snopt}} $ &$ f^*$    \\ \hline
+AUG2D    &           24,  9         &  24,   9,  18       &    2-D Laplace   & 0.05,1,5,30   &  0.124999           &     0.1250    &      N/A                \\ \hline
+AUG2D    &          220, 100   & 220, 100, 200  &                      &   0.05,1,5,30         &   110.7987          &    110.7991      &    N/A           \\ \hline
+AUG2DC  &       24, 9      &   24, 9, 18       &       &     0.05,1,5,30        &    2.973213        & 2.973214    &   N/A     \\ \hline
+AUG2DC  &      220, 100   &  220, 100, 200   &     &   0.05,1,5,30    & 184.2388    &   184.2394     &    N/A      \\ \hline
+AUG3D  &      156, 27    & 156, 27, 54   & 3-D Laplace  &  0.05,1,5,30   & 0.08333   &   0.083333   &  N/A         \\ \hline
+AUG3DC  &  156, 27  &  156, 27, 54   &    & 0.05,1,5,30 &   35.84226   &   35.84276      & N/A      \\ \hline
+AVGASA  &       8, 10   &   8, 0, 26   &            LP problem     &   0.05,1,5,30       &           -4.63092    &    -4.79278   &   N/A     \\ \hline
+AVGASB  &    8, 10  &   8, 0, 26   &   LP problem      & 0.05,1,5,30   &   -4.482206   &   -4.666351     &   N/A    \\ \hline
+ALLINQP  & 10, 5   &  10, 1, 21   & banded QP  &  0.05,10,20,30 & 0.346667  & -0.183256     &  N/A \\  \hline     %\midrule
+BLOCKQP2   & 25, 11   & 25,  10, 71   &    non-convex  & 0.05,1,5,5  & -6.201652   & -2.507e+14    &  -6.2017   \\ \hline
+BLOCKQP3   & 25, 11   & 25,  10, 71  &  	  & 0.05,1,5,2 & 2.330508     &  2.330508   &            -2.4987e-1   \\ \hline
+BLOCKQP4  & 25, 11    & 25, 10, 71  &    & 0.05,1,5,5     & -2.928928   & -5.73e+14   &    -2.499e-1   \\ \hline
+BDRY2   & 25, 18   & 25, 18, 86   &  AMPL  & 0.05,1,5,3  & 0.544932  & 0.548110  & N/A    \\ \hline   
+BIGGSC4  & 4, 7   & 4, 0, 21   & & 0.05,1,5,2  & -24.4999   &  -24.375  &    -24.5 \\ \hline 
+CVXQP1  & 10, 5 & 10, 5, 30  & convex   & 0.05,1,5,2 & 181.0401 & 165.8738  & N/A   \\ \hline
+DEGENQP & 10, 1005 & 10,5,2030  & degenerate convex  & 0.05,1,5,10  & 8.80e-06 & -5.55e-17  & N/A \\ \hline
+DTOC3   & 29, 18  & 29,18,40 & discrete time control & 0.05,1,5,10  &  224.5904 & 8.20189  & 224.5904 \\ \hline 
+GENHS28 & 10, 8  & 10, 8, 16  & Hock and Schittkowski &   0.05,1,5,2   & 0.927173  & 0.927174  & 0.0   \\ \hline
+GMNCASE1 &  175, 300   & 175, 0, 300  &   optimized control   & 0.5, 5, 5, 100   &   0.267087  & 0.266973             &    0.266733   \\ \hline
+GMNCASE4 & 175, 350 & 175, 0, 350  &  optimized control &  0.5, 5, 5, 100      & 5.6273e3 &  5.9469e3 &    5.9468e3 \\ \hline 
+HS268   & 5,5  & 5, 0, 5  &  Schittkowski   &  0.05,50,5,3    & 2.09e-4   & -3.6e-12      &    N/A    \\ \hline 
+HS21    &  2,1 & 2,0,5   & Hock and  Schittkowski  &  0.5,5,10,1   & -99.3434  & -99.9900  & -99.96    \\ \hline 
+HS35   &  3,1  & 3,0,4  &             &  0.05,1,5,1    & 0.111111  & 0.111111   &   0.111111   \\ \hline 
+HS35I   &  3,1  & 3,0,7  &             &   0.05,1,5,1      & 0.111111  & 0.111111   &   0.111111   \\ \hline 
+HS44   & 4,6   & 4,0,10   &  	 & 0.05,1,20,3      &  -13.000 & -4.01e+14 & -13.0    \\ \hline
+HS44NEW & 4,6  & 4,0,10  &     &   0.05,1,20,3    & -13     & -3.20e+14   & -13.0    \\ \hline
+HS51    &  5,3   & 5,3,6    &  & 0.05,1,20,3      & 4.46e-19   & 5.86E-14     & 0.0    \\ \hline
+HS52    &  5,3  & 5,3,6   & & 0.05,1,20,3      & 5.326634   & 5.326647   & 5.326643   \\ \hline
+HS53    &  5,3  & 5,3,16    &   &  0.05,1,5,3  & 4.093023   & 4.093023   & 4.093023  \\ \hline
+HS118  & 15,17  & 15,0,59  & & 0.05,50,5,3   & 664.8205  & -1748.638  & 664.8204    \\ \hline
+HS268  & 5,5  & 5,0,5  & & 0.05,50,5,3     & 3.839e-4 & -3E-12  & N/A   \\ \hline
+HATFLDH  & 4, 7 &  4, 0, 21  & & 0.05,1,5,2  &  -24.5002  & -24.375 & 24.5   \\ \hline
+LOTSCHD  & 12,7  &  12, 7, 26 & eco. lot scheduling &  0.05,1,5,4   & 44.2890 & 165.6553  & N/A  \\ \hline
+MOSARQP1 & 36, 10 & 36, 0, 46 &convex quadratic & 0.05,1,5,4     &  -24.14365 & -52.04917 & -24.13768 \\ \hline
+MOSARQP2 &36, 10 & 36, 0, 46 &     & 0.05,1,5,4   & -35.69815  & -55.16234  & -35.6981 \\ \hline
+POWELL20 & 10,10  & 10,0,10 & degenerate convex & 0.05,1,5,2    & 57.8125 & 57.8125  & N/A  \\\hline
+RDW2D52F & 18,1  & 18,1,36 & optimal control &  0.05,10,20,5 &  0.053016 & 0.020779 & N/A \\\hline
+STCQP1  & 17, 8  &  17, 8, 50 & convex   &    0.05,1,5,5  & 494.4054  & 494.5208  & 4.95E+02 \\\hline
+SOSQP1 &  20, 11 & 20, 11, 62 & non-convex & 0.05,1,5,2    & 5.9e-07 & -4E-16   & 0.0 \\\hline
+SOSQP2 & 20,11  &  20, 11, 62 &    & 0.05,1,5,5	& -3.99779  & -4.04565  & -3.99781    \\\hline
+S268   &   5,5   & 5,0,5  &   & 0.05,10,20,10  &   2.274e-3  &  -3.64E-12  & N/A  \\\hline
+YAO   &  22,20  & 22, 0, 25 &   &  0.05,1,5,10 & 2.398829  & 3.715e-3 & 2.39883  \\\hline
+ZECEVIC2 & 2,2 & 2,0,6  & &  0.05,1,5,2 & -4.1249  & -4.125  & N/A  \\\hline
+\end{longtable}   % \midrule
+\end{landscape}
+
+
+As can be seen, for most problems, the proposed Homotopy RSNK method and the preconditioner can deliver accurate solutions.  However, even with a small number of numerical tests, several valuable insights could be drawn: 
+\begin{enumerate}
+\item While the current Homotopy RSNK optimization algorithm works as a general optimization method, irrelevant of the problem types and feature, it struggles on problems with any hint of ill-conditioning, such as degenerate problems where the constraint qualifications are not satisfied, badly scaled objective and constraint functions. 
+\item As CUTEr test problems do not involve the state variables and thus adjoint variables, the Homotopy RSNK's core strength of using second-order adjoints to approximate Hessian vector products is not applicable. In contrast, SNOPT can readily make good use of the explicit Jacobians 
+provided by the pyCUTEr tool, while Kona is only using the explicit matrices to calculate the products in order to form the Krylov subspace. Consequently, SNOPT is faster than Kona when solving the CUTEr problems on average.   
+\item The proposed matrix-free preconditioner is not general and is specifically designed for PDE-constrained optimization problems as introduced at the beginning of this thesis.  For bound-only constraints, it does not work that well. Because the constraint Jacobians are Identity matrix, the Krylov subspace built from it is only 1-rank, making the Lanczos method's SVD approximation very insufficient.  
+\item If the product of the constraint Jacobian with a vector of ones is always zero, then it will make the preconditioner crash. Because the Krylov subspace would be linearly dependent, making the Lanczos methods fail. Problems whose constraint Jacobian has the non-zero entries of e.g. $[-1, -3, 3, 1]$ on each row belong to this category, like the LISWET problems 
+\item For non-convex problems, sometimes the proposed Homotopy RSNK can work, and sometimes not. So more effort is needed to increase the robustness of the algorithm. 
+\end{enumerate} 
+
+ 
+ 
