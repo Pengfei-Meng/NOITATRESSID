@@ -4,9 +4,34 @@
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{Introduction}
+\chapter{INTRODUCTION}
  
 \section{Motivation}
+At the turn of 2017/2018,  global warming has been unequivocally proved by scientific evidence~\cite{nasa_warm}. 
+The surface temperature of Earth has risen by 2.0 degrees Fahrenheit since the late 19th century.  The ice sheets, glaciers and Arctic sea ice are retreating almost everywhere on Earth, at an accelerating speed. Extreme weathers like tornados, heatwaves, wildfires and droughts are increasing in frequency and intensity. There is no doubt that human activities, especially manmade emissions carbon dioxide (CO2) and other exhausts like nitrogen oxides, carbon monoxide, sulphur oxides are the major causes. 
+
+Air transport is responsible for about $2\%$ of the manmade carbon dioxide (CO2) emissions~\cite{aviation_warm}. But because of the altitude the CO2 is released, together with the fact that other emissions like NOx and water vapor having a larger impact on the climate at higher altitudes, researchers suggest that aviation CO2 emissions should be multiplied by 1.9 times to incorporate the impact of altitude.   
+
+With the airplane passengers growing at an average of $5\%$ each year, perhaps more at developing markets, the impact of aviation on the environment will only increase. It is estimated that approximately 27,000 new passenger aircrafts will be demanded between now and 2030.  The total contribution of aviation to human emissions in CO2 and other effects will rise to $5\%$ and a worst-case $15\%$. 
+
+Advisory Council for Aeronautics Research in Europe (ACARE) is enforcing strict emission targets, to reduce CO2 emissions per passenger kilometer by $75\%$, NOx by $90\%$ and perceived noise by $65\%$ by 2050 relative to the year 2000~\cite{SKINNER2018933, euro_commi}. Reducing the impact on the environment is becoming the driving factor for future aircraft design~\cite{green_2006}. To do that, the aviation industry needs to continue working on reducing gas emissions by using light weight and smart materials, and optimizing current aircraft configurations. 
+
+%technology, like exploring innovative aircraft shapes, improving current aircraft efficiency by minimizing drag for aerodynamic shape optimization, or minimizing mass for structural optimization, and upgrading operations to reduce noise and delays. 
+
+\section{The Role of Numerical Optimization}
+The ultimate goal of engineering is to make better decision-making models through optimization. Numerical optimization plays a key role in almost every aspect of engineering design.  
+
+The aircraft design is a complicated system that involves aerodynamics, structures, propulsion, stability, mission and whole performance. The past two decades has seen growing interests in using optimization to explore unconventional aircraft configurations like the blended-wing body (BWB), the Box Wing, the UCAV (Unmanned Combat Air Vehicle). During the conceptual 
+aircraft design stage, numerical optimization can reveal valuable insights about the design trade-offs and help engineers make detailed and informed decisions.  
+     
+The first aerodynamic optimization was done in \cite{hicks:1974} by using finite-difference approximations to calculate the gradients. The cost of computing the gradients using finite-difference methods increase drastically as the design dimension increases. The adjoint methods greatly propelled the advancement of research in aerodynamic shape optimization field. Adjoint methods address the dimensionality issue of finite-differences with a cost independent of the number of design variables. \cite{pironneau:1974} developed the adjoint method for Stokes equations and the incompressible Euler equations, and used the adjoints to optimize airfoil profiles. \cite{reuther:1996} used an adjoint algorithm based on Euler to optimize a complete aircraft configurations.  \cite{jameson:1988} derived the adjoint equations for inviscid compressible Navier-Stokes equations, making it possible to do transonic aerodynamic optimizations.  The discrete adjoint method is more preferred in aerospace optimization as the sensitivities are exact to the discretized objective function~\cite{frank:1992}. \cite{Mader06adjoint:an} derived a discrete adjoint method for Euler equations using automatic differentiation. \cite{Lyu2013b} extended the previous adjoint implementation to 
+Reynolds-averaged Navier-Stokes (RANS) equations and effectively applied it to high-fidelity optimization. \cite{hicken:aiaa2010} developed similar methods for non-planar wings high-fidelity aerodynamic optimization. 
+
+
+%The ever-growing capacity of computers are empowering numerical analysts to do simulations on ever-larger physics systems governed by Partial-Differential-Equations(PDEs). Accordingly, PDE-constrained optimization problems pose greater challenges as the optimization systems are larger and more complicated, especially when many state-based constraints are present. Current matrix-based optimization algorithms are defied for such problems due to memory requirements and computing cost. 
+
+
+\section{PDE-constrained Optimization Framework}
 The thesis is interested in solving engineering design optimization problems that are governed by Partial-Differential-Equations (PDEs). Such PDE-constrained optimization problems arise in many engineering applications including aerodynamic shape optimization \cite{lambe:2014,lyu2014aerodynamic, Zhang567303}, structural optimization \cite{DBLP:DeckelnickHJ17, lambe:2014, kennedy14}, and thermodynamic optimization \cite{chen1999finite,bejan2000thermodynamic,bejan2012thermodynamic}.  %
 
 
@@ -30,140 +55,39 @@ General-purpose optimization algorithms are unsuitable for large-scale PDE-const
 
 This thesis intends to address these challenges by proposing a scalable optimization algorithm specially for large-scale PDE-constrained design problems. 
 
-\section{Solving PDE-constrained Optimization Problem}\label{sec:pde_mot}
-A generic PDE-constrained optimization problem can be stated as
-\begin{equation}\label{eq:gen1}
-\begin{aligned}
-\underset{x,u}{\text{min}} \quad &f(x, u) &\\
-\text{subject to} \quad &  h(x,u) &= 0  \\
- &  g(x,u) &\geq 0  \\
-\text{governed by} \quad &  \mathcal{F}(x, u) &= 0, \\
-\end{aligned}
-\end{equation}
-where $x \in \mathbb{R}^n, u \in \mathbb{R}^v$ are the design and state vectors respectively, and $f: \mathbb{R}^n \rightarrow \mathbb{R}, h: \mathbb{R}^n \rightarrow \mathbb{R}^l, g:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are the objective, equality and inequality constraints respectively. We assume that $f$, $h$ and $g$ have continuous second derivatives. 
+\section{Optimization Algorithms}
+Many optimization packages are available for applications of different types. Considering the expensive cost of PDE solutions in PDE-constrained optimization problems, it is crucial to choose an efficient optimization algorithm that uses less number of function evaluations. Besides, the optimization algorithm must be able to handle nonlinear objectives and constraints. Gradient-free optimization algorithms like the genetic algorithm are not suitable here because they demands large amounts of function calls, despite the fact that they can locate global minimums. Gradient-based algorithms are used extensively in PDE constrained optimizations as they can handle hundreds of design variables by using the adjoint method to compute the gradients, with less number of function evaluations.  \cite{2015lyu_crm} and \cite{kenway:2014} use SNOPT (Sparse Nonlinear OPTimizer) \cite{gill:2002} through the Python interface pyOpt~\cite{Perez:2011:A} for the investigations of the aerodynamic and aerostructural optimization on the Common Research Model based on RANS, using analytically derived adjoint gradients. Because there are only three aerodynamic objective and constraints, drag, lift, pitch moment coefficients, they use the adjoint methods to assemble the total gradients to SNOPT. Other general purpose optimization algorithms can also work for aerodynamic design problems, IPOPT~\cite{Lyu2014f}, Knitro~\cite{Rumpfkeil2009OptimizationbasedMA}, a sequential quadratic programming method~\cite{Ning09multidisciplinaryconsiderations}. But they all compute the total gradients by using the adjoint methods and feed that to the optimization algorithm. 
 
-The challenge in solving \eqref{eq:gen1} is that general-purpose gradient-based optimization algorithms \cite{Nocedal2006NO, Byrd:1999:IPA:588897.589167,gill:2002} require the total derivative of the objective and constraints with respect to the design variables, and each of these total derivatives requires the solution of an $v\times v$ linear system, \ie a discretized PDE.  For example, the total derivative of the $i$th constraint $g_i$ is given by
-\begin{align}
-\frac{d}{dx}\left(g_i\right) &= \frac{\partial}{\partial x}\left(g_i\right) + \psi ^T \left[ \frac{\partial}{\partial x}\mathcal{F} \right] \\
-\intertext{where $\psi \in \mathbb{R}^v$ is the adjoint which is governed by the discretized PDE,}
-\left[ \frac{\partial}{\partial u}\mathcal{F} \right]^T \psi &= - \frac{\partial}{\partial u}\left(g_i\right) 
-\end{align}
-which is the adjoint equation \cite{Jameson03aerodynamicshape}. The computational cost of solving the adjoint equation is equivalent to that of the PDEs governing equation. Clearly, if the number of constraints $m$ is sufficiently large, it will be prohibitively expensive to compute all the total derivatives for optimization as each one entails an adjoint. 
+For PDE-constrained optimization problems, when there are many state-based constraints, assembling the total constraint Jacobian is very expensive as it demands an adjoint solve for each state-based constraints. Besides, general optimization algorithm store the constraint Jacobians at each design point, which puts a heavy memory load on the computer. Therefore, most general optimization algorithms possess poor scaling qualities.  
 
-To solve \eqref{eq:gen1}, the Lagrangian formulation is:
-\begin{equation}\label{eq:lag}
-\mathcal{L}(x, u, \psi, s, \lambda_h, \lambda_g) = f(x,u) + \lambda_h^T h(x, u) + \lambda_g^T (g(x,u)-s) + \psi^T \mathcal{F}(x,u),
-\end{equation} 
-where $s \in \mathbb{R}^m$ is for transforming the inequality constraints into equality ones, and $\lambda_h \in  \mathbb{R}^l$,  $\lambda_g \in  \mathbb{R}^m$ are the Lagrangian multiplier vectors for equality and inequality constraints. 
+For these reasons, optimization researchers in different PDE fields have been developing in-house algorithms for their own use. For detailed formulations, see chapter~\ref{sec:pde_mot}. Newton-based full-space methods possess good scaling, but is complicated to implement as it requires intrusion to the PDE solver. Currently there is no general purpose optimization libraries exist for full-space methods.  In addition, other numerical difficulties exist for full-space methods as pointed out in chapter~\ref{sec:pde_mot}. In comparison, reduced-space methods possess modularity that can make good use of prevalent PDE solvers. \cite{rumpfkeil:2010b} uses reduced-space Newton algorithm in KNitro to perform steady and unsteady aerodynamic shape optimization, with less computational cost compared with a quasi-Newton method; but the reduced Hessian is computed explicitly. In this work, we present a general reduced-space Newton-Krylov optimization algorithm, which is part of the matrix-free optimization package Kona~\cite{dener:scitech2016}, that makes use of the PDE solvers for different problems, and shares algorithmic scaling property as it approximates Hessian vector products through second adjoint solves. 
 
-The first-order optimality conditions, or the \textit{Karush-Kuhn-Tucker} (KKT) conditions for \eqref{eq:gen1} are derived by taking partial derivatives of 
-\eqref{eq:lag} with respect to all the unknown variables,
-\begin{equation}\label{eq:kktcond}
-\begin{aligned}
-\nabla_x \mathcal{L} &= \nabla_x f + \lambda_h^T \nabla_x h + \lambda_g^T \nabla_x g + \psi^T \nabla_x\mathcal{F} = 0, \\
-\nabla_u \mathcal{L} &= \nabla_u f + \lambda_h^T \nabla_u h + \lambda_g^T \nabla_u g + \psi^T \nabla_u\mathcal{F} = 0, \\
-\nabla_{\psi} \mathcal{L} &= \mathcal{F} = 0, \\
-\nabla_{\lambda_h} \mathcal{L} &= h = 0, \\
-\nabla_{\lambda_g} \mathcal{L} &= g - s = 0, \\
--\mathcal{S} \Lambda_g e &= 0,\\
-s \geq 0, &\quad \lambda_g \leq 0. \\
-\end{aligned}
-\end{equation}
+%Conventionally, solving general constrained optimization problems without PDE constraints involves forming the Lagrangian, and finding the minimization point of the Lagrangian, which is equivalent to solving the first-order optimality conditions or the KKT conditions. Prevalent sequential quadratic programming methods or newton-type methods for solving a system of equations would further break it down to solving a series of systems of linearized equations, also called the Karush-Kuhn-Tucker (KKT) system. The KKT matrix contains the Hessian of the Lagrangian, which is often approximated using quasi-Newton method, and the total constraint Jacobians, which is straightforward to compute using automatic differentiation or complex step methods. Conventional matrix-based optimization algorithms would use direct factorization methods to solve the KKT system.    
 
-The big nonlinear systems of equations \eqref{eq:kktcond} can be solved in either the full space or the reduced space.  Full-space methods~\cite{DBLP:journals/siamsc/BirosG05,DBLP:journals/siamsc/BirosG05a,haber:2001} solve all the unknowns in \eqref{eq:kktcond} simultaneously. The resulted KKT system is large, more than two times the number of state variables, indefinite and ill-conditioned. During optimization iterations, the state equation $\mathcal{F} =0$ and adjoint equation $\nabla_u \mathcal{L} = 0$ do not need to be solved exactly, avoiding the computational expense of tightly converging the PDE and adjoint equation residuals; however, this is also a potential disadvantage in practical engineering problems, because, if the optimization fails to converge, the intermediate solution may not be feasible with respect to the physics.  Furthermore, for highly nonlinear PDEs, \eg gas dynamics with shocks and boundary layers, practitioners have developed specialized globalization strategies that may be difficult to take advantage of in general-purpose full-space optimization algorithms.
-
-In contrast, reduced-space algorithms treat the states $u$ and the adjoints $\psi$ as implicit functions of the design variables through $\mathcal{F}(x,u(x)) = 0$, $\nabla_u \mathcal{L} = 0$. The reduced KKT condition is formulated as follows, 
-\begin{equation}\label{eq:opt00x}
- \begin{gathered}
-    F(x,s,\lambda_h, \lambda_g) \equiv 
-    \begin{bmatrix}
-\nabla_x f + \lambda_h^T \nabla_x h + \lambda_g^T \nabla_x g\\
--\mathcal{S} \Lambda_g e\\
-h  \\
-g - s 
-\end{bmatrix} =0,\\
-\text{subject to} \quad s_i \geq 0, \quad \text{and} \quad \lambda_{gi} \leq 0. \\
-\end{gathered}
-\end{equation}
-
-where $s \in \mathbb{R}^m$ denotes the slack variables, $q \equiv (x^T, s^T,
-\lambda_h^T, \lambda_g^T) \in \mathbb{R}^{N}$ is a vector of all the unknowns,
-and $F :\mathbb{R}^{N} \rightarrow \mathbb{R}^{N}$ is the vector-valued residual
-of the KKT conditions excluding the inequalities on $s$ and $\lambda_g$.  For
-convenience, we have also introduced $e = [1,1,\ldots,1]^T$ and the diagonal
-matrices
-\begin{equation*}
-  \mat{S} = \mydiag\left(s_1,s_2,\ldots,s_m\right),\qquad\text{and}\qquad
-  \mat{\Lambda_g} = \mydiag\left(\lambda_{g1}, \lambda_{g2}, \ldots, \lambda_{gm}\right).
-\end{equation*}
-
-
-Therefore, the resulted KKT system is much smaller, and it can make use of existing PDE solvers and adjoint solvers, maintaining modularity. Reduced-space methods have been successfully implemented in unconstrained problems and IDF problems. The unconstrained version of \eqref{eq:opt00x} can be solved efficiently using a Newton-Krylov (NK) algorithm applied to the first-order optimality conditions; see, for example, \cite{akcelik:2006, Heinkenschloss:1999:IOA, hinze2010optimization,borzi:2011}. NK optimization algorithms have also shown promise for equality-constrained optimization in the reduced space, because they do not require the constraint Jacobian to be form explicitly and, thus, avoid the scaling issue described earlier.  For instance, \cite{dener:idf2017} applied a matrix-free NK algorithm to a class of equality-constrained optimization problems that arise in multidisciplinary design optimization and would otherwise be intractable with conventional matrix-based algorithms.
-
-Motivated by its success in the unconstrained and equality-constrained cases, we would like to extend the Newton Krylov methodology to more general, inequality constrained problems, to solve \eqref{eq:opt00x}. 
-
-\section{Inexact-Newton Methods}
-
-An alternative to using conventional (matrix-based) optimization algorithms or
-constraint aggregation is to apply inexact-Newton methods~\cite{dembo:1982},
-also know as truncated-Newton methods in the optimization
-literature~\cite{nash:2000} to solve \eqref{eq:opt00x}.  
-
-With the exception of the bounds on $s$ and $\lambda_g$, the KKT conditions
-\eqref{eq:opt00x} form a set of nonlinear algebraic equations, $F(q)=0$.  These
-equations can be solved, in principle, using Newton iterations of the form
-\begin{equation}
-(\nabla_q F) \Delta q^{(k)} = -F(q^{(k)}), \label{eq:Newton}
-\end{equation}
-where $q^{(k)}$ is the solution at the $k$th iteration and $\Delta q^{(k)} =
-q^{(k+1)} - q ^{(k)}$ is the solution update.  Solving~\eqref{eq:Newton} exactly
-can be inefficient during early Newton iterates when the linear model is not a
-good approximation to $F(q)=0$.  Instead, truncated- and inexact-Newton methods
-find approximate solutions to \eqref{eq:Newton} that, for example, satisfy the
-inexact-Newton condition
-\begin{equation}
-  \left\| (\nabla_q F) \Delta q^{(k)} + F(q^{(k)}) \right\| \leq \eta_k \left\| F(q^{(k)}) \right\|, \label{eq:inexact_Newton}
-\end{equation}
-for some parameter $\eta_k \in (0,1)$.
-
-There has been considerable success applying inexact-Newton methods to
-unconstrained optimization problems; see \cite{nash:2000} and the references
-therein.  On the other hand, inexact-Newton methods for general (nonconvex)
-constrained problems are much less common.  Some notable exceptions include the
-efforts by Byrd and colleagues~\cite{byrd:2008, byrd:2010} and by Heinkenschloss
-and Ridzal~\cite{heinkenschloss:2014}; however, these algorithms make
-assumptions regarding the structure of the problem that favor full-space
-formulations, and our experience applying them to reduced-space PDE-constrainted
-optimization has been disappointing.
-
-Applying Newton's method to \eqref{eq:opt00x}, the KKT system, also called primal-dual system is obtained:
-\begin{equation}\label{eq:kkt0}
-\begin{bmatrix} \nabla_{xx} \mathcal{L} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
-    0 & -\Lambda_g & 0 & -\mathcal{S} \\
-    \mathcal{A}_{h} & 0 & 0 & 0 \\
-    \mathcal{A}_{g} & -\mathcal{I} & 0 & 0 
-    \end{bmatrix}
-    \begin{bmatrix} p_x \\ p_s \\ p_h \\ p_g \end{bmatrix}
-    = - \begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g e \\ h \\ g - s \end{bmatrix}
-\end{equation}
-where $\mathcal{L}$ the Lagrangian is defined in \eqref{eq:lag}, $\mathcal{S}$ and $\Lambda_g$ are as defined previously. 
-
-NK method solves \eqref{eq:kkt0} using Krylov method, so it only need the matrix-vector product of the system matrix. The products are formed in a matrix-free way by solving two second-adjoint systems, for details, see~\cite{hicken:inexact2014, dener:idf2017} and the references therein.  However, while NK methods can avoid the cost associated with forming the explicit constraint Jacobian, the extension to inequality constraints faces several significant challenges. First, active-set and interior-point algorithms that make use of an explicit basis for the null space of the constraint Jacobian cannot be used, because such a basis requires the Jacobian to be explicitly available.  Second, the primal-dual saddle-point system raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge to a sufficient tolerance, hurting the convergence rate of Newton's method. Third, dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task. 
 
 \section{Preconditioners for Optimization}
-As is well known, Krylov iterative methods suffer from slow convergence rate when the spectral property of the system matrix is not favorable, e.g. the ratio of the largest to the smallest singular value is huge ($10^5$ to $10^9$). In such cases, a preconditioner that transforms the linear system into another one with favorable spectral properties is necessary for fast convergence of the iterative methods.  For saddle point systems, standard preconditioners like incomplete factorizations are often ineffective, as the indefiniteness of the system, or equivalently the zeros on the diagonal of the matrix would cause the preconditioner to breakdown in the pivoting operation steps \cite{saad:2003}. In addition, incomplete factorization involves direct operations to the entries of the matrix, which is not preferable as we do not have the matrix entries available in matrix-free method. One popular type of solver or preconditioner used in optimization is close to the null space approach, which involves computing the null space of constraint Jacobians, and finding the step update in that null space that would reduce the objective function values. The null space approach is not ideal either, as computing the column orthonormal vectors that span the null space involves operations to the matrix entries. In this thesis, a matrix-free preconditioner that makes use of the matrix vector products with the system matrix is proposed. 
+Using Krylov methods to solve the linear systems saves the effort of computing and storing the constraint Jacobian and Lagrangian Hessian, but the convergence rate of Krylov solvers depend on the distribution of eigenvalues of the system matrix. If the eigenvalues are clustered in a small radius, the convergence rate is better. Poor convergence happens when the ratio of the largest to the smallest absolute eigenvalue is large, ($10^5$ to $10^9$). 
 
-The solution to the optimization problem \eqref{eq:opt00x} is a saddle point for the Lagrangian \eqref{eq:lag}, as the optimal design point minimizes the Lagrangian, while the optimal multipliers maximizes the Lagrangian ~\cite{benzi2005numerical}. 
-Note that the matrix in  \eqref{eq:kkt0} is nonsymmetric \footnote{By using a scaled slack block, $\tilde{p_s} = \mathcal{S}^{-1}e p_s $,  the system \eqref{eq:kkt0} can be turned into a symmetric one. We adopt the nonsymmetric version, as we think the preconditioner for this form has better numerical properties, see the section on preconditioner later}. 
-%Basic algebraic properties of the saddle point system like invertibility and conditioning in optimization can be analyzed through the Schur complement factorization form. Suppose the saddle point system is notated as
+In the context of PDE-constrained optimization problem, there are two sources of ill-condition. The first one resides in PDE solvers. When the discretization is refined, the eigenvalues of the PDE system matrix goes towards zero, or to say the PDE problem is ill-posed. The second source of ill-condition often arises from optimization algorithms like the interior-point method family, where slack variables are used to measure the activeness of the inequality constraints. When some of the inequality constraints get close to the boundary, the corresponding slack variables get near to zero, and certain entries on the diagonal of the KKT matrix will go unbounded. The second type of ill-condition is the target in this thesis, as the first type are usually covered as part of the PDE solver.     
 
+In presence of ill-condition, a nonsingular matrix, the preconditioner, could do similarity transformation to the linear system, resulting in a better conditioned system with the same solutions.   
 
-\section{Thesis Objective and Outline}
+Several popular preconditioners exist for general optimization problems without PDE constraints, like incomplete factorizations~\cite{saad:2003}, which involve direct operations to the entries of the matrix,
+or the null space approach, which involves computing and working with the null space of constraint Jacobians to find the step updates. Those preconditioners would not work well for interior-point methods type optimization problems, as the diagonal entries could go either zero or infinity for inequality constraints. Especially, for matrix-free PDE constrained optimization problems, the Hessian or constraint Jacobian do not exists in explicit form, so it is not possible to use direct methods.  
 
-The objective of this thesis is to develop an efficient inexact-Newton algorithm that is
-suitable for reduced-space PDE-constrained optimization problems of the
-form~\eqref{eq:gen1}.  This goal faces two significant challenges, which
-we seek to address in this work.
+Inspired by domain-decomposed Schur preconditioners used in PDE solvers~\cite{keyes_domain} ,  where approximate subdomain solutions of the mesh field is used as preconditioners for the iterative solver of the PDE, \cite{DBLP:journals/siamsc/BirosG05} uses approximate state and adjoint solutions in the Schur of the KKT system as the preconditioner for the Krylov solver in each Newton step for the optimization problem. \cite{pc_kkt_control} presented a similar KKT matrix preconditioner for  optimization in distributed control problem using an interior-point method, it also used the block structure of the KKT matrix to decompose it, then used existing preconditioners for the PDE solvers to approximately solve the preconditioning system. However, the preconditioner is not ideal as the preconditioned system has both positive and negative eigenvalues. \cite{doi:10.1137/15M104075X} constructed a preconditioner for full-space Lagrange-Newton method for multi-field problems. The preconditioner removes the field variables that are causing nonlinearity of the system, resulting in a well-balanced Newton system. The preconditioner proposed in this thesis is similar to  \cite{pc_kkt_control}. 
+
+%The kernel of reduced-space Newton-Krylov methods for PDE-constrained optimization solves a series of linear systems, which are saddle point systems, but much smaller than the saddle-point system raised in full-space methods.  Because the solution to the optimization problem \eqref{eq:opt00x} is a saddle point for the Lagrangian \eqref{eq:lag} in that the optimal design point minimizes the Lagrangian, while the optimal multipliers maximizes the Lagrangian ~\cite{benzi2005numerical}.  
+
+\section{Thesis Objectives and Outline}
+
+%The objective of this thesis is to develop an efficient inexact-Newton algorithm that is
+%suitable for reduced-space PDE-constrained optimization problems of the
+%form~\eqref{eq:gen1}.  This goal faces two significant challenges, which
+%we seek to address in this work.
+The thesis wants to overcome the challenges listed below, and doing so represents 
+two separate objectives. 
+
 \begin{description}
 \item[Nonconvexity:] The system $F(q) =0$ does not distinguish between different
   types of stationary points, so a basic Newton's method may converge to local
@@ -195,7 +119,7 @@ Lanczos method with approximate adjoints.
 
 The following contents are organized as follows: 
 \begin{itemize}
-\item Chapter 2 reviews homotopy-based globalization and the homotopy map adopted in this work. Then it describes the predictor-corrector path-following algorithm that traces the homotopy zero curve. The proposed new optimization algorithm is called Homotopy RSNK method. 
+\item Chapter 2 reviews homotopy-based globalization and the homotopy map adopted in this work. Then it describes the predictor-corrector path-following algorithm that traces the homotopy zero curve. 
 
 \item Chapter 3 begins by reviewing Krylov iterative methods, but the focus is the proposed matrix-free preconditioner, firstly for solving inequality constrained problems, then for solving problems with both equality and inequality constraints. 
   
@@ -254,35 +178,7 @@ The following contents are organized as follows:
 % null space methods, the null space of the constraint Jacobian, the column of Z span the null space of constraint Jacobian
 % popular in optimization, projection of the problem onto the constraint set; 
 
-
-% \begin{table}
-% \caption[This is the Caption for Table 1]
-%            {This is the Caption for Table 1\cite{thisbook}}
-%  Note entry in [] for list of tables; you don't want the citation in the LOT.
-% \begin{center}
-% \begin{tabular}{lll}
-% Here's       & an          & example  \\
-% of           & a           & table    \\
-% floated      & with        & the      \\
-% \verb+table+ & environment & command.
-%\end{tabular}
-% \end{center}
-% \end{table}
  
- 
-% \subsection{This is a Subsection Heading} 
- 
-% This is a sentence to take up space and look like text.
-% This is a sentence to take up space \cite{anotherbook}.
-% This is a sentence to take up space and look like text.
- 
-% \subsubsection{This is a Subsubsection Heading}
-% This is a sentence to take up space and look like text.
-% This is a sentence to take up space and look like text.
-% Text before the footnote.\footnote{Here's the text of the footnote.}
-% Text after the footnote. 
-% This is a sentence to take up space and look like text.
-
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: t
