@@ -1,650 +1,254 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %                                                                 %
-%                            CHAPTER TWO                         %
+%                            CHAPTER ONE                          %
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{HOMOTOPY-BASED GLOBALIZATION}
-
-\section{Homotopy-based Globalization}\label{sec:homotopy}
-Homotopy methods are robust, numerically stable, and globally convergent methods
-for solving nonlinear algebraic equations; see, for example,
-\cite{allgower_georg_1993} and \cite{Watson_1989}.  Our interest in these
-methods began as a means of globalizing difficult computational aerodynamics
-problems~\cite{hicken:cfd2009, hicken:cfd2011b, Brown_2016}, but globally
-convergent probability-one homotopy methods have also been successfully applied
-to solve engineering optimization problems.  Watson~\cite{Watson_2001} reviewed
-and developed the general convergence theory for nonlinear optimization
-problems, including unconstrained, bound-constrained, linear and nonlinear
-inequality constrained convex cases.  He also discussed the extension of the
-theory to nonconvex problems, although the convergence theory for equality
-constraints remains an open problem.  More recently, Huang
-\etal~\cite{huang_2012pc} transformed a general nonlinear optimization with
-equality and inequality into an inequality-only problem, and used a
-predictor-corrector method to track the homotopy interior-point map using the
-conjugate gradient method. While their method achieves global linear convergence
-under the normal cone condition, it is limited to convex objective and
-constraint functions.
-
-\subsection{Example}
-
-Conceptually, the idea of homotopy methods is easy to understand. To find the
-solution of a difficult nonlinear equation, $F(q)=0$, a homotopy map is
-constructed that connects the target problem to an easy-to-solve problem via a
-parameter.  For example, a convex homotopy map $H : \mathbb{R}^N \times
-\mathbb{R}^{N} \times [0,1) \rightarrow \mathbb{R}^N$ is given by
-\begin{equation}\label{eq:homotopy}
-H(q, q_0, \mu) = (1-\mu) F(q) + \mu G(q,q_0),\quad 0 \leq \mu \leq 1,
+\chapter{SOLVING REDUCED-SPACE PDE-CONSTRAINED OPTIMIZATION}
+ 
+\section{PDE-constrained Optimization Problem}\label{sec:pde_mot}
+A generic PDE-constrained optimization problem can be stated as
+\begin{equation}\label{eq:gen1}
+\begin{aligned}
+\underset{x,u}{\text{min}} \quad &f(x, u) &\\
+\text{subject to} \quad &  h(x,u) &= 0  \\
+ &  g(x,u) &\geq 0  \\
+\text{governed by} \quad &  \mathcal{F}(x, u) &= 0, \\
+\end{aligned}
 \end{equation}
-where $\mu$ is the homotopy parameter, and $G : \mathbb{R}^N\times\mathbb{R}^{N}
-\rightarrow \mathbb{R}^N$ is chosen such that $G(q,q_0)=0$ is easy to solve and
-has the solution $q=q_0$.  Formally, a homotopy is a continuous map from the
-interval $[0,1]$ into a function space.
+where $x \in \mathbb{R}^n, u \in \mathbb{R}^v$ are the design and state vectors respectively, and $f: \mathbb{R}^n \rightarrow \mathbb{R}, h: \mathbb{R}^n \rightarrow \mathbb{R}^l, g:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are the objective, equality and inequality constraints respectively. We assume that $f$, $h$ and $g$ have continuous second derivatives. 
 
-We will use a simple, unconstrained optimization example to illustrate the
-homotopy idea. Consider the problem
-\begin{equation*}
-\min_x  \quad  f(x) = x^4 - x^2.
-\end{equation*}
-The first-order optimality condition for this problem is given by (identifying
-$q$ with $x$ here)
-\begin{equation*}
-F(x) = \nabla_x f(x) = 2x(2x^2 - 1) = 0.
-\end{equation*}
-It is easy to see that there are three stationary points; a local maximizer at
-$x=0$ and two local/global minimizers at $x=\pm 1/\sqrt{2}$.  Newton's method
-may converge to any of these stationary points depending on the initial guess
-$x_0$, so we need some way to avoid the local maximizer at $x=0$.
+The challenge in solving \eqref{eq:gen1} is that general-purpose gradient-based optimization algorithms \cite{Nocedal2006NO, Byrd:1999:IPA:588897.589167,gill:2002} require the total derivative of the objective and constraints with respect to the design variables, and each of these total derivatives requires the solution of an $v\times v$ linear system, \ie a discretized PDE.  For example, the total derivative of the $i$th constraint $g_i$ is given by
+\begin{align}
+\frac{d}{dx}\left(g_i\right) &= \frac{\partial}{\partial x}\left(g_i\right) + \psi ^T \left[ \frac{\partial}{\partial x}\mathcal{F} \right] \\
+\intertext{where $\psi \in \mathbb{R}^v$ is the adjoint which is governed by the discretized PDE,}
+\left[ \frac{\partial}{\partial u}\mathcal{F} \right]^T \psi &= - \frac{\partial}{\partial u}\left(g_i\right) 
+\end{align}
+which is the adjoint equation \cite{Jameson03aerodynamicshape}. The computational cost of solving the adjoint equation is equivalent to that of the PDEs governing equation. Clearly, if the number of constraints $m$ is sufficiently large, it will be prohibitively expensive to compute all the total derivatives for optimization as each one entails an adjoint. 
 
-Now, consider the simple problem $\min_x \; \frac{1}{2}(x - x_0)^2$, whose
-first-order optimality is given by
-\begin{equation*}
-G(x,x_0) = x - x_0 = 0.
-\end{equation*}
-This has the obvious solution $x=x_0$.  We can take advantage of this simple
-optimization problem by constructing a convex homotopy that combines $F(x)$ and
-$G(x,x_0)$ as follows:
-\begin{equation*}
-  H(x, x_0, \mu) = (1-\mu) F(x) + \mu G(x, x_0) = (1 - \mu) 2x(2x^2 -1) + \mu (x
-  - x_0).
-\end{equation*}
-Next, we trace out the set of solutions corresponding to $H(x,x_0,\mu)=0$ from
-$\mu=1$ to $\mu=0$.  Starting at $\mu=1$ we have the solution $x=x_0$.  If we
-change the value of $\mu$ slightly to $\mu = 1 - \Delta \mu$, then, for $\Delta
-\mu$ sufficiently small and by continuity, $x_0$ should remain in the basin of
-attraction for Newton's method applied to $H(x, x_0, 1-\Delta \mu)=0$.  The
-solution at $\mu= 1 - \Delta \mu$ can then be used as an initial guess for the
-next value of $\mu$, and so on, until we reach $\mu = 0$.  Example solution
-paths for this process are illustrated in Figure~\ref{fig:zc} starting from
-distinct $x_0$.  Notice that all paths converge to the local minimizers, even
-those that begin near the maximizer $x=0$.
+To solve \eqref{eq:gen1}, the Lagrangian formulation is:
+\begin{equation}\label{eq:lag}
+\mathcal{L}(x, u, \psi, s, \lambda_h, \lambda_g) = f(x,u) + \lambda_h^T h(x, u) + \lambda_g^T (g(x,u)-s) + \psi^T \mathcal{F}(x,u),
+\end{equation} 
+where $s \in \mathbb{R}^m$ is for transforming the inequality constraints into equality ones, and $\lambda_h \in  \mathbb{R}^l$,  $\lambda_g \in  \mathbb{R}^m$ are the Lagrangian multiplier vectors for equality and inequality constraints. 
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{./figs/chap2/paths.png}
-  \caption{Solution curves of $H(x,x_0,\mu) = 0$ (left side of figure) for
-    different values of $x_0$.  The paths begin at $\mu=1$ and converge to the
-    local minimizers at $\mu=0$.  The function to be minimized is plotted on the
-    right-side of the figure.\label{fig:zc}}
-\end{figure}
+The first-order optimality conditions, or the \textit{Karush-Kuhn-Tucker} (KKT) conditions for \eqref{eq:gen1} are derived by taking partial derivatives of 
+\eqref{eq:lag} with respect to all the unknown variables,
+\begin{equation}\label{eq:kktcond}
+\begin{aligned}
+\nabla_x \mathcal{L} &= \nabla_x f + \lambda_h^T \nabla_x h + \lambda_g^T \nabla_x g + \psi^T \nabla_x\mathcal{F} = 0, \\
+\nabla_u \mathcal{L} &= \nabla_u f + \lambda_h^T \nabla_u h + \lambda_g^T \nabla_u g + \psi^T \nabla_u\mathcal{F} = 0, \\
+\nabla_{\psi} \mathcal{L} &= \mathcal{F} = 0, \\
+\nabla_{\lambda_h} \mathcal{L} &= h = 0, \\
+\nabla_{\lambda_g} \mathcal{L} &= g - s = 0, \\
+-\mathcal{S} \Lambda_g e &= 0,\\
+s \geq 0, &\quad \lambda_g \leq 0. \\
+\end{aligned}
+\end{equation}
 
-\subsection{Review of convergence theory for homotopy methods}
+The big nonlinear systems of equations \eqref{eq:kktcond} can be solved in either the full space or the reduced space.  Full-space methods~\cite{DBLP:journals/siamsc/BirosG05,DBLP:journals/siamsc/BirosG05a,haber:2001} solve all the unknowns in \eqref{eq:kktcond} simultaneously. The resulted KKT system is large, more than two times the number of state variables, indefinite and ill-conditioned. During optimization iterations, the state equation $\mathcal{F} =0$ and adjoint equation $\nabla_u \mathcal{L} = 0$ do not need to be solved exactly, avoiding the computational expense of tightly converging the PDE and adjoint equation residuals; however, this is also a potential disadvantage in practical engineering problems, because, if the optimization fails to converge, the intermediate solution may not be feasible with respect to the physics.  Furthermore, for highly nonlinear PDEs, \eg gas dynamics with shocks and boundary layers, practitioners have developed specialized globalization strategies that may be difficult to take advantage of in general-purpose full-space optimization algorithms.
 
-The path-following process described above, while intuitive, is not guaranteed
-to succeed.  In particular, it is not clear that $\nabla_q H$ remains
-non-singular along the path.  A poor choice of $G(q)$ may produce a level set
-$H(q,q_0,\mu) = 0$ with an intersection, where $\nabla_q H$ is singluar and the path
-bifurcates.  The Jacobian will also become rank deficient at so-called turning
-points, where following the path from $\mu=1$ to $\mu=0$ requires $\mu$ to
-increase at some point.  Finally, the path may diverge before reaching
-$\mu=0$.
-
-Many of the potential issues with the path-following approach can be avoided if
-we place some conditions on the map $H$.  These conditions are described in the
-theorem below, which has been adapted from~\cite{watson_2002} to the present
-context.
-
-\begin{theorem}\label{thm:homotopy}
-  Assume the following conditions hold:
-  \begin{itemize}
-  \item $G : \mathbb{R}^{N} \times \mathbb{R}^{N} \rightarrow \mathbb{R}^{N}$ is
-    a $C^2$ map, and $q=q_0$ is the unique solution to $G(q,q_0) = 0$;    
-  \item $F :\mathbb{R}^{N} \rightarrow \mathbb{R}^{N}$, the first-order
-    optimality residual given by \eqref{eq:opt00x}, is a $C^2$ map;
-  \item For the homotopy map $H$ defined by \eqref{eq:homotopy}, the Jacobian
-    $\nabla H \equiv \begin{bmatrix} \nabla_q H & \nabla_{q_0} H & \nabla_\mu
-    H \end{bmatrix}$ is full-rank on the zero set $X \equiv \{(q,q_0,\mu) |
-    H(q,q_0,\mu) = 0 \}$.
-  \end{itemize}
-  Then, for almost all $q_0 \in \mathbb{R}^{N}$, there exists a zero curve of
-  $H$ starting from $q=q_0$ at $\mu=1$ along which the Jacobian $\nabla H$ has
-  full rank.  Furthermore, if the set $X$ is bounded, then the path includes a
-  point $(q,q_0,\mu) = (q^*,q_0,0)$, \ie, where $H(q^{*},q_0,0) = F(q^{*}) = 0$.
-  Finally, if the Jacobian $\nabla_q F$ is invertible at $q^{*}$, the path has
-  finite arc length.
-\end{theorem}
-
-Theorem~\ref{thm:homotopy} is a powerful result.  It implies that, for almost
-all choices of $q_0$, there exists a path from $q=q_0$ at $\mu=1$ to a point
-$q=q^*$ at $\mu=0$ that satisfies $F(q^*) = 0$, and along this path the Jacobian
-is full-rank.  The phrase \emph{``almost all choices of $q_0$''} means that the
-set of points for which there is no path has measure zero.
-
-The drawback of Theorem~\ref{thm:homotopy} is that its assumptions, with the
-exception of the first, are difficult to guarantee or verify in
-practice\footnote{The first condition requires $G$ to be sufficiently smooth and
-  have $q_0$ as its only solution; as we show in Section~\ref{sec:map}, it is
-  straightforward to construct such a map.}.  The second condition, which cannot
-be relaxed~\cite{watson_2002}, implies that the objective and constraints are
-$C^3$.  While this level of smoothness exists for many engineering problems, it
-is certainly not true in general.  The third assumption means that $H$ is
-\emph{transversal to zero} for each choice of $q_0$, which can be verified for
-simple problems, but may be difficult to determine for complex engineering
-design problems.  Finally, as Watson points out in~\cite{watson_2002}, the
-assumptions on the boundedness of the path and the invertibility of $\nabla_q F$
-at $q^{*}$ are the most difficult to verify, since, taken together with the
-other conditions, they imply the exsistence of a solution to $F(q) = 0$.
-
-Despite the potential difficulty of guaranteeing the assumptions of
-Theorem~\ref{thm:homotopy}, the theorem hints at the robustness of the homotopy
-approach, and this is corroborated by our experience.
-
-\subsection{Homotopy map for constrained optimization}\label{sec:map}
-
-For this work we use the convex homotopy defined by \eqref{eq:homotopy},
-therefore we need only define $G(q,q_0)$.  Similar to the unconstrained case, we
-could use a map of the form
-\begin{equation*}
-  G(q,q_0) = q - q_0,
-\end{equation*}
-where $q_0 = \begin{bmatrix} x_0^T & s_0^T & \lambda_{h0}^T &  \lambda_{g0}^T \end{bmatrix}^T$.  However, this map produces a
-positive-definite (diagonal) Jacobian $\nabla_q G$, which would be inconsistent
-with the inertia of the Jacobian $\nabla_q F$ at a local solution to
-\eqref{eq:opt00x}~\cite{Nocedal2006NO}.  Instead, we adopt the map
-\begin{equation*}
-  G(q,q_0) \equiv \begin{bmatrix}
-    (x - x_0)^T &
-    (s - s_0)^T &
-    -\lambda_h^T & 
-    -\lambda_g^T
-  \end{bmatrix}^T, 
-\end{equation*}
-for which $q_0 = \begin{bmatrix} x_0^T & s_0^T & 0^T & 0^T \end{bmatrix}$.
-We note that $G(q,q_0)$ satisfies the requirements of
-Theorem~\ref{thm:homotopy}. 
-
-For future reference, we restate the homotopy map that we use for solving the
-first-order necessary conditions in this work:
-\begin{equation}\label{eq:homo0}
-    H(q, q_0, \mu) = (1-\mu)
+In contrast, reduced-space algorithms treat the states $u$ and the adjoints $\psi$ as implicit functions of the design variables through $\mathcal{F}(x,u(x)) = 0$, $\nabla_u \mathcal{L} = 0$. The reduced KKT condition is formulated as follows, 
+\begin{equation}\label{eq:opt00x}
+ \begin{gathered}
+    F(x,s,\lambda_h, \lambda_g) \equiv 
     \begin{bmatrix}
-      \nabla_x f(x) +   \lambda_h^T \nabla_x h(x)  +  \lambda_g^T \nabla_x g(x) \\
-      -\mat{S}\mat{\Lambda_g} e \\
-      h(x) \\
-      g(x) - s 
+\nabla_x f + \lambda_h^T \nabla_x h + \lambda_g^T \nabla_x g\\
+-\mathcal{S} \Lambda_g e\\
+h  \\
+g - s 
+\end{bmatrix} =0,\\
+\text{subject to} \quad s_i \geq 0, \quad \text{and} \quad \lambda_{gi} \leq 0. \\
+\end{gathered}
+\end{equation}
+
+where $s \in \mathbb{R}^m$ denotes the slack variables, $q \equiv (x^T, s^T,
+\lambda_h^T, \lambda_g^T) \in \mathbb{R}^{N}$ is a vector of all the unknowns,
+and $F :\mathbb{R}^{N} \rightarrow \mathbb{R}^{N}$ is the vector-valued residual
+of the KKT conditions excluding the inequalities on $s$ and $\lambda_g$.  For
+convenience, we have also introduced $e = [1,1,\ldots,1]^T$ and the diagonal
+matrices
+\begin{equation*}
+  \mat{S} = \mydiag\left(s_1,s_2,\ldots,s_m\right),\qquad\text{and}\qquad
+  \mat{\Lambda_g} = \mydiag\left(\lambda_{g1}, \lambda_{g2}, \ldots, \lambda_{gm}\right).
+\end{equation*}
+
+
+Therefore, the resulted KKT system is much smaller, and it can make use of existing PDE solvers and adjoint solvers, maintaining modularity. Reduced-space methods have been successfully implemented in unconstrained problems and IDF problems. The unconstrained version of \eqref{eq:opt00x} can be solved efficiently using a Newton-Krylov (NK) algorithm applied to the first-order optimality conditions; see, for example, \cite{akcelik:2006, Heinkenschloss:1999:IOA, hinze2010optimization,borzi:2011}. NK optimization algorithms have also shown promise for equality-constrained optimization in the reduced space, because they do not require the constraint Jacobian to be form explicitly and, thus, avoid the scaling issue described earlier.  For instance, \cite{dener:idf2017} applied a matrix-free NK algorithm to a class of equality-constrained optimization problems that arise in multidisciplinary design optimization and would otherwise be intractable with conventional matrix-based algorithms.
+
+Motivated by its success in the unconstrained and equality-constrained cases, we would like to extend the Newton Krylov methodology to more general, inequality constrained problems, to solve \eqref{eq:opt00x}. 
+
+\section{Inexact-Newton Methods}
+
+An alternative to using conventional (matrix-based) optimization algorithms or
+constraint aggregation is to apply inexact-Newton methods~\cite{dembo:1982},
+also know as truncated-Newton methods in the optimization
+literature~\cite{nash:2000} to solve \eqref{eq:opt00x}.  
+
+With the exception of the bounds on $s$ and $\lambda_g$, the KKT conditions
+\eqref{eq:opt00x} form a set of nonlinear algebraic equations, $F(q)=0$.  These
+equations can be solved, in principle, using Newton iterations of the form
+\begin{equation}
+(\nabla_q F) \Delta q^{(k)} = -F(q^{(k)}), \label{eq:Newton}
+\end{equation}
+where $q^{(k)}$ is the solution at the $k$th iteration and $\Delta q^{(k)} =
+q^{(k+1)} - q ^{(k)}$ is the solution update.  Solving~\eqref{eq:Newton} exactly
+can be inefficient during early Newton iterates when the linear model is not a
+good approximation to $F(q)=0$.  Instead, truncated- and inexact-Newton methods
+find approximate solutions to \eqref{eq:Newton} that, for example, satisfy the
+inexact-Newton condition
+\begin{equation}
+  \left\| (\nabla_q F) \Delta q^{(k)} + F(q^{(k)}) \right\| \leq \eta_k \left\| F(q^{(k)}) \right\|, \label{eq:inexact_Newton}
+\end{equation}
+for some parameter $\eta_k \in (0,1)$.
+
+There has been considerable success applying inexact-Newton methods to
+unconstrained optimization problems; see \cite{nash:2000} and the references
+therein.  On the other hand, inexact-Newton methods for general (nonconvex)
+constrained problems are much less common.  Some notable exceptions include the
+efforts by Byrd and colleagues~\cite{byrd:2008, byrd:2010} and by Heinkenschloss
+and Ridzal~\cite{heinkenschloss:2014}; however, these algorithms make
+assumptions regarding the structure of the problem that favor full-space
+formulations, and our experience applying them to reduced-space PDE-constrainted
+optimization has been disappointing.
+
+Applying Newton's method to \eqref{eq:opt00x}, the KKT system, also called primal-dual system is obtained:
+\begin{equation}\label{eq:kkt0}
+\begin{bmatrix} \nabla_{xx} \mathcal{L} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
+    0 & -\Lambda_g & 0 & -\mathcal{S} \\
+    \mathcal{A}_{h} & 0 & 0 & 0 \\
+    \mathcal{A}_{g} & -\mathcal{I} & 0 & 0 
     \end{bmatrix}
-    + \mu
-    \begin{bmatrix}
-      x - x_0 \\
-      s - s_0 \\
-      -\lambda_h \\
-      -\lambda_g
-    \end{bmatrix}.
+    \begin{bmatrix} p_x \\ p_s \\ p_h \\ p_g \end{bmatrix}
+    = - \begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g e \\ h \\ g - s \end{bmatrix}
 \end{equation}
+where $\mathcal{L}$ the Lagrangian is defined in \eqref{eq:lag}, $\mathcal{S}$ and $\Lambda_g$ are as defined previously. 
 
-\begin{remark}
-  The homotopy map \eqref{eq:homo0} can be used to identify stationary points of
-  $F(q)$, but it cannot, on its own, ensure that $s_i \geq 0$ and $\lambda_{i}
-  \leq 0$.  We use safeguards to ensure the correct signs for the slacks and
-  inequality multipliers; see Section~\ref{sec:fraction}.
-\end{remark}
-
-The homotopy map \eqref{eq:homo0} is a favorable in the context of optimization
-for several reasons.  First, the term $\mu(x-x_0)$ helps to address nonconvexity
-by adding a positive diagonal matrix to the Lagrangian Hessian during the early
-stages of convergence.  Furthermore, the term $\mu(s - s_0) with s_0 > 0$ generates a path
-that remains feasible with respect to the slack boundaries $s>0$.  Finally, the
-term $-\mu\lambda_{h} \text{and}  -\mu\lambda_{g}$ improves the conditioning of the
-KKT matrix; even when the constraint Jacobian is rank deficient the homotopy map
-will remain invertible.
-
-\section{Predictor-Corrector Path-following Algorithm}\label{sec:pc}
-The theory presented in Section~\ref{sec:homotopy} tells us when a path exists
-between $q_0$ and a solution to $F(q)$, but it does not tell us how to traverse
-such a path in an efficient manner.  In this section we describe the modified
-predictor-corrector algorithm~\cite{allgower_georg_1993} used to trace the
-zero-curve of the homotopy map.
-
-\subsection{Overview}
-
-Figure \ref{fig:pc} illustrates the predictor and corrector phases at iteration
-$k$.  The iteration begins by computing an inexact tangent to the path,
-$q_{k+1}'$, and using this tangent to predict the next point on the path.
-Subsequently, the homotopy parameter $\mu$ is fixed and a correction is found
-that gives an inexact root of the homotopy.  This cycle is repeated until $\mu <
-\epsilon_\mu$, where $\epsilon_\mu > 0$ is a specificed tolerance.  Once $\mu$ is
-sufficiently close to zero an approximate solution of the primal-dual system is
-recovered.
-
-\begin{remark}
-  We use a default value of $\epsilon_\mu = 10^{-9}$ in our algorithm, which we
-  have found works well for most problems; however, for difficult problems, \eg,
-  with rank-deficient constraint Jacobians, it may be necessary to use larger
-  thresholds.  For example, we use $\epsilon_\mu = 10^{-6}$ in the structural
-  optimization problem presented later.
-\end{remark}
-
-\begin{figure}[tbp]
-  \centering
-  \subfloat[exact solves \label{fig:exact_pc}]{
-    \includegraphics[width=0.4\linewidth]{figs/chap2/exact_pc.png} }
-  \hspace{3em}
-  \subfloat[inexact solves\label{fig:inexact_pc}]{
-  \includegraphics[width=0.4\linewidth]{figs/chap2/inexact_pc.png}
-  }
- \caption{ Figure~\ref{fig:exact_pc} illustrates the predictor-corrector algorithm in the case that exact solves are used, while Figure~\ref{fig:inexact_pc} depicts the situation when inexact solves are used. \label{fig:pc}}   
-\end{figure}
+NK method solves \eqref{eq:kkt0} using Krylov method, so it only need the matrix-vector product of the system matrix. The products are formed in a matrix-free way by solving two second-adjoint systems, for details, see~\cite{hicken:inexact2014, dener:idf2017} and the references therein.  However, while NK methods can avoid the cost associated with forming the explicit constraint Jacobian, the extension to inequality constraints faces several significant challenges. First, active-set and interior-point algorithms that make use of an explicit basis for the null space of the constraint Jacobian cannot be used, because such a basis requires the Jacobian to be explicitly available.  Second, the primal-dual saddle-point system raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge to a sufficient tolerance, hurting the convergence rate of Newton's method. Third, dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task. 
 
 
-\begin{description}
 
-  \item[Predictor:] During the predictor phase we first need to compute an
-    approximate tangent direction $q' = dq/d\mu$, which is defined by taking the
-    total derivative of $H(q,q_0,\mu) = 0$ with respect to $\mu$, \ie the
-    implicit function theorem:
-    \begin{equation}
-      \left(\nabla_q H\right)_{k} q_{k}' = -\nabla_\mu H_{k} = F(q_k)  - G(q_k,q_0)
-      \label{eq:predictorx}
-    \end{equation}
-    where $\nabla_q H$ and $\nabla_\mu H$ are evaluated at $q_k$, the previous
-    homotopy iterate.  In practice, we solve \eqref{eq:predictorx} inexactly
-    using a preconditioned Krylov iterative method.  That is, we find a $q_{k}'$
-    that satisfies
-    \begin{equation*}
-      \lVert \left(\nabla_q H\right)_{k} q_{k}' - F(q) + G(q,q_0) \rVert
-      \leq \tau \lVert F(q_k)  - G(q_k,q_0) \rVert,
-    \end{equation*}
-    where $\tau \in [0,1)$ is the desired relative tolerance.  Further details
-      on the inexact solution of \eqref{eq:predictorx} are provided in
-      Chapter~\ref{chap:linsys}.
-    
-    After (inexactly) solving \eqref{eq:predictorx} for $q_{k}'$, the predictor
-    step is given by
-    \begin{equation*}\label{eq:pred}
-      \begin{bmatrix}
-        \hat{q}_{k+1} \\ \mu_{k+1} 
-      \end{bmatrix} 
-      = \begin{bmatrix}
-        q_k \\ \mu_k 
-      \end{bmatrix}      
-      + \alpha_{k} t_{k},
-    \end{equation*}
-    where $\alpha_{k}$ is the step length taken along the tangent direction at
-    iteration $k$ (see Section~\ref{sec:step}), and $t_k$ is the normalized
-    tangent given by
-    \begin{equation*}
-      t_{k} \equiv \frac{1}{\sqrt{\|q_{k}'\|^2 + 1}} \begin{bmatrix} -q_k'
-        \\ -1 \end{bmatrix}.
-    \end{equation*}
-    Note that the negative signs in the definition of $t_k$ account for
-    decreasing $\mu$ as the path moves from $\mu=1$ to $\mu <
-\epsilon_\mu$.
-
-  \item[Corrector:] In the corrector phase, we fix the homotopy parameter
-    at $\mu=\mu_{k+1}$ based on the predictor, and use a Newton-Krylov method to
-    inexactly solve $H(q_{k+1},q_0,\mu_{k+1}) = 0$.  This has the effect of
-    ``correcting'' $\hat{q}_{k+1}$ to be closer to the path.  More precisely,
-    we seek $q_{k+1}$ that reduces the relative residual below some tolerance:
-    \begin{equation}\label{eq:cornt}
-      \lVert H(q_{k+1},q_0,\mu_{k+1}) \rVert \leq
-      \epsilon_k \lVert H(\hat{q}_{k+1},q_0,\mu_{k+1}) \rVert.
-    \end{equation}
-    A loose relative tolerance of $\epsilon_k \in [0.1,0.5]$ is used for
-    homotopy parameter values $\mu > 0$ to avoid oversolving the corrector step.
-    Once the algorithm reaches $\mu = 0$, the tolerance is tightened to the
-    user-specified value for the first-order necessary conditions.
-    
-    At each Newton subiteration within the corrector, we must solve a linear
-    system of the form
-    \begin{equation}\label{eq:cor}
-      \left(\nabla_q H \right)_{k+1} \Delta q_{k+1} = -H,
-    \end{equation}
-    for $\Delta q_{k+1}$, where $(\nabla_q H)_{k+1}$ and $H_{k+1}$ are evaluated
-    at $\mu_{k+1}$ and the current estimate for $q_{k+1}$.  The Jacobian,
-    $\nabla_q H$, that appears in \eqref{eq:cor} also appears in
-    \eqref{eq:predictorx} during the predictor phase; again, further details
-    regarding the solution of the linear systems that involve $\nabla_q H$ are
-    provided in Chapter~\ref{chap:linsys}.
-
-\end{description}
-
-\begin{remark}
-  The above predictor-corrector approach is a classical embedding
-  method~\cite{allgower_georg_1993}, since the solution path is assumed to be
-  parameterized by $\mu$; that is, the path has the form $(q(\mu),\mu)$.  This
-  type of method cannot handle folds, or turning points, where the path reverses
-  direction with respect to $\mu$ and the Jacobian $\nabla_q H$ becomes
-  singular.  Problems for which such turning points arise can be handled using
-  more advanced predictor-corrector algorithms; see, for
-  example,~\cite{walker:1999}.
-\end{remark}
-
-\subsection{Implementation details}
-
-\subsubsection{Adaptive step-size control}\label{sec:step}
-
-The step length $\alpha$ along the tangent direction is calculated using the
-asymptotic expansion method \cite{allgower3}, which we briefly review here.
-
-At the first iteration of the predictor-corrector algorithm when $\mu=1$, a
-conservative step length is used, \eg, $\alpha_0 = 0.05$.  Subsquent step
-lengths are then determined adaptively using a scaling factor and a couple
-safeguards on the maximum step size:
-\begin{equation*}
-  \alpha_{k} = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right),
-\end{equation*}
-where $\Delta \mu_{\max}$ is the maximum allowable change in $\mu$,
-$\alpha_{\max}$ is allowable step size permitted by the fraction-to-the-boundary
-rule (see Section~\ref{sec:fraction}), and the scaling factor is given by
-\begin{equation*}
-  \zeta_{k} \equiv \max\left( \sqrt{\delta_k/\delta_{\text{targ}}}, \phi_k / \phi_{\text{targ}} \right).
-\end{equation*}
-
-The scaling factor $\zeta_k$ is controlled by two quantities that measure how
-nonlinear the path is, namely the previous corrector update size, and the angle
-between successive tangents.  Referring to Figure~\ref{fig:pc}, the corrector
-update size is the magnitude of the difference between the predictor step and
-the corrector step:
-\begin{equation}\label{eq:delta_k}
-  \delta_k \equiv \| q_{k} - \hat{q}_{k} \|.
-\end{equation}
-A large value of $\delta_k$ indicates that the linear predictor does not
-approximate the path well, so a smaller step size is warranted.  The angle
-between the tangents is
-\begin{equation}\label{eq:phi_k}
-  \phi_k \equiv \arccos\left(t_{k+1}^T t_{k} \right).
-\end{equation}
-The angle $\phi_k$ is a measure of the curvature in the path, so a relatively
-large value of $\phi_k$ also suggests that $\alpha_k$ should be reduced.  For
-locally linear paths both $\delta_k$ and $\phi_k$ are zero, and the scaling
-factor will lead to an unbounded $\alpha_k$; hence the need for the maximum
-allowable step $\alpha_{\max}$.
-
-\begin{remark}
-  While the adaptive step-size control is automated, performance depends on the
-  parameters $\alpha_0$, $\Delta \mu_{\max}$, $\delta_{\text{targ}}$ and
-  $\phi_{\text{targ}}$.  The optimal choice for these parameters is problem
-  dependent.
-\end{remark}
-
-\subsubsection{Safeguards on the slacks and inequality multipliers}\label{sec:fraction}
-One of the differences between solving \eqref{eq:opt00x} and solving a generic
-nonlinear system of equations is that the slacks and inequality multipliers must
-remain nonnegative and nonpositive, respectively.  To cope with this additional
-set of requirements, the following safeguards are implemented in the
-predictor-corrector scheme.
-\begin{itemize}
-  \item During the predictor phase, the maximum allowable step size is bounded
-    using a fraction-to-the-boundary-like rule~\cite{Nocedal2006NO} defined
-    below.
-    
-  \begin{equation}\label{eq:f2b}
-      \alpha_{\max} = \max\left\{
-      \alpha \in (0,1] \;|\; s + \alpha s' \geq \tau_s .\right\}.
-    \end{equation}
-where $\tau_s = 10^{-6}$. If a particular slack variable gets close to zero, 
-   \begin{equation*}
-   0 <  s \leq \tau_s
-   \end{equation*}
-  then its value is frozen and it is excluded from the above
-    calculation of $\alpha_{\max}$.
-
-In our algorithm, we make sure the slack variables $s \geq \tau_s$ at the very beginning 
-to the initial slack $s_0$ as well as at the last point of the corrector step 
-by applying the following clipping rule : 
-   \begin{equation}\label{eq:sclip}
-      \hat{s} = \max(s, \tau_s)
-   \end{equation}
+The solution to the optimization problem \eqref{eq:opt00x} is a saddle point for the Lagrangian \eqref{eq:lag}, as the optimal design point minimizes the Lagrangian, while the optimal multipliers maximizes the Lagrangian ~\cite{benzi2005numerical}. 
+Note that the matrix in  \eqref{eq:kkt0} is nonsymmetric \footnote{By using a scaled slack block, $\tilde{p_s} = \mathcal{S}^{-1}e p_s $,  the system \eqref{eq:kkt0} can be turned into a symmetric one. We adopt the nonsymmetric version, as we think the preconditioner for this form has better numerical properties, see the section on preconditioner later}. 
 
 
-    The maximum step size is enforced for all variables, including the design
-    variables $x$.  We have found that synchronizing the step size across the
-    design, slack and multipliers improves the performance of the algorithm.
-    
-  \item After the predictor step, and the corrector step,
-  the inequality multipliers are clipped to
-    ensure they remain non-positive:
-    \begin{equation}\label{eq:lclip}
-      \hat{\lambda}_{k+1} = \min(\lambda_{k} + \alpha_k (t_k)_{\lambda}, 0),
-    \end{equation}
-    where $(t_k)_{\lambda}$ denotes the multiplier component of the normalized
-    tangent, and the $\min$ function in the above expression is to be
-    interpreted elementwise.
-    
-\end{itemize}
 
-While the slacks and multipliers both have bound constraints, their treatment is
-slightly different in the above safeguards.  Our motivation for bounding the
-slacks away from zero, in both the predictor corrector phases, is to avoid
-severe ill-conditioning in the system matrix and its preconditioner; see
-Section~\ref{sec:matfreepc} for further details.  The multipliers, in contrast,
-do not lead to conditioning problems if they vanish, so we can clip the
-multipliers to zero.
+% a popular large-scale matrix-based active -set augmented-Lagrangian optimization method SNOPT.  
 
-\subsection{Algorithm Summary}
+%\begin{equation}\label{eq:saddle}
+%\mathcal{A} = \begin{bmatrix}
+%A & B \\
+%C & D
+%\end{bmatrix}
+%\end{equation}
+%One type of Schur complement can be obtained by performing the following LDU decomposition 
+%\begin{equation}\label{eq:saddle:ldu}
+%\mathcal{A} = \begin{bmatrix}
+%A & B \\
+%C & D
+%\end{bmatrix} = 
+%\begin{bmatrix}
+%I_p & BD^{-1} \\
+%0 & I_q
+%\end{bmatrix}
+%\begin{bmatrix}
+%A-BD^{-1}C  & 0 \\
+%0  & D 
+%\end{bmatrix}
+%\begin{bmatrix}
+%I_p  & 0 \\
+%D^{-1}C  & I_q 
+%\end{bmatrix}
+%\end{equation}
 
-With most of its elements described, we summarize the predictor-corrector method
-in Algorithm~\ref{alg:pc}.  The solution of the tangent step,
-line~\ref{line:tang}, and the solution of the Newton step, line
-\ref{line:newton}, are the only components of the algorithm that require further
-explanation.  % The solution of these linear systems is detailed in the next chapter.
-\\
-\LinesNumberedHidden
-\begin{algorithm}[H]\setstretch{1.35}
-\SetKwInOut{Input}{Input}
-\SetKwInOut{Output}{Output}
-\SetKwInOut{Parameter}{Parameters}
-\SetKw{Break}{break}
-\SetKw{Return}{return}
-\SetEndCharOfAlgoLine{}
-%\SetKwRepeat{Do}{do}{while} %
+% which is indefinite, poor spectral properties (ill-conditioned) 
+% Direct solvers, however, are still the preferred method in optimization and other areas. Furthermore, direct methods are often used in the solution of subproblems, for example as part of a preconditioner solve.
+%The preconditioners developed here are tailored for PDE-constrained optimization problem. 
+% matrix-vector products with A can be performed efficiently
+% approximate its action on a vector with (nearly) linear complexity,
+% the convergence of the iterates to the optimal solution of problem
+% gain efficient, save on storage
+%words from the paper ~\cite{benzi2005numerical} Benzi block preconditioners, 
+% As the iterates approaches the solution,  the entries in A tend to zero, or infinity, KKT matrix ill-conditioned
+% the norm of the inverse Schur complement goes to infinity
 
-\Parameter{$K_{\max}$, $J_{\max}$, $\epsilon_F$, $\tau$, $\epsilon_H$, $\alpha_0$, $\delta_{\text{targ}}$, $\phi_{\text{targ}}$, $\Delta \mu_{\max}$}
-\Input{$x_0$, $s_0$}
-\Output{$q^{*} = \begin{bmatrix} x^{*T} & s^{*T} & \lambda_h^{*T} & \lambda_g^{*T}   \end{bmatrix}^T$, the solution of \eqref{eq:opt00x}}
-\BlankLine
-Clip $s_0$ if necessary: $s_0 \leftarrow \max(s_0,\tau_s)$  \\
-Set $q_0 = \begin{bmatrix} x_0^T & s_0^T& 0^T & 0^T \end{bmatrix}$, $q  \leftarrow q_0 $  \\
-compute state $u$,  adjoint $\psi$ for $\boldsymbol{q}_0$ \\
-inexactly solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k}$ 
- for $q_{k}'$ to required tolerance $\tau$ \label{line:initPred} \\
-compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
-
-\For{$k = 0,1,2,\ldots,K_{\max}$}{
- compute $\alpha_{k} (\alpha_0 \text{~if~} k==0) = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right)$\\
-  use \eqref{eq:pred} to update $\hat{q}_{k+1}$ and $\mu_{k+1}$\\
-  clip $\lambda_{k+1}$ if necessary:  $\hat{\lambda}_{k+1} = \min(\lambda_{k} + \alpha_k (t_k)_{\lambda}, 0)$  \\
-  update state $u$, adjoint $\psi$ at $\boldsymbol{q}_{k+1}'$ \\
-  set $q_{k+1} \leftarrow \hat{q}_{k+1}$\\
-  
-  \For{$j = 0,1,2,\ldots,J_{\max}$}{ 
-    \lIf{$\lVert H(q_{k+1},q_0,\mu_{k+1}) \rVert \leq \epsilon_{H} \lVert
-      H(\hat{q}_{k+1},q_0,\mu_{k+1}) \rVert$}{%
-      \Break
-    }
-    \ShowLn
-    inexactly solve $\left(\nabla_q H \right)_{k+1} \Delta q_{k+1} =
-    -H_{k+1}$ for $\Delta q_{k+1}$ \label{line:newton} \\
-    $q_{k+1} \leftarrow q_{k+1} + \Delta q_{k+1}$ \\
-     \lIf{ $\mu_{k+1} < \epsilon_{\mu}$ and $\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$,  $s_{i} \geq 0$}
-     {\Break \Break} 
-  }
-  update state $u$, adjoint $\psi$ at $\boldsymbol{q}_{k+1}$ \\ 
-    \lIf{$\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$,  $s_{i} \geq 0$ ,
-   and $\lambda_{i} \leq 0$}{\Return $q_{k}$}
-  \ShowLn
-   inexactly solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k}$
-  for $q_{k}'$ to required tolerance $\tau$   \label{line:tang} \\
-  compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
-  compute the step scaling factor: $\zeta_{k} = \max\left( \sqrt{\delta_k/\delta_{\text{targ}}}, \phi_k / \phi_{\text{targ}} \right)$\\
-  compute $\alpha_{k} = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right)$\\
-  clip $\lambda_{k+1}$ and $s_{k+1}$ if necessary: $s_{k+1} \leftarrow \max(s_{k+1},\tau_s)$ and
-  $\lambda_{k+1} \leftarrow \min(\lambda_{k+1},0)$ \\
-  update $\delta_k$ and $\phi_{k}$ according to \eqref{eq:delta_k} and
-  \eqref{eq:phi_k} \\
-  $k \leftarrow k+1$
-  }
-\caption{Inexact-Newton predictor-corrector algorithm for PDE-Constrained
-  optimization.\label{alg:pc}}
-\end{algorithm}
-
-\newpage
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Application I: Sphere Problem}
-\subsection{Problem Description}
-The first test problem to verify RSNK's globalization performance is on an analytical inequality constrained Sphere problem: 
-\begin{equation*}
-\begin{aligned}
-\underset{x, y, z} {\text{min}}  & \quad & x + y + z \\
-   {\text{subject to}}  & \quad & x^2 + y^2 + z^2 <= 3 \\
-\end{aligned}
-\end{equation*}
-
-The solution to this problem is at $(-1,-1,-1)^T$. There is a local maximum point at $(1,1,1)^T$, where the 
-first-order optimality condition (KKT condition) is also satisfied but not the second-order optimality condition. 
-
-\subsection{Results}
-To prove that the algorithm can bypass the local maximum, 100 random starting points around $(1,1,1)^T$ are generated using Gaussian random distribution, with a mean at 1, and standard deviation 0.1. Figure~\ref{fig:sphere_100} shows the sphere, with the starting points in blue circles, and the solutions in red starts. 
-
- \begin{figure}[H]
-  \centering
-  \includegraphics[clip,trim=20 40 20 70, width=1.0\columnwidth]{./figs/chap2/100_111.pdf}%  
-  \caption{100 Starting Points Around Local Maximum \label{fig:sphere_100}}
-\end{figure}
+% Schur complement reduction 
+% null space methods, the null space of the constraint Jacobian, the column of Z span the null space of constraint Jacobian
+% popular in optimization, projection of the problem onto the constraint set; 
 
 
- \begin{figure}[H]
-  \centering
-  \includegraphics[clip,trim=80 40 20 70, width=1.1\columnwidth]{./figs/chap2/1000.pdf}%  
-  \caption{1000 Random Standard Distributed Points \label{fig:sphere_1000}}
-\end{figure}
-
- \begin{figure}[H]
-  \centering
-  \includegraphics[clip,trim=20 40 20 70, width=1.0\columnwidth]{./figs/chap2/50.pdf}%  
-  \caption{50 Random Standard Distributed Points \label{fig:sphere_50}}
-\end{figure}
-
-Figure~\ref{fig:sphere_1000} shows the distribution of 1000 starting points generated using the Standard 
-Normal Distribution method. The starting points are semi-transparent blue circles, while the solution points are in solid red stars. The red star shown in the picture is actually 1000 solutions points overlaid on top of each other. 
-Figure~\ref{fig:sphere_50} shows the same content but with 50 starting points. The test shows that the globalization of RSNK is working well.  
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Application II: Non-convex Problem}
-\subsection{Problem Description}
-We consider the following simple nonconvex optimization problem :
-\begin{equation*}
-\begin{aligned}
-&\underset{x \in R^{100}} {\text{min}}  
-& &\phantom{-} \frac{1}{2}x^T \mat{Q} x \\
-  & {\text{subject to}}
-& &-1 \leq x_i \leq 1 \qquad \forall i = 1,2,\ldots,100 \\
-\end{aligned}
-\end{equation*}
-where the pattern of $\mat{Q} = \textsf{diag}(1,-1,1,\ldots,1,-1)$ is randomly generated. 
-
-This problem is challenging for Newton-based optimization algorithms, which 
-tends to locate stationery points where $F(q) = 0$ but cannot differentiate between 
-a minimizer or a maximizer. As the objective function can be separated into 
-individual dimensions, it is easy to see that the minimizer for this problem has the pattern
-corresponding to $\mat{Q}$: 
-\begin{equation}\label{eq:pattern}
-  x^{*} = \begin{bmatrix} 0 & \pm 1 & 0 & \cdots & 0 & \pm 1 \end{bmatrix}^{T}.
-\end{equation}
-where
-\begin{equation}\label{eq:pattern2}
-  \begin{gathered}
-  x_i=0  \text{~if~}  \mat{Q}_{ii} = 1  \\
-  x_i = \pm 1  \text{~if~}  \mat{Q}_{ii} = -1
-  \end{gathered}
-\end{equation}
-We would like to see 
-the ability of the algorithm to bypass the wrong solutions in individual dimensions, e.g. $x_i = 0$ 
-when $\mat{Q}_{ii} = -1$ and $x_i = \pm 1$ when $\mat{Q}_{ii} = 1$.
-Note that when $\mat{Q}_{ii} = 1$, the upper and lower bound $x_i = \pm 1$ are 
-individual maximums where the gradient of the Lagrangian is zero in that dimension. 
-
-\subsection{Results - Nonconvexity}
-We ran the optimization algorithm on 1000 random cases. For each case, 
-the arrangement of $1$ and $-1$ in $\mat{Q}$ is uniformly randomly generated; 
- the initial point $x_0$ is also generated randomly with uniform probability in the domain
-  $\Omega = \{ x \in \mathbb{R}^{100} \; | \; -2 \leq x_i \leq 2 \}$.  We call a solution successful if 
-  its pattern is exact as \eqref{eq:pattern2}.  Table~\ref{tab:success} lists the success rate for different 
-  combinations of $\epsilon_{\text{krylov}}$ and $\epsilon_F$. 
+% \begin{table}
+% \caption[This is the Caption for Table 1]
+%            {This is the Caption for Table 1\cite{thisbook}}
+%  Note entry in [] for list of tables; you don't want the citation in the LOT.
+% \begin{center}
+% \begin{tabular}{lll}
+% Here's       & an          & example  \\
+% of           & a           & table    \\
+% floated      & with        & the      \\
+% \verb+table+ & environment & command.
+%\end{tabular}
+% \end{center}
+% \end{table}
  
-\begin{table}[H]
-  \begin{center}
-    \caption{Success Rate with Different Parameters \label{tab:success}}
-  \begin{tabular}{| c |  c |  c |  c | c | c | c | c |}
-  \hline
- & \multicolumn{7}{  c  | }{ $\epsilon_{\text{krylov}}$  } \\  \hline
- &   & 1e-1  & 1e-2    & 1e-3    &  1e-4    &  1e-5   & 1e-6  \\  
-\multirow{2}{*}{$\tau$ and $\epsilon_F$ } &  1e-1 & 51\%  &90.0\% &94.2\% &94.6\% &93.9\% & 93.8\%  \\
-	               					      &   1e-2 & 47.2\%  &93.1\% &94.4\% &93.9\% &94.2\% &  94.5\%\\
-    \hline
-  \end{tabular}
-  \end{center}
-\end{table}
-
-As can be seen from Table~\ref{tab:success}, the robustness of the algorithm for handling non-convexity 
-is obviously impacted by the tolerances. It shows that $\epsilon_{\text{krylov}}$ has to be below $1e-2$ 
-for effective non-convexity handling ability, and the predictor and corrector linear solve tolerance $\epsilon_F$ 
-plays a smaller role than $\epsilon_{\text{krylov}}$.   
-  
- \begin{figure}[tbp]
-  \centering
-  \includegraphics[clip,width=0.7\columnwidth]{./figs/chap4_test/nonconvex_1000_random.eps}%
-  \caption{Success Minimizers. \label{fig:nonconvex}}
-\end{figure}
-
-Figure ~\ref{fig:nonconvex} shows one sample statistical results for the random study using 
-$\epsilon_{\text{krylov}}=10^{-5}$ and $\tau = 10^{-2}$. The plot shows that $94.2\%$ of the $1000$ random cases 
-successfully converge to the minimizer, while the rest $5.8\%$ of the $1000$ cases failed in one dimension.    
-  
-The results show that the optimization method can start from infeasible points, and can handle certain 
-amount of nonconvexity. The preconditioner is not used here.  Admittedly, this nonconvex test problem is rather simple, with no complexities like bad-scaling, ill-conditioning included. However, the focus is solely to see whether the added regularization from the homotopy term can help 
-Newton's method bypass local maximization points.  Further work is needed to determine when the problem demands 
-tighter tolerances and how to detect and handle nonnegative curvature.  
-
- \subsection{Results - Convergence Plots} 
  
-A typical optimization convergence plot is provided in Figure~\ref{fig:nc_converg}. Figure~\ref{fig:ncmu} 
-shows the absolute optimality, complementarity and feasibility at each Homotopy iteration of different $\mu$. 
-Note that for simplicity, only the Predictor points are displayed when $\mu \geq \epsilon_{\mu}$, 
-while the Corrector points are displayed at $\mu < \epsilon_{\mu}$.
-Figure~\ref{fig:nccpu} shows convergence plot w.r.t CPU time, 
-which is used more often later when the performance of the new method is benchmarked with other 
-optimization packages.
+% \subsection{This is a Subsection Heading} 
+ 
+% This is a sentence to take up space and look like text.
+% This is a sentence to take up space \cite{anotherbook}.
+% This is a sentence to take up space and look like text.
+ 
+% \subsubsection{This is a Subsubsection Heading}
+% This is a sentence to take up space and look like text.
+% This is a sentence to take up space and look like text.
+% Text before the footnote.\footnote{Here's the text of the footnote.}
+% Text after the footnote. 
+% This is a sentence to take up space and look like text.
 
-\begin{figure}[tbp]
-  \centering
-  \subfloat[Convergence vs. $\mu$ \label{fig:ncmu}]{
-   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/nonconvex_mu.eps} }
-   \hspace{1em}
-   \subfloat[Convergence vs. CPU time \label{fig:nccpu}]{
-   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/nonconvex_cpu.eps} }
-   \caption{Typical Convergence Plots in $1000$ Random Cases \label{fig:nc_converg}}
-\end{figure}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
 
-%\begin{remark}
-% The parameters $\alpha_0$, $\delta_{\text{targ}}$, $\phi_{\text{targ}}$, and
-%  $\Delta \mu_{\max}$ all play a role in the ability of Algorithm~\ref{alg:pc}
-%  to handle nonconvex objectives.  If these parameters are set too agressively,
-%  then the algorithm may move off the homotopy level-set and converge to a local
-%  maximizer or saddle, even for the simple problem considered here.
-%  \padd{I think this Remark should be removed now. As we've provided the influence of 
-%  Krylov tolerance and inner tolerance on the success rate. }
-%\end{remark}
+%The formula \eqref{eq:kkt0} takes the same form as the classical interior point method in Chapter 19 in Nocedal's book \cite{Nocedal2006NO}, which will be reviewed below. 
+
+%\section{Review on Interior Point Method  }
+%The difficulty in extending the Newton Krylov methods to handle inequality constraints, to solve \eqref{eq:opt00x} lies in the nonlinear complementarity condition: for each inequality constraint, either the slack or Lagrangian multiplier is strictly zero if we assume strict complementarity is satisfied at the solution. The slack has to be non-negative to guarantee feasibility of the inequality constraints, and the multipliers has to be non-positive in respect to the property of a local minimization point following the formula convention. For inequality constraints that are active at the solution, slack variable is zero and the multiplier is negative, while for inactive inequality constraints, slack variable is positive and the multiplier is negative. Therefore, the complementarity condition, in combined with the sign requirement on slack and multipliers, contains information on optimal active set of the inequality constraints at the solution.   
+%
+%Currently there are two most powerful algorithms for general nonlinear constrained problems: active-set SQP methods and interior point methods \cite{Nocedal2006NO}. Determining the inequality constraint sets that are active at the solution is the main challenge facing active-set methods. Especially when the number of inequality constraints is large, the method may need many iterations to locate the active-set of inequality constraints. While for interior point methods, there are two varieties based on globalization strategies: Newton-Lagrangian line-search and trust-region SQP on the barrier problems. The former is more for illustration purpose, and the latter is actually implemented in practical optimization software libraries IPOPT \cite{Wächter2006}, and KNITRO \cite{Byrd:1999:IPA:588897.589167}. 
+%
+%The trust-region SQP method builds a quadratic model on the barrier formulation, employs direct linear algebra, uses explicit constraint Jacobians to first compute the multipliers that deliver minimum linearized constraint violations, then compute the design and slack update steps that minimize the quadratic model. In both subproblems, a trust region bound is imposed on the design and slack components, with the slack variable scaled properly to prevent it away from the nonnegative bound. A proper merit function mimic the quadratic objective function is used to estimate the quality of the steps and control the trust-region radius for next iteration. 
+%
+%To handle nonlinearities and nonconvexities, regularization terms can be added to the Hessian block and the equality constraint Jacobian on the diagonal of the KKT matrix. The proper amount of regularization is computed at each iteration by trial and error such that the inertia of the regularized KKT matrix is $(n+m, l+m, 0)$, under which condition the total Hessian block of design and slack will be positive definite on the null space of the combined constraint matrix, therefore the resulted Newton step will be a guaranteed descent direction for a large class of merit functions. 
+%
+%Using the proper barrier parameter $\mu$ updating strategy is crucial to the performance of interior point methods: A slowly decreasing $\mu$ will result in large number of outer iterations, making the algorithm less efficient. While a quickly decreasing $\mu$ may make some slack or inequality multipliers approach zero prematurely, hurting the convergence. Some simple implementations of interior point methods use a constant fraction updating scheme, while some chooses the fraction value based on the recent iterations' progress towards the solution. Making the fraction value close to zero near the solution can yield a superlinear convergence rate. More robust strategies update $\mu$ based on the progress of the current complementarity products. Predictor strategy first calculates a predictor direction by setting $\mu=0$, then calculates the tentative complementarity product along this direction using the step size from fraction to boundary rule. The updating fraction value is based on the ratio of this tentative and current complementarity product. 
+%
+%
+%The former Newton-Lagrangian line-search method solves a perturbed KKT system at each homotopy parameter, also called the barrier parameter $\mu$:
+%
+%\begin{equation}\label{eq:kkt1}
+%\begin{aligned}
+%\nabla f(x) + \lambda_h^T \nabla h(x) + \lambda_g^T \nabla g(x) &= 0 \\
+%-\mathcal{S} \Lambda_g - \mu e &= 0\\
+%h(x) &= 0 \\
+%g(x) - s &= 0 \\
+%s \geq 0, \quad &\lambda_g \leq 0 \\
+%\end{aligned}
+%\end{equation}
+%The barrier parameter $\mu$, is a sequence of strictly positive numbers and converges to zero. The perturbed KKT system \ref{eq:kkt1} is solved for each $\mu$, and the solution trajectory converges to the KKT point of the original problem in the limit.  
+%
+%Newton's method is used to solve \ref{eq:kkt1} for each $\mu$, where each Newton step is as follows:
+%\begin{equation}
+%\begin{bmatrix} \mathcal{W} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
+%    0 & -\Lambda_g & 0 & -\mathcal{S} \\
+%    \mathcal{A}_{h} & 0 & 0 & 0 \\
+%    \mathcal{A}_{g} & -\mathcal{I} & 0 & 0 
+%    \end{bmatrix}
+%    \begin{bmatrix} p_x \\ p_s \\ p_h \\ p_g \end{bmatrix}
+%    = -\begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g - \mu e  \\ h(x) \\ g(x) - s \end{bmatrix}
+%\end{equation}
+%After the Newton step direction is computed, fraction to the boundary rule is applied to determine the maximum allowable step size to keep the slack and inequality multipliers away from the 0 bound. Then a backtracking line search is performed to find the step length that delivers sufficient decrease in the merit function or accepted by the filter. The barrier parameter is then updated for the next iteration. 
+%
+%There are potential drawbacks when using interior point methods for PDE-constrained optimization. For instance, to ensure progress towards global minimum, either trust-region or line-search globalization techniques have to be implemented. The former judges the quality of a computed step by calculating the merit function value and adjust the trust-region radius accordingly, while the latter computes the step-length along a step direction that satisfies the Wolfe condition. In either case, extra computation is needed. Dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task; possible solutions include adding a proper regularization term to enforce a positive definite Hessian, see \cite{hicken:flecs2014} and Algorithm B.1 \cite{Nocedal2006NO}. Moreover, the saddle-point matrix raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge. 
 
 

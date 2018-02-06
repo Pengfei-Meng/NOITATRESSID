@@ -77,9 +77,13 @@
 \newcommand{\mat}[1]{\ensuremath{\mathsf{#1}}}
 \newcommand{\nsig}[0]{\ensuremath{n_{\mat{\Sigma}}}}
 \PassOptionsToPackage{usenames,dvipsnames}{xcolor}
-% \usepackage[usenames,dvipsnames]{xcolor}
- \usepackage{xcolor}
-\newcommand{\padd}[1]{{\leavevmode\color{blue}{#1}}}
+
+% \usepackage[table]{xcolor}
+% \newcommand{\padd}[1]{{\leavevmode\color{blue}{#1}}}
+
+\usepackage{color, colortbl}
+\definecolor{blue}{rgb}{0,0.75,1}
+\definecolor{yellow}{rgb}{1,1,0}
 
 % \includeonly{rpichap1}  % use \includeonly to process only
                          % the file(s) listed inside the braces        
@@ -92,14 +96,12 @@
 \include{rpiack}   
 \include{rpiabs}  
 \include{chap1}  
-\include{chap1_2} 
 \include{chap2} 
-\include{chap3}
+\include{chap3} 
 \include{chap4}
-% \include{chap5}
+\include{chap5}
 \include{chap6}
-% \include{chap7}
-\include{chap8}
+\include{chap7}
 \include{rpibib}   
  
 \end{document}
