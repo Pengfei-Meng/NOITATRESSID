@@ -4,7 +4,7 @@
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{Matrix-free, Inexact Solution of The Linear Systems}\label{chap:linsys}
+\chapter{MATRIX-FREE, INEXACT SOLUTION OF THE LINEAR SYSTEMS}\label{chap:linsys}
 During the execution of Algorithm~\ref{alg:pc}, the tangent linear system and
 Newton update are solved many times.  Therefore, in order for the
 predictor-corrector algorithm to be competitive, these systems must be
@@ -21,7 +21,7 @@ in the introduction, is that the preconditioner itself must be matrix free.
 In this Chapter, the Krylov iterative solver is briefly reviewed; then the bulk of the content focuses on
 the matrix-free preconditioner for the two linear systems. 
 
-\section{Krylov iterative solver}
+\section{Krylov Iterative Solver}
 We use the flexible generalized minimal residual method,
 FGMRES~\cite{Saad1993fgmres}, to solve~\eqref{eq:linsys}.  One advantage of
 FGMRES, compared to most Krylov-based methods, is that is permits nonstationary
@@ -76,7 +76,7 @@ constraints.  The second required operation, preconditioning, is described in
 the next subsection.
 
 
-\section{Matrix-free preconditioner}\label{sec:matfreepc}
+\section{Matrix-free Preconditioner}\label{sec:matfreepc}
 As $\mu$ approaches zero, the system \eqref{eq:linsys} becomes an increasingly
 ill-conditioned saddle-point problem.  Consequently, solving this problem with
 an iterative Krylov solver like FGMRES requires an effective preconditioner.  
@@ -616,6 +616,122 @@ where
 This way we can use Sherman-Morrison to compute the inverse of 
 $\mat{W}_\mu  +  \mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, and use Lanczos method to find the SVD 
 approximation of $\mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, in the same manner as in the previous section. 
+
+\section{Application: Scalable Quadratic Optimization Problem}
+\subsection{Problem Description}
+The next numerical experiement is intended to test the effectiveness of the approximate SVD
+preconditioner defined in Algorithm~\ref{alg:precond}.  In particular, we are
+interested in the performance of the algorithm with the preconditioner as the size of the problem increases.  
+To this end, we consider the following scalable optimization problem
+in which we can independently control the size and conditioning of the Hessian
+and constraint Jacobian:
+\begin{equation}\label{eq:quadra}
+  \begin{aligned}
+    &\underset{x \in R^n} {\text{min}}  
+    & & \frac{1}{2}x^T \mat{Q} x + g^T x \\
+    &\text{subject to} & & \mat{A}x \geq b  \\
+  \end{aligned}.
+\end{equation}
+The vectors $g\in \mathbb{R}^{n}$ are randomly sampled from a uniform distribution 
+in $[ 0,1)$, while $b \in \mathbb{R}^{n}$ from $[0,0.1)$. 
+
+The Hessian $\mat{Q}$ is diagonal with entries
+\begin{equation*}
+  \mat{Q}_{ii} = \begin{cases}
+    \frac{1}{i}, &  i = 1, 2, ...,  \kappa, \\
+    \frac{1}{\kappa}, & i =  \kappa+1, ... , n, \\
+  \end{cases}
+\end{equation*}
+where $\kappa \leq n$.  This definition produces a Hessian with a condition
+number of $\kappa$,  so that the condition number
+stays the same as the dimension of the problem increases from $100$ to $500$. 
+
+The constraint Jacobian $\mat{A} \in \mathbb{R}^{n\times n}$ is defined as follows. Suppose
+$\mat{D} \in \mathbb{R}^{n\times n}$ is a diagonal
+matrix of singular values defined similar to $\mat{Q}$:
+\begin{equation*}
+  \mat{D}_{ii} = \begin{cases}
+    \frac{1}{i^2}, &  i = 1,2,...,\nu, \\
+    \frac{1}{\nu^2}, & i = \nu+1, ..., n, \\
+  \end{cases}
+\end{equation*}
+where $\nu \leq n$.  Then, $\mat{A}_L $ and $\mat{A}_R$ are matrices of random integers from 
+the discrete uniform distribution in the
+interval [0,10),  which are applied with $QR$ factorizations,  
+\begin{equation*}
+\begin{aligned}
+\mat{A}_L &= \mat{Q}_L \mat{R}_L \\
+\mat{A}_R &= \mat{Q}_R \mat{R}_R \\
+\end{aligned}
+\end{equation*}
+The constraint Jacobian $\mat{A} =\mat{Q}_L  \mat{D} \mat{Q}_R $ 
+
+Consequently, the condition number of $\mat{A}$ is also constant $\nu ^2$ when the dimension 
+of the problem increases. 
+
+
+For this study we chose $\kappa = \nu = 9$, which gives the condition number 
+$ \text{cond} (\mat{Q} )= 9$,  $ \text{cond} (\mat{A}) = 81$. The modest condition number of 
+$\mat{Q} $ and $\mat{A}$ is benefit to our study in that we can shift 
+the focus to treat the ill-condition in the KKT matrix 
+$\nabla_{q} F(q)$ at $\mu<\epsilon_{\mu}$, whose typical condition number ranges from $10^4$ to $10^9$
+depends on the problem.
+
+The values of $\kappa$ and $\nu$ are chosen to be a fixed positive
+value smaller than the number of design variables.  This is to make the
+condition number of the matrix fixed, not hugely increasing with the
+dimension of the problem.
+
+\begin{remark}
+Although the matrices for this synthetic problem are available explicitly, our
+algorithm does not exploit this and remains matrix-free, \ie it only uses
+matrix-vector products.
+\end{remark}
+
+\subsection{Results}
+Figure~\ref{fig:quad_hist} plots the absolute optimality, complementarity and feasibility
+histories versus CPU time. 
+The predictor-corrector algorithm is applied both with and without the preconditioner.  
+In addition, the plots include the results
+from SNOPT~\cite{gill:2002}, a well-validated active-set SQP
+optimization library.
+
+Without the preconditioner, the predictor-corrector algorithm is not competitive
+and does not converge after sufficient time.  This illustrates the need for preconditioning Newton-Krylov
+optmization algorithms, even for modest sized problems.  The results
+also indicate that the proposed algorithm outperforms SNOPT on this particular
+problem.  SNOPT is able to establish feasiblity within the same time as the
+predictor-corrector algorithm, but it takes significantly longer to converge the
+first-order optimality conditions.
+
+\begin{figure}[tbp]
+  \centering
+  \subfloat[$n=200$\label{fig:quad_200}]{
+   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/quadratic_200_color.eps} }
+   \hspace{1em}
+   \subfloat[$n=500$\label{fig:quad_500}]{
+   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/quadratic_500_color.eps} }
+   \caption{Convergence histories for the quadratic problem with $n=200$ and
+  $n=500$. The results for the proposed algorithm, with and without
+  preconditioning, are plotted together with the results from
+  SNOPT.\label{fig:quad_hist}}
+\end{figure}
+
+To further explore the scalability of the proposed algorithm, we run 100 random cases for 
+each fixed sized problem, for $n = 100, 200, 300, 400, 500$.  In each random case, the gradient 
+in the objective function $g$, and the right hand side vector $b$ in the linear constraint in \eqref{eq:quadra} 
+are randomly generated. The diagonal Hessian $\mat{Q}$ and $\mat{D}$ is fixed, while $\mat{A}_L$ and $\mat{A}_R$ are randomly generated. So the constraint Jacobian $\mat{A}$ is also changing. The starting point for each run is also randomly generated. Figure~\ref{fig:quad_scale} shows the error bar of the CPU time while
+the problem size increases. As can be seen, the new method exhibits good scalability performances, in comparison with SNOPT. 
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[clip,width=0.8\textwidth]{./figs/chap4_test/quadratic_random_100_nocolor.eps}%
+  \caption{CPU cost versus number of design variables for the quadratic
+    optimization problem.\label{fig:quad_scale}}
+\end{figure}
+
+It is worthwhile to emphasize that the proposed SVD preconditioner is particularly effective for this constructed problem, because the problem is designed in such a way that the distribution of the singular values for the constraint Jacobian is readily separable, with the largest few dominates, and there are only linear inequality constraints. Put another way, SVD approximation can capture the main characteristics of the matrix in~\eqref{eq:svd}. For real-world problems, the distribution of the singular values of the constraint Jacobian is unknown, and may possess unfavorable distribution patterns. The the proposed preconditioner may not be as effective.  
+
 
 
 

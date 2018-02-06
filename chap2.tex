@@ -437,10 +437,10 @@ With most of its elements described, we summarize the predictor-corrector method
 in Algorithm~\ref{alg:pc}.  The solution of the tangent step,
 line~\ref{line:tang}, and the solution of the Newton step, line
 \ref{line:newton}, are the only components of the algorithm that require further
-explanation.  The solution of these linear systems is detailed in the next chapter.
-
+explanation.  % The solution of these linear systems is detailed in the next chapter.
+\\
 \LinesNumberedHidden
-\begin{algorithm}[tbh]\setstretch{1.35}
+\begin{algorithm}[H]\setstretch{1.35}
 \SetKwInOut{Input}{Input}
 \SetKwInOut{Output}{Output}
 \SetKwInOut{Parameter}{Parameters}
@@ -497,3 +497,154 @@ compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
 \caption{Inexact-Newton predictor-corrector algorithm for PDE-Constrained
   optimization.\label{alg:pc}}
 \end{algorithm}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Application I: Sphere Problem}
+\subsection{Problem Description}
+The first test problem to verify RSNK's globalization performance is on an analytical inequality constrained Sphere problem: 
+\begin{equation*}
+\begin{aligned}
+\underset{x, y, z} {\text{min}}  & \quad & x + y + z \\
+   {\text{subject to}}  & \quad & x^2 + y^2 + z^2 <= 3 \\
+\end{aligned}
+\end{equation*}
+
+The solution to this problem is at $(-1,-1,-1)^T$. There is a local maximum point at $(1,1,1)^T$, where the 
+first-order optimality condition (KKT condition) is also satisfied but not the second-order optimality condition. 
+
+\subsection{Results}
+To prove that the algorithm can bypass the local maximum, 100 random starting points around $(1,1,1)^T$ are generated using Gaussian random distribution, with a mean at 1, and standard deviation 0.1. Figure~\ref{fig:sphere_100} shows the sphere, with the starting points in blue circles, and the solutions in red starts. 
+
+ \begin{figure}[H]
+  \centering
+  \includegraphics[clip,trim=20 40 20 70, width=1.0\columnwidth]{./figs/chap2/100_111.pdf}%  
+  \caption{100 Starting Points Around Local Maximum \label{fig:sphere_100}}
+\end{figure}
+
+
+ \begin{figure}[H]
+  \centering
+  \includegraphics[clip,trim=80 40 20 70, width=1.1\columnwidth]{./figs/chap2/1000.pdf}%  
+  \caption{1000 Random Standard Distributed Points \label{fig:sphere_1000}}
+\end{figure}
+
+ \begin{figure}[H]
+  \centering
+  \includegraphics[clip,trim=20 40 20 70, width=1.0\columnwidth]{./figs/chap2/50.pdf}%  
+  \caption{50 Random Standard Distributed Points \label{fig:sphere_50}}
+\end{figure}
+
+Figure~\ref{fig:sphere_1000} shows the distribution of 1000 starting points generated using the Standard 
+Normal Distribution method. The starting points are semi-transparent blue circles, while the solution points are in solid red stars. The red star shown in the picture is actually 1000 solutions points overlaid on top of each other. 
+Figure~\ref{fig:sphere_50} shows the same content but with 50 starting points. The test shows that the globalization of RSNK is working well.  
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Application II: Non-convex Problem}
+\subsection{Problem Description}
+We consider the following simple nonconvex optimization problem :
+\begin{equation*}
+\begin{aligned}
+&\underset{x \in R^{100}} {\text{min}}  
+& &\phantom{-} \frac{1}{2}x^T \mat{Q} x \\
+  & {\text{subject to}}
+& &-1 \leq x_i \leq 1 \qquad \forall i = 1,2,\ldots,100 \\
+\end{aligned}
+\end{equation*}
+where the pattern of $\mat{Q} = \textsf{diag}(1,-1,1,\ldots,1,-1)$ is randomly generated. 
+
+This problem is challenging for Newton-based optimization algorithms, which 
+tends to locate stationery points where $F(q) = 0$ but cannot differentiate between 
+a minimizer or a maximizer. As the objective function can be separated into 
+individual dimensions, it is easy to see that the minimizer for this problem has the pattern
+corresponding to $\mat{Q}$: 
+\begin{equation}\label{eq:pattern}
+  x^{*} = \begin{bmatrix} 0 & \pm 1 & 0 & \cdots & 0 & \pm 1 \end{bmatrix}^{T}.
+\end{equation}
+where
+\begin{equation}\label{eq:pattern2}
+  \begin{gathered}
+  x_i=0  \text{~if~}  \mat{Q}_{ii} = 1  \\
+  x_i = \pm 1  \text{~if~}  \mat{Q}_{ii} = -1
+  \end{gathered}
+\end{equation}
+We would like to see 
+the ability of the algorithm to bypass the wrong solutions in individual dimensions, e.g. $x_i = 0$ 
+when $\mat{Q}_{ii} = -1$ and $x_i = \pm 1$ when $\mat{Q}_{ii} = 1$.
+Note that when $\mat{Q}_{ii} = 1$, the upper and lower bound $x_i = \pm 1$ are 
+individual maximums where the gradient of the Lagrangian is zero in that dimension. 
+
+\subsection{Results - Nonconvexity}
+We ran the optimization algorithm on 1000 random cases. For each case, 
+the arrangement of $1$ and $-1$ in $\mat{Q}$ is uniformly randomly generated; 
+ the initial point $x_0$ is also generated randomly with uniform probability in the domain
+  $\Omega = \{ x \in \mathbb{R}^{100} \; | \; -2 \leq x_i \leq 2 \}$.  We call a solution successful if 
+  its pattern is exact as \eqref{eq:pattern2}.  Table~\ref{tab:success} lists the success rate for different 
+  combinations of $\epsilon_{\text{krylov}}$ and $\epsilon_F$. 
+ 
+\begin{table}[H]
+  \begin{center}
+    \caption{Success Rate with Different Parameters \label{tab:success}}
+  \begin{tabular}{| c |  c |  c |  c | c | c | c | c |}
+  \hline
+ & \multicolumn{7}{  c  | }{ $\epsilon_{\text{krylov}}$  } \\  \hline
+ &   & 1e-1  & 1e-2    & 1e-3    &  1e-4    &  1e-5   & 1e-6  \\  
+\multirow{2}{*}{$\tau$ and $\epsilon_F$ } &  1e-1 & 51\%  &90.0\% &94.2\% &94.6\% &93.9\% & 93.8\%  \\
+	               					      &   1e-2 & 47.2\%  &93.1\% &94.4\% &93.9\% &94.2\% &  94.5\%\\
+    \hline
+  \end{tabular}
+  \end{center}
+\end{table}
+
+As can be seen from Table~\ref{tab:success}, the robustness of the algorithm for handling non-convexity 
+is obviously impacted by the tolerances. It shows that $\epsilon_{\text{krylov}}$ has to be below $1e-2$ 
+for effective non-convexity handling ability, and the predictor and corrector linear solve tolerance $\epsilon_F$ 
+plays a smaller role than $\epsilon_{\text{krylov}}$.   
+  
+ \begin{figure}[tbp]
+  \centering
+  \includegraphics[clip,width=0.7\columnwidth]{./figs/chap4_test/nonconvex_1000_random.eps}%
+  \caption{Success Minimizers. \label{fig:nonconvex}}
+\end{figure}
+
+Figure ~\ref{fig:nonconvex} shows one sample statistical results for the random study using 
+$\epsilon_{\text{krylov}}=10^{-5}$ and $\tau = 10^{-2}$. The plot shows that $94.2\%$ of the $1000$ random cases 
+successfully converge to the minimizer, while the rest $5.8\%$ of the $1000$ cases failed in one dimension.    
+  
+The results show that the optimization method can start from infeasible points, and can handle certain 
+amount of nonconvexity. The preconditioner is not used here.  Admittedly, this nonconvex test problem is rather simple, with no complexities like bad-scaling, ill-conditioning included. However, the focus is solely to see whether the added regularization from the homotopy term can help 
+Newton's method bypass local maximization points.  Further work is needed to determine when the problem demands 
+tighter tolerances and how to detect and handle nonnegative curvature.  
+
+ \subsection{Results - Convergence Plots} 
+ 
+A typical optimization convergence plot is provided in Figure~\ref{fig:nc_converg}. Figure~\ref{fig:ncmu} 
+shows the absolute optimality, complementarity and feasibility at each Homotopy iteration of different $\mu$. 
+Note that for simplicity, only the Predictor points are displayed when $\mu \geq \epsilon_{\mu}$, 
+while the Corrector points are displayed at $\mu < \epsilon_{\mu}$.
+Figure~\ref{fig:nccpu} shows convergence plot w.r.t CPU time, 
+which is used more often later when the performance of the new method is benchmarked with other 
+optimization packages.
+
+\begin{figure}[tbp]
+  \centering
+  \subfloat[Convergence vs. $\mu$ \label{fig:ncmu}]{
+   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/nonconvex_mu.eps} }
+   \hspace{1em}
+   \subfloat[Convergence vs. CPU time \label{fig:nccpu}]{
+   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/nonconvex_cpu.eps} }
+   \caption{Typical Convergence Plots in $1000$ Random Cases \label{fig:nc_converg}}
+\end{figure}
+
+%\begin{remark}
+% The parameters $\alpha_0$, $\delta_{\text{targ}}$, $\phi_{\text{targ}}$, and
+%  $\Delta \mu_{\max}$ all play a role in the ability of Algorithm~\ref{alg:pc}
+%  to handle nonconvex objectives.  If these parameters are set too agressively,
+%  then the algorithm may move off the homotopy level-set and converge to a local
+%  maximizer or saddle, even for the simple problem considered here.
+%  \padd{I think this Remark should be removed now. As we've provided the influence of 
+%  Krylov tolerance and inner tolerance on the success rate. }
+%\end{remark}
+
+
