@@ -6,17 +6,23 @@
  
 \chapter{CUTER TEST PROBLEMS}
 
-In this chapter, we test the Homotopy RSNK optimization algorithm and the preconditioners 
-on two constructed analytical problems to investigate the algorithm's non-convexity 
-handling capacity and scalability performance. The first one is a constructed indefinite 
-quadratic problem with bound constraints. The second one is a constructed convex 
-quadratic problem with linear inequality constraints. The second problem is scalable with 
-the problem dimension ranges from 100 to 500. A state-of-the-art optimization package 
-SNOPT is benchmarked with on accuracy and scalability performance.   
+This chapter starts with introducing two optimization packages, Kona and SNOPT, then 
+basic parameter settings for the proposed algorithm. The second section 
+is on introducing CUTEr, the problem test sets for optimization, with descriptions of the 
+CUTEr problem formulations,  the Kona-CUTEr interface, and the CUTEr problem classifications. 
+The last section presents the results of a subset of the CUTEr problems tested by Kona and SNOPT, 
+followed by a short discussion. 
+
+%two constructed analytical problems to investigate the algorithm's non-convexity 
+%handling capacity and scalability performance. The first one is a constructed indefinite 
+%quadratic problem with bound constraints. The second one is a constructed convex 
+%quadratic problem with linear inequality constraints. The second problem is scalable with 
+%the problem dimension ranges from 100 to 500. A state-of-the-art optimization package 
+%SNOPT is benchmarked with on accuracy and scalability performance.   
 
 \section{General Information for Test Problems}
 \subsection{Optimization Environment - Kona}\label{sec:kona_mv}
-The previously introduced Homotopy RSNK method and the preconditioners are part of 
+The proposed globalized RSNK method and the preconditioners are part of 
 our in-house optimization package, Kona~\cite{dener:scitech2016}. Kona is a matrix-free, 
 parallel agnostic optimization package aiming for solving large-scale PDE-constrained 
 optimization problems.  It has implemented several optimization 
@@ -24,48 +30,49 @@ algorithms including an unconstrained
 reduced-space quasi-Newton method, an unconstrained reduced-space 
 Newton-CG method, an equality constrained reduced-space Newton-Krylov 
 based on FLECS~\cite{hicken:flecs2014}, and a composite-step RSNK.    
-It contains various types of tools for supporting the functions of the optimization algorithms, e.g. 
+It contains various types of tools for supporting the functions of the optimization algorithms:  
 iterative matrix-free solvers like FGMRES, STCG, FLECS for the linear systems, 
-globalization techniques including trust-region, backtracking line search and line search with 
-the strong Wolfe conditions, and merit functions like augmented Lagrangian and $l_2$ 
-merit function. Besides, it computes the matrix-vector product of the Hessian of the Lagrangian 
+globalization techniques like the trust-region, the backtracking line search and the line search with 
+the strong Wolfe conditions,   and merit functions like the augmented Lagrangian and the $l_2$ 
+merit function. In addition, it computes the matrix-vector product of the Lagrangian Hessian 
 by solving two second-order adjoint systems. 
 
-Architechturally, it separates the optimization algorithms with the optimization 
+Architecturally, it separates the optimization algorithms with the optimization 
 problem interface, allowing the development of new optimization algorithms independently with 
 new problem solvers. From a user's perspective, one has to write a solver interface to Kona providing 
-a series of function operations as listed in Table 4.1 in~\cite{dener_thesis_2017}. The solver interface 
-functions the same as the objective/constraint function and the sensitivity function in SNOPT, or 
-other popular optimization methods like fmincon in Matlab. During the optimization process, 
-conventional optimizers will call those functions for evaluating the function values and sensitivities 
+a series of function operations as listed in Table 4.1 in~\cite{dener_thesis_2017}. This solver interface 
+has the same function as the user interface in SNOPT, or other popular optimization methods like fmincon in Matlab, 
+providing the objective, constraint, and the sensitivity functions. During the optimization process, 
+conventional optimizers will call those functions to evaluate the function values and sensitivities 
 values at different design points, then make decisions on where to go for the next point. 
-The sensitivities demanded are the total gradients. In presence of state variables for 
+The sensitivities demanded are the total gradients. In the presence of state variables for 
 PDE-constrained optimization, total gradients are expensive as each one would require an adjoint solve, 
-as explained in detail in Chapter~\ref{sec:pde_mot}. In contrast, the structure of the solver interface 
+as explained in detail in Chapter~\ref{sec:pde_mot}. In contrast, the solver interface 
 required by Kona is designed specially for PDE-constrained optimization problems by providing 
-partial gradients instead of total gradients, and matrix-vector products with the system matrix of 
-the PDE solvers, with the Jacobians of the constraints w.r.t. the state variables, and with 
-the Jacobians of the constraints w.r.t. the design variables. These matrix-vector products 
+partial instead of total gradients for the constraints, matrix-vector products with the system matrix of 
+the PDE solvers, matrix-vector products with the constraint Jacobians w.r.t. the state variables, and the design variables. 
+These matrix-vector products 
 with the Jacobians are used to assemble the matrix-vector products with the Lagrangian Hessian 
 and the total constraint gradients, which in turn are used by the Krylov solvers to solve the linear systems.    
 
-The Homotopy RSNK method developed in this work is placed together with the other unconstrained 
-and equality constrained optimization methods, with the same interface and using the same 
-vector and matrix operator modules. The preconditioners are likewise placed in the preconditioned folders. 
-When testing different problems, the user will first write the solver interface, then setup the running script 
-to execute the optimization. 
+The globalized RSNK method developed in this work is in the same place with the other unconstrained 
+and equality constrained optimization methods, with the same interface and using the same supporting 
+modules. To test the algorithm on different problems, the user have to write the solver interface, 
+then setup the running script to execute the optimization. 
 
-Although Homotopy RSNK's strength is in PDE-constrained optimization area in presence of 
-state variables, it can still be used on problems without state variables, where the conventional 
+Although the globalized RSNK's strength is in PDE-constrained optimization area with 
+state variables, it can still be used on problems without the state variables, where the conventional 
 optimization methods dominate.  For such problems, the total gradients are usually cheap to 
 calculate and readily available. For instance, to solve a linear system involving the total constraint Jacobian, 
 conventional optimization methods would ask to compute and 
-store these total gradients for once, then find the solution by operating directly to the matrix entries.  
-In contrast, when using the Homotopy RSNK method, it would ask to calculate the matrix-vector 
-products several times in order to form the Krylov subspace. Each time the constraint Jacobian is 
-calculated and multiplied with the incoming vector, then released from the memory space. 
+store these total gradients for once, then find the solution using direct linear algebra methods. 
+
+In contrast, the globalized RSNK method would ask to calculate the matrix-vector 
+products with the linear system matrix several times in order to form the Krylov subspace. Each time the constraint Jacobian is 
+calculated and multiplied with an incoming vector. 
 So it's the memory cost of the storage of the matrix versus the computational cost of matrix-vector products 
-for several times. For some problems, the matrix exists in the form of basic algebraic operations, saving the memory cost of storing the matrix even for once. 
+for several times. 
+%For some problems, the matrix exists in the form of basic algebraic operations, saving the memory cost of storing the matrix even for once. 
 
 
 \subsection{SNOPT}
@@ -74,9 +81,9 @@ quadratic optimization method for solving large-scale nonlinear optimization pro
 with thousands of constraints and design variables. It uses an augmented Lagrangian 
 merit function, and the Hessian of the Lagrangian is approximated
 using a limited-memory quasi-Newton method. In this work, we use its Python interface 
-pyOpt to compare its performance with that of the proposed Homotopy RSNK method. 
+pyOpt to compare its performance with that of the proposed method. 
 SNOPT uses major feasibility and major optimality to measure the progress of the 
-optimization iteration. The feasibility measures the maximum nonlinear constraint violation, 
+optimization iterations. The feasibility measures the maximum nonlinear constraint violation, 
 normalized by the size of the solution,
 \begin{equation*}
 \text{snopt feasibility} = \underset{i}{\text{max}}  \ \text{viol}_i / \lVert x \rVert 
@@ -123,48 +130,49 @@ points at the last homotopy iteration when $\mu < \epsilon_{\mu}$.
 Table \ref{tab:param} shows the parameters used in the test problems, including
 the default values set in the algorithm and the recommended ranges.
 
-\begin{table}[tbp]
-  \begin{center}
-    \caption{Parameters used in the test problems \label{tab:param}}
-  \begin{tabular}{ l c c c c c}
-    \textbf{Parameters} & $\textbf{Default}$  & $\textbf{Range}$ & $\textbf{Nonconvex}$ 
-    & $ \textbf{Quadratic} $ & \textbf{Structural}  \\ \hline
+\begin{landscape}
+\begin{longtable}{ l c c c c c c c }
+%  \begin{center}
+    \caption{Parameters used in the test problems \label{tab:param}} \\
+    \textbf{Parameters} & $\textbf{Default}$     & $\textbf{Range}$ &  $\textbf{Sphere}$    &   $\textbf{Non-convex}$ 
+    & $ \textbf{Quadratic} $   & \textbf{Structural}    &  \textbf{ASO} \\ \hline
     %\rule{0ex}{3ex}%
-    \multicolumn{6}{ l }{Predictor-Corrector Algorithm} \\   %  $\delta_{\text{targ}}$ and $\phi_{\text{targ}}$. 
+    \multicolumn{8}{ l }{Predictor-Corrector Algorithm} \\   %  $\delta_{\text{targ}}$ and $\phi_{\text{targ}}$. 
     \hline
-    $K_{\max}$             	&  100     & $\geq$100         & 100 	 &  100       &    100     \\ 
-     $J_{\max}$  		&   2         & $\geq$2         & 2             & 2           &      2        \\
-    $\epsilon_F$ 	           		&  1e-6     & [1e-8, 1e-3]   & 1e-7 	 & 1e-7       &    1e-4    \\ 
-       $\tau$    		&   0.1      & [0.1,0.5]	        & 0.1          & 0.1	 &     0.1    \\
-    $\epsilon_H$    		&   0.1      & [0.1,0.5]	        & 0.1          & 0.1	 &     0.1    \\
-    $\epsilon_{\mu} $   & 1e-9     & [1e-10, 1e-6]  &   1e-9  & 1e-9  & 1e-6  \\   
-    \textbf{$\alpha_0$}             &  0.05     & $\geq$0.01         & 0.05	 & [40,60,80,100,120]  &  0.05  \\
-    $\delta_{\text{targ}}$      &  1.0	& [1.0,10]          & 10		 & 10    &   1.0    \\
-    $\phi^{\circ}_{\text{targ}}$   & 10.0	& [5.0,50] 	       & 10		 & 20    &   10     \\
-    $\zeta_{\max}$ 		        &  50		& [10,50]	       & 50		 & 50    	 &   50     \\
-    $\zeta_{\min}$ 		        &  0.5	& 0.5		       & 0.001	 & 0.001    &   0.5   \\
-    $\Delta \mu_{\max}$		        &  -5e-4	& [-5e-4, -5e-1]  & -5e-4	 & -5e-4     &  -5e-4  \\  
-    $\Delta \mu_{\min}$		        &  -0.9	& -0.9 	       & -0.9		 & -0.9       &  -0.9    \\
-    $s_0$                           & $\mathbf{e}$     &   $>$ 0    &    5$\mathbf{e}$    &  10$\mathbf{e}$   &  $g(x_0)$  \\ 
-    $\tau_s$                      & 1e-6    & 1e-6    &  1e-6    &  1e-6    & 1e-6   \\
+    $K_{\max}$             	&  100     & $\geq$100   & 500      & 100 	 &  100       &    100  & 100    \\ 
+     $J_{\max}$  		&   2         & $\geq$2         & 2    & 2          & 2           &      2     & 2   \\
+    $\epsilon_F$ 	           		&  1e-6     & [1e-8, 1e-3]    & 1e-7   & 1e-7 	 & 1e-7       &    1e-4   & 1e-3  \\ 
+       $\tau$    		&   0.1      & [0.1,0.5]	    & 0.1    & 0.1          & 0.1	 &     0.1   & 0.1  \\
+    $\epsilon_H$    		&   0.1      & [0.1,0.5]	    & 0.1       & 0.1          & 0.1	 &     0.1   & 0.1    \\
+   % $\epsilon_{\mu} $   & 1e-9     & [1e-10, 1e-6]   &   &   1e-9  & 1e-9  & 1e-6  &  \\   
+    \textbf{$\alpha_0$}             &  0.05     & $\geq$0.01    & 0.05      & 0.05	 & [40,60,80,100,120]  &  0.05  & 0.05 \\
+    $\delta_{\text{targ}}$      &  1.0	& [1.0,10]       & 1	    & 10		 & 10    &   1.0   & 10	  \\
+    $\phi^{\circ}_{\text{targ}}$   & 10.0	& [5.0,50] 	     & 10     & 10		 & 20    &   10    & 20    \\
+    $\zeta_{\max}$ 		        &  50		& [10,50]	& 50       & 50		 & 50    	 &   50   & 50  \\
+    $\zeta_{\min}$ 		        &  0.5	& 0.5		& 0.001       & 0.001	 & 0.001    &   0.5  & 0.001 \\
+    $\Delta \mu_{\max}$		        &  -5e-4	& [-5e-4, -5e-1] & -5e-4 & -5e-4	 & -5e-4     &  -5e-4 & -5e-4 \\  
+    $\Delta \mu_{\min}$		        &  -0.9	& -0.9 	& -0.9	       & -0.9		 & -0.9       &  -0.9  & -0.9	  \\
+    $s_0$                           & $\mathbf{e}$     &   $>$ 0  & $g(x_0)$  &    5$\mathbf{e}$    &  10$\mathbf{e}$   &  $g(x_0)$  & $g(x_0)$  \\ 
+    $\tau_s$                      & 1e-6    & 1e-6    &  1e-6 &  1e-6   &  1e-6    & 1e-6  &  1e-6 \\
     \hline
-    \multicolumn{6}{ l }{Preconditioner} \\ 
+    \multicolumn{8}{ l }{Preconditioner} \\ 
     \hline    
-    $\mathbf{{n_{\mat{\Sigma}}}}$    & 5	       & $\geq$2		&  -	         &  2          &  [20,80,320]  \\
-    $\beta$				& 1.0	       & $>$0        & -         &  -      &  0.1  \\
-    $N_{\text{bfgs}}$		& 10	       & [1, 20]		& - 		 &  10	& -  \\
-    $\mu_e$			& -1	       & [0, 1] 		& -	         &  -	        & 1e-3  \\
-    $\Sigma_e$			& 1 	       & [0, 1]                 & -		& -		& 1e-3  \\
+    $\mathbf{{n_{\mat{\Sigma}}}}$    & 5	       & $\geq$2	  & -    &  -	         &  2       &  [20,80,320]   & 20 \\
+    $\beta$				& 1.0	       & $>$0        & -      & -    &  -      &  0.1 & -  \\
+    $N_{\text{bfgs}}$		& 10	       & [1, 20]		& - 	&  -   	 &  10	& -     &  20    \\
+    $\mu_e$			& -1	       & [0, 1] 	& -	& -	         &  -	        & 1e-3  & 1e-3\\
+    $\Sigma_e$			& 1 	       & [0, 1]      & -           & -		& -		& 1e-3 & - \\
     \hline
-    \multicolumn{6}{ l }{Krylov Iterative Solver} \\ 
+    \multicolumn{8}{ l }{Krylov Iterative Solver} \\ 
     \hline       
-    $n_k$		& 20        & [10,30]              & 20		 &  20       &  20  \\
-    $\epsilon_{\text{krylov}}$		& 1e-2     & [0, 0.1]           	&1e-2	 &  1e-2    &  1e-4  \\
+    $n_k$		& 20        & [10,30]              & 20	 & 20	 &  20       &  20   & 20  \\
+    $\epsilon_{\text{krylov}}$		& 1e-2     & [0, 0.1]    &1e-2       	&1e-2	 &  1e-2    &  1e-4  &1e-2\\
     \hline
-  \end{tabular}
-  \end{center}
-\end{table}
+%  \end{center}
+\end{longtable}    
+\end{landscape}
 
+\newpage
 \section{CUTEr Problem Description}\label{sec:cuter1}
 The \textbf{CUTEr} Test Problem Set~\cite{cuter_opt, cuter_gould} is a huge collection of test problems to test new optimization codes and develop new algorithms. The problem set ranges from small differentiable unconstrained problem to large scale dense and sparse problems with both equality and inequality constraints, nonlinear systems, and network problems etc.  Some of the test problems exhibit numerical difficulties observable in practice like bad scaling in objective and constraint functions, ill-conditioned problems, multiple local solutions, non-regular solutions where the constraint qualification is not satisfied etc. A number of optimization packages have interfaced with CUTEr~\cite{cuter_interface} like Ipopt, Knitro, Minos, SNOPT etc.  
 
@@ -224,72 +232,153 @@ The next character shows whether the problem contains internal variables, with t
 The last two characters \textbf{n} and \textbf{m} indicate the number of variables and constraints (fixed variables and bound constraints excluded) in the problem respectively, with the option of \textbf{V}: an integer chosen by the user, or a constant integer giving the fixed numbers. 
 
 \section{Results}
-As the CUTEr test problem set contains a huge collection of problems with assorted features, due to limited time and resources, only a subset of the problems are considered here. Users can select subsets of the problems that belong to a certain category as described in Section~\ref{sec:cuter1} by using Python CUTEr interface. Problems with the following features are selected:
-\begin{equation*}
-Q \ L \ R \ 2 \ - \ A \ X \ - \ [1,500] \ - \ [1,500]
-\end{equation*}
-that is, problems with quadratic objective function (convex, non convex, or indefinite), linear constraint function, with second order derivatives and continuous everywhere, from academic area, used by researchers to test algorithms, finally the number of design variables in $[1,500]$ and the number of constraints in $[1,500]$.  Table~\ref{tab:cuter} lists the results on the selected subset of the Cuter problems. The first column 'Name'  are the name of the problems as in \cite{cuter_probs}, where the ascii files are also available that contains information on the problem including problem origin, authors, classifications, SIF problem cards, and sometimes the solutions. The second column 'n, m' are the number of design variable $x$ and constraints as described in~\ref{sec:cuternm}. The third column 'n,  $m_{\text{eq}}$,  $m_{\text{ineq}}$' are the number of $x$, equality constraints and inequality constraints interpreted in Kona's way. The fourth column describes the key word for the origin or origin of the problem. The fifth column lists the major parameters used in the Homotopy RSNK algorithm, the initial step size $\textbf{$\alpha_0$}$, the nominal distance  $\delta_{\text{targ}}$  and nominal angle $\phi^{\circ}_{\text{targ}}$ as defined in Section~\ref{sec:step}, and the rank of the SVD approximation in Lanczos method used in the preconditioner~\ref{eq:svd}. The sixth column is the optimized objective function value using Kona, while the seventh column is that using SNOPT. The last column is the optimized objective function value as shown in the ascii file of~\cite{cuter_probs}. Note that some problems do not provide solutions, thus 'N/A' is used. 
+As the CUTEr test problem set contains a huge collection of problems with assorted features, due to limited time and resources, only a subset of the problems are considered here. Several criteria is used to deselect certain problems from being tested by Kona, 
+\begin{itemize}
+\item Objective functions with the following type: \textbf{U},  \textbf{C}, and \textbf{L}
+\item Constraint functions with the following type: \textbf{U},  \textbf{X}
+\item Irregular problems 
+\item Large number of design and constraints, more than a few hundreds
+\item Problems with no correct solutions provided
+\end{itemize}
+
+
+%Users can select subsets of the problems that belong to a certain category as described in Section~\ref{sec:cuter1} by using Python CUTEr interface. Problems with the following features are selected:
+%\begin{equation*}
+%Q \ L \ R \ 2 \ - \ A \ X \ - \ [1,500] \ - \ [1,500]
+%\end{equation*}
+%that is, problems with quadratic objective function (convex, non convex, or indefinite), linear constraint function, with second order derivatives and continuous everywhere, from academic area, used by researchers to test algorithms, finally the number of design variables in $[1,500]$ and the number of constraints in $[1,500]$.  
+
+Table~\ref{tab:cuter} lists the results on the selected subset of the Cuter problems. The first column 'Name'  are the name of the problems as in \cite{cuter_probs}, where the ascii files are also available that contains information on the problem including problem origin, authors, classifications, SIF problem cards, and sometimes the solutions. The second column 'n, m' are the number of design variable $x$ and constraints as described in~\ref{sec:cuternm}. The third column 'n,  $m_{\text{eq}}$,  $m_{\text{ineq}}$' are the number of $x$, equality constraints and inequality constraints interpreted in Kona's way. The fourth column describes the key word for the origin or origin of the problem. The fifth column lists the major parameters used in the Homotopy RSNK algorithm, the initial step size $\textbf{$\alpha_0$}$, the nominal distance  $\delta_{\text{targ}}$  and nominal angle $\phi^{\circ}_{\text{targ}}$ as defined in Section~\ref{sec:step}, and the rank of the SVD approximation in Lanczos method used in the preconditioner~\ref{eq:svd}. The sixth column is the optimized objective function value using Kona, while the seventh column is that using SNOPT. The last column is the optimized objective function value as shown in the ascii file of~\cite{cuter_probs}. 
 
 \begin{landscape}
-\begin{longtable}{l | l |  l  |  >{\footnotesize}p{3.5cm} | l | c | c | c  }      %\toprule      % |  >{\centering}m{3.5cm}
+\begin{longtable}{l | l |  l  |  >{\footnotesize}p{3cm} | l | l | l | l  }      %\toprule      % |  >{\centering}m{3.5cm}
 \caption{Subsets of Cuter Problem Results}\label{tab:cuter} \\
  \hline 
 Name   &                 n,   m       &  n,  $m_{\text{eq}}$,  $m_{\text{ineq}}$        &     Origin      &\textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $\mathbf{{n_{\mat{\Sigma}}}}$      & $ f_{\text{kona}} $   & $ f_{\text{snopt}} $ &$ f^*$    \\ \hline
-AUG2D    &           24,  9         &  24,   9,  18       &    2-D Laplace   & 0.05,1,5,30   &  0.124999           &     0.1250    &      N/A                \\ \hline
-AUG2D    &          220, 100   & 220, 100, 200  &                      &   0.05,1,5,30         &   110.7987          &    110.7991      &    N/A           \\ \hline
-AUG2DC  &       24, 9      &   24, 9, 18       &       &     0.05,1,5,30        &    2.973213        & 2.973214    &   N/A     \\ \hline
-AUG2DC  &      220, 100   &  220, 100, 200   &     &   0.05,1,5,30    & 184.2388    &   184.2394     &    N/A      \\ \hline
-AUG3D  &      156, 27    & 156, 27, 54   & 3-D Laplace  &  0.05,1,5,30   & 0.08333   &   0.083333   &  N/A         \\ \hline
-AUG3DC  &  156, 27  &  156, 27, 54   &    & 0.05,1,5,30 &   35.84226   &   35.84276      & N/A      \\ \hline
- AVGASA  &       8, 10   &   8, 0, 26   &   \cellcolor{blue}         LP, Integer Variable    &   0.05,1,5,30       &           -4.63092    &    -4.79278   &   N/A     \\ \hline
- AVGASB  &    8, 10  &   8, 0, 26   &   \cellcolor{blue}    LP, Integer Variable   & 0.05,1,5,30   &   -4.482206   &   -4.666351     &   N/A    \\ \hline
-ALLINQP  & 10, 5   &  10, 1, 21   & banded QP  &  0.05,10,20,30 & \cellcolor{blue}0.346667  & \cellcolor{blue}-0.183256     &  N/A \\  \hline     %\midrule
-BLOCKQP2   & 25, 11   & 25,  10, 71   &    non-convex quadratic & 0.05,1,5,5  & -6.201652   &  \cellcolor{yellow}  -2.507e+14    &  \cellcolor{yellow}  -6.2017   \\ \hline
-BLOCKQP3   & 25, 11   & 25,  10, 71  & non-convex quadratic  	  & 0.05,1,5,2 & \cellcolor{blue} 2.330508     &  \cellcolor{blue}2.330508   &            \cellcolor{blue}-2.4987e-1   \\ \hline
-BLOCKQP4  & 25, 11    & 25, 10, 71  &    & 0.05,1,5,5     &\cellcolor{blue} -2.928928   & \cellcolor{blue}-5.73e+14   &    \cellcolor{blue} -0.6   \\ \hline
-BDRY2   & 25, 18   & 25, 18, 86   &  AMPL  & 0.05,1,5,3  & 0.547854  & 0.548110  & N/A    \\ \hline   
-BIGGSC4  & 4, 7   & 4, 0, 21   & & 0.05,1,5,2  & -24.4999   &  -24.375  &    -24.5 \\ \hline 
-CVXQP1  & 10, 5 & 10, 5, 30  & convex   & 0.05,1,5,2 & \cellcolor{blue}181.0401 & \cellcolor{blue}165.8738  & N/A   \\ \hline
-DEGENQP & 10, 1005 & 10,5,2030  & degenerate  $N^3$ cons & 0.05,1,5,10  & 8.80e-06 & -5.55e-17  & N/A \\ \hline
-DTOC3   & 29, 18  & 29,18,40 & discrete time control & 0.05,1,5,10  &  224.5904 & \cellcolor{yellow}8.2e-13  &\cellcolor{yellow} 224.5904 \\ \hline 
-GENHS28 & 10, 8  & 10, 8, 16  & Hock and Schittkowski &   0.05,1,5,2   & 0.927173  & 0.927174  & 0.0   \\ \hline
+AIRPORT   &  84, 42  &  84, 0, 210  &    &  0.05, 20, 20, 40 & 47952.976  & 47952.702  & 47952.696   \\ \hline
+BIGGSC4   & 4,7  &  4, 0, 21  &    & 0.05, 1, 5, 2  &  -24.49999  & -24.375   & -24.5    \\ \hline
+BLOCKQP1 &  25, 11 &  25, 10, 71  &     & 0.05, 1, 5, 2 & 2.403846   & 2.4038461  &  -6.4988    \\ \hline
+BLOCKQP2 &  25, 11 &  25, 10, 71  &     & 0.05, 1, 5, 2 & -6.20165    & -2.5e+14  & -6.2017    \\ \hline
+%BLOCKQP3 &  25, 11 &  25, 10, 71  &     &  0.05, 1, 5, 2  &  2.330508  & 2.330508   & -2.4987e-1     \\ \hline
+%BLOCKQP4 &  25, 11 &  25, 10, 71  &     &  0.05, 1, 5, 2  &  -2.928928   & -5.7e+14   &  -0.60    \\ \hline
+%BLOCKQP5 &  25, 11 &  25, 10, 71  &     &  0.05, 1, 5, 2 & 2.330508  &   2.330508   &  -2.4987e-1     \\ \hline
+BLOWEYA  &  22, 12 &  22, 12, 46  &      &   0.05, 1, 5, 10  & -4.56931  & -4.56931   & -4.56932   \\ \hline
+% BLOWEYB &  22, 12  & 22, 12, 46  &    &  0.05, 1, 5, 10  & -3.05613 &  -3.05613  & -4.93517e2  \\ \hline
+% BLOWEYC &  22, 12  & 22, 12, 46  &    &  0.05, 1, 5, 10  &-3.06104 & -3.06104 & -2.388E+02 \\ \hline
+BT1    & 2, 1   &  2, 1, 2  & &  0.05, 10, 20, -    &  -0.99999  & -0.99999   & -1   \\ \hline
+BT2    & 3, 1   & 3, 1, 2  & & 0.05, 10, 20, -   & 0.032568  &  0.032568  & 0.0325682  \\ \hline
+BT3    & 5, 3   & 5, 3, 6 & & 0.05, 10, 20, -   &  4.093013  &  4.093023  & 4.093011 \\ \hline
+BT4   &   3, 2  &   3, 2, 4 & & 0.05, 10, 20, -   & -45.5106  &  -45.5105  & -45.5105  \\ \hline
+BT5   &  3, 2   & 3, 2, 4  & non-convex& 0.05, 10, 20, -  & 961.7152  &  961.7152  & 961.7152    \\ \hline
+BT6  & 5, 2  & 5, 2, 4  &  & 0.05, 10, 20, -  & 0.277045  & 0.277045  & 0.277045   \\ \hline
+BT7  & 5,3   & 5,3,6   & & 0.05, 1, 10, -   & 306.4957 & 360.3797  & 306.4964  \\ \hline
+BT8  & 5,2   & 5,2,4   & & 0.05, 1, 10, -  & 1.000000  & 1.000000  & 1   \\ \hline
+BT11 & 5,3  & 5,3,6  & & 0.05, 1, 10, -  &  0.824892 &  0.824892 & 0.824892   \\ \hline
+BT12  &   5,3  & 5,3,6 &&  0.05, 1, 10, - & 6.188113 &  6.188119 & 6.188119   \\ \hline
+CHAIN & 102, 51 & 102, 51, 106 & &     0.05, 10,20,50 & 5.07047 & -25473973 & 5.07226  \\ \hline
+CHANDHEQ & 10, 10 &  10, 10, 30 & &  0.05, 10,20,10 & 0  & 0  & 0   \\ \hline
+DIPIGRI & 7,4 & 7,0,4  & & 0.05,10,20, 7  &  680.6301 &  680.6301 & 680.63   \\ \hline
+DTOC1L & 58, 36 & 58, 36, 80 & DTOC & 0.05,10,20,30 &0.0735945   &0.0307271  & 0.0735931 \\ \hline
+DTOC1NA & 58, 36 & 58, 36, 80 &non-convex  & 0.05,10,20,30&  0.0753143   &0.0320512  & 0.0753126 \\ \hline
+DTOC1NB & 58, 36 & 58, 36, 80 &non-convex   & 0.05,10,20,30 &0.0984835   &0.0524561  & 0.0984812 \\ \hline
+DTOC1NC & 58, 36 & 58, 36, 80 & non-convex  & 0.05,10,20,30 &0.3123065    & 0.2703142   &  0.3123101 \\ \hline
+DTOC1ND & 58, 36 & 58, 36, 80 & non-convex  & 0.05,10,20,30& 0.4155301   &  0.3845229   &  0.4142563 \\ \hline
+DTOC2 & 58, 36 & 58, 36, 80 & non-convex  & 0.05,10,20,30 &     0.4859889   &  1.5e-09  &  0.4859839 \\ \hline
+DTOC3 & 29, 18 &  29, 18, 40 & convex  & 0.05,10,20,30      &     224.59038   &  8.2e-13  &  224.59038 \\ \hline
+DTOC4 & 29, 18 &  29, 18, 40 &non-convex  & 0.05,10,20,30&      3.7508222  &   1.6e-13  &  3.7507839 \\ \hline
+DTOC5 & 19, 9 &  19, 9, 20 &convex  & 0.05,10,20,30 &  1.451900  &   4.4e-13  & 1.4518939 \\ \hline
+DTOC6 & 19, 9 &  19, 9, 20 &convex  &  0.05,10,20,30 & 19.80411 &  9.740196 & 19.80411 \\ \hline
+% DUAL1 & 85, 1 & 85, 1, 170 &   pc linalg error &  0.05,10,20,2 & 0.0633427 & 0.0339766 &    3.5E-02 \\ \hline
+DUAL2 & 96, 1 & 96, 1, 192 &    &  0.05,10,20,2 &  3.37546E-2 & 3.36831E-2 &    3.37337E-2 \\ \hline
+DUAL3 & 111, 1 &  111, 1, 222 &  & 0.05,10,20,1 &1.35542E-1  &    1.35544E-1  &   1.35756E-1\\ \hline
+EQC & 9,3  & 9, 0, 21 & Quality Control & 0.05,10,20,5 & -4789.377 & -4789.377 & 1138.416 \\ \hline
+GILBERT & 2,1 & 2,1,1 &  & 0.05,1,10,2  & 0.251624        &  0.251624     &  0.251626 \\ \hline
+GILBERT & 5,1 & 5,1,1 &  & 0.05,1,10,2  & 1.339713        &  1.339713    &  1.339710 \\ \hline
+GILBERT & 10,1 & 10,1,1 &  & 0.05,1,10,2  & 3.345201       &  3.345201    &  3.345196 \\ \hline
 GMNCASE1 &  175, 300   & 175, 0, 300  &   optimized control   & 0.5, 5, 5, 100   &   0.267087  & 0.266973             &    0.266733   \\ \hline
 GMNCASE4 & 175, 350 & 175, 0, 350  &  optimized control &  0.05, 10, 20, 170      & 5.9132e3 &  5.9469e3 &   5.9468e3 \\ \hline 
-HS268   & 5,5  & 5, 0, 5  &  Schittkowski   &  0.05,50,5,3    & 2.09e-4   & -3.6e-12      &    N/A    \\ \hline 
-HS21    &  2,1 & 2,0,5   & Hock and  Schittkowski  &  0.5,5,10,1   & -99.3434  & -99.9900  & -99.96    \\ \hline 
+HS100  & 7,4 & 7, 0, 4 & &0.05,10,20,- &  680.6300 & 680.6300 & 680.6300  \\ \hline
+HS100LNP & 7,2 & 7, 2, 0 & & 0.05,10,20,-  &  680.6300 & 680.6300 & 680.6300 \\ \hline
+HS104 &  8,5 & 8,0,22 & &  0.05,10,20,3 & 3.951162  &     3.951163 &  3.951163    \\ \hline
+HS11  & 2,1 & 2,0,1 & & 0.05,10,20,1     & -8.498464 &     -8.498465 & -8.49846   \\ \hline
+HS112 & 10,3 & 10,3,10 & & 0.05,1,5,3 & -47.7611 &  -47.7611 & -47.7075   \\ \hline
+HS113 & 10,8 & 10, 0, 8 & & 0.05,10,20,1 & 24.30621 & 24.30621 & 24.30621   \\ \hline
+HS118 & 15, 17 & 15, 0, 59 & &  0.05,10,20,- & 664.7021 & -1748.637  & 664.8204  \\ \hline
+HS12 & 2,1 & 2, 0, 1 & &   0.05,10,20,5 & -30 & -30 & -30   \\ \hline
+HS14 & 2,2 & 2,1,3 & &   0.05,10,20,1  &   1.393465 &  1.393461               & 1.423224\\ \hline
+HS15 & 2,2 & 2,0,3 & &   0.05,10,20,1 &    306.5000 & 6.8e-17 & 306.5 \\ \hline
+HS16 & 2,2 & 2,0,5 & &   0.05,10,20,1    & 0.25 & 3.98 &    0.25 \\ \hline
+HS21    &  2,1 & 2,0,5   & Schittkowski  &  0.5,5,10,1   & -99.3434  & -99.9900  & -99.96    \\ \hline 
 HS35   &  3,1  & 3,0,4  &             &  0.05,1,5,1    & 0.111111  & 0.111111   &   0.111111   \\ \hline 
 HS35I   &  3,1  & 3,0,7  &             &   0.05,1,5,1      & 0.111111  & 0.111111   &   0.111111   \\ \hline 
-HS44   & 4,6   & 4,0,10   &  	 & 0.05,1,20,3      &  -13.000 &\cellcolor{yellow} -4.01e+14 & \cellcolor{yellow}-13.0    \\ \hline
-HS44NEW & 4,6  & 4,0,10  &     &   0.05,1,20,3    & -13     &\cellcolor{yellow} -3.20e+14   &\cellcolor{yellow} -13.0    \\ \hline
+HS44   & 4,6   & 4,0,10   &  	 & 0.05,1,20,3      &  -13.000 & -4.01e+14 & -13.0    \\ \hline
+HS44NEW & 4,6  & 4,0,10  &     &   0.05,1,20,3    & -13     & -3.20e+14   & -13.0    \\ \hline
 HS51    &  5,3   & 5,3,6    &  & 0.05,1,20,3      & 4.46e-19   & 5.86E-14     & 0.0    \\ \hline
 HS52    &  5,3  & 5,3,6   & & 0.05,1,20,3      & 5.326634   & 5.326647   & 5.326643   \\ \hline
 HS53    &  5,3  & 5,3,16    &   &  0.05,1,5,3  & 4.093023   & 4.093023   & 4.093023  \\ \hline
-HS118  & 15,17  & 15,0,59  & & 0.05,50,5,3   & 664.8205  &\cellcolor{yellow} -1748.638  & \cellcolor{yellow}664.8204    \\ \hline
-HS268  & 5,5  & 5,0,5  & & 0.05,50,5,3     & \cellcolor{blue} 3.839e-4 & \cellcolor{blue}-3E-12  & N/A   \\ \hline
+HS118  & 15,17  & 15,0,59  & & 0.05,50,5,3   & 664.8205  & -1748.638  &664.8204    \\ \hline
 HATFLDH  & 4, 7 &  4, 0, 21  & & 0.05,1,5,2  &  -24.5002  & -24.375 & 24.5   \\ \hline
-LOTSCHD  & 12,7  &  12, 7, 26 & eco. lot scheduling &  0.05,10,20,10   &  \cellcolor{blue}2398.416 &  \cellcolor{blue}165.6553  & N/A  \\ \hline
-MOSARQP1 & 36, 10 & 36, 0, 46 &convex quadratic & 0.05,1,5,4     &  -24.13771 &  \cellcolor{yellow}-52.04917 & \cellcolor{yellow} -24.13768 \\ \hline
- MOSARQP2 &36, 10 & 36, 0, 46 &     & 0.05,1,5,4   & -35.69815  & \cellcolor{yellow}-55.16234  & \cellcolor{yellow}-35.6981 \\ \hline
-POWELL20 & 10,10  & 10,0,10 & degenerate convex & 0.05,1,5,2    & 57.8125 & 57.8125  & N/A  \\\hline
-RDW2D52F & 18,1  & 18,1,36 & optimal control &  0.05,10,20,5 &  \cellcolor{blue}0.053016 & \cellcolor{blue} 0.020779 & N/A \\\hline
-STCQP1  & 17, 8  &  17, 8, 50 & convex   &    0.05,1,5,5  & 494.4054  & 494.5208  & 4.95E+02 \\\hline
-SOSQP1 &  20, 11 & 20, 11, 62 & non-convex & 0.05,1,5,2    & 5.9e-07 & -4E-16   & 0.0 \\\hline
-SOSQP2 & 20,11  &  20, 11, 62 &    & 0.05,1,5,5	& -3.99779  & -4.04565  & -3.99781    \\\hline
- S268   &   5,5   & 5,0,5  &Schittkowski   & 0.05,10,20,10  &    \cellcolor{blue}2.274e-3  &  \cellcolor{blue} -3.64E-12  & N/A  \\\hline
-YAO   &  22,20  & 22, 0, 25 &   &  0.05,1,5,10 & 2.398829  & \cellcolor{yellow}3.715e-3 & \cellcolor{yellow}2.39883  \\\hline
-ZECEVIC2 & 2,2 & 2,0,6  & &  0.05,1,5,2 & -4.1249  & -4.125  & N/A  \\\hline
+
+MOSARQP1 & 36, 10 & 36, 0, 46 &convex quadratic & 0.05,1,5,4 &  -24.1436 & -52.0492 & -24.1377 \\ \hline
+MOSARQP2 &36, 10 & 36, 0, 46 &  &0.05,1,5,4  & -35.6982  &-55.1623  & -35.6981 \\ \hline
+STCQP1  & 17, 8  &  17, 8, 50 & convex quadratic  & 0.05,1,5,5& 494.4054  & 494.5208  & 494.5209 \\\hline
+SOSQP1 &  20, 11 & 20, 11, 62 & non-convex  &  0.05,1,5,2 &5.9e-07 & -4E-16   & 0.0 \\\hline
+SOSQP2 & 20,11  &  20, 11, 62 &  &0.05,1,5,5	&  -3.99779  & -4.045649  & -3.99781    \\\hline
+YAO   &  22,20  & 22, 0, 25 & & 0.05,1,5,10& 2.398829  & 0.0037148 & 2.39883  \\\hline
 \end{longtable}   % \midrule
 \end{landscape}
 
+%AIRPORT & 84, 42  & 84, 0, 210 & SQR2-MN-84-42  & 0.05,20,20,40 & 47952.97672  & 47953.7026  &    \\ \hline 
+%AUG2D    &           24,  9         &  24,   9,  18       &    2-D Laplace   & 0.05,1,5,30   &  0.124999           &     0.1250    &      N/A                \\ \hline
+%AUG2D    &          220, 100   & 220, 100, 200  &                      &   0.05,1,5,30         &   110.7987          &    110.7991      &    N/A           \\ \hline
+%AUG2DC  &       24, 9      &   24, 9, 18       &       &     0.05,1,5,30        &    2.973213        & 2.973214    &   N/A     \\ \hline
+%AUG2DC  &      220, 100   &  220, 100, 200   &     &   0.05,1,5,30    & 184.2388    &   184.2394     &    N/A      \\ \hline
+%AUG3D  &      156, 27    & 156, 27, 54   & 3-D Laplace  &  0.05,1,5,30   & 0.08333   &   0.083333   &  N/A         \\ \hline
+%AUG3DC  &  156, 27  &  156, 27, 54   &    & 0.05,1,5,30 &   35.84226   &   35.84276      & N/A      \\ \hline
+% AVGASA  &       8, 10   &   8, 0, 26   &   \cellcolor{blue}         LP, Integer Variable    &   0.05,1,5,30       &           -4.63092    &    -4.79278   &   N/A     \\ \hline
+% AVGASB  &    8, 10  &   8, 0, 26   &   \cellcolor{blue}    LP, Integer Variable   & 0.05,1,5,30   &   -4.482206   &   -4.666351     &   N/A    \\ \hline
+%ALLINQP  & 10, 5   &  10, 1, 21   & banded QP  &  0.05,10,20,30 & \cellcolor{blue}0.346667  & \cellcolor{blue}-0.183256     &  N/A \\  \hline     %\midrule
+%BLOCKQP2   & 25, 11   & 25,  10, 71   &    non-convex quadratic & 0.05,1,5,5  & -6.201652   &  \cellcolor{yellow}  -2.507e+14    &  \cellcolor{yellow}  -6.2017   \\ \hline
+%BLOCKQP3   & 25, 11   & 25,  10, 71  & non-convex quadratic  	  & 0.05,1,5,2 & \cellcolor{blue} 2.330508     &  \cellcolor{blue}2.330508   &            \cellcolor{blue}-2.4987e-1   \\ \hline
+%BLOCKQP4  & 25, 11    & 25, 10, 71  &    & 0.05,1,5,5     &\cellcolor{blue} -2.928928   & \cellcolor{blue}-5.73e+14   &    \cellcolor{blue} -0.6   \\ \hline
+%BDRY2   & 25, 18   & 25, 18, 86   &  AMPL  & 0.05,1,5,3  & 0.547854  & 0.548110  & N/A    \\ \hline   
+%BIGGSC4  & 4, 7   & 4, 0, 21   & & 0.05,1,5,2  & -24.4999   &  -24.375  &    -24.5 \\ \hline 
+%CVXQP1  & 10, 5 & 10, 5, 30  & convex   & 0.05,1,5,2 & \cellcolor{blue}181.0401 & \cellcolor{blue}165.8738  & N/A   \\ \hline
+%DEGENQP & 10, 1005 & 10,5,2030  & degenerate  $N^3$ cons & 0.05,1,5,10  & 8.80e-06 & -5.55e-17  & N/A \\ \hline
+%DTOC3   & 29, 18  & 29,18,40 & discrete time control & 0.05,1,5,10  &  224.5904 & \cellcolor{yellow}8.2e-13  &\cellcolor{yellow} 224.5904 \\ \hline 
+%GENHS28 & 10, 8  & 10, 8, 16  & Hock and Schittkowski &   0.05,1,5,2   & 0.927173  & 0.927174  & 0.0   \\ \hline
+%GMNCASE1 &  175, 300   & 175, 0, 300  &   optimized control   & 0.5, 5, 5, 100   &   0.267087  & 0.266973             &    0.266733   \\ \hline
+%GMNCASE4 & 175, 350 & 175, 0, 350  &  optimized control &  0.05, 10, 20, 170      & 5.9132e3 &  5.9469e3 &   5.9468e3 \\ \hline 
+%HS268   & 5,5  & 5, 0, 5  &  Schittkowski   &  0.05,50,5,3    & 2.09e-4   & -3.6e-12      &    N/A    \\ \hline 
+%HS21    &  2,1 & 2,0,5   & Hock and  Schittkowski  &  0.5,5,10,1   & -99.3434  & -99.9900  & -99.96    \\ \hline 
+%HS35   &  3,1  & 3,0,4  &             &  0.05,1,5,1    & 0.111111  & 0.111111   &   0.111111   \\ \hline 
+%HS35I   &  3,1  & 3,0,7  &             &   0.05,1,5,1      & 0.111111  & 0.111111   &   0.111111   \\ \hline 
+%HS44   & 4,6   & 4,0,10   &  	 & 0.05,1,20,3      &  -13.000 &\cellcolor{yellow} -4.01e+14 & \cellcolor{yellow}-13.0    \\ \hline
+%HS44NEW & 4,6  & 4,0,10  &     &   0.05,1,20,3    & -13     &\cellcolor{yellow} -3.20e+14   &\cellcolor{yellow} -13.0    \\ \hline
+%HS51    &  5,3   & 5,3,6    &  & 0.05,1,20,3      & 4.46e-19   & 5.86E-14     & 0.0    \\ \hline
+%HS52    &  5,3  & 5,3,6   & & 0.05,1,20,3      & 5.326634   & 5.326647   & 5.326643   \\ \hline
+%HS53    &  5,3  & 5,3,16    &   &  0.05,1,5,3  & 4.093023   & 4.093023   & 4.093023  \\ \hline
+%HS118  & 15,17  & 15,0,59  & & 0.05,50,5,3   & 664.8205  &\cellcolor{yellow} -1748.638  & \cellcolor{yellow}664.8204    \\ \hline
+%HS268  & 5,5  & 5,0,5  & & 0.05,50,5,3     & \cellcolor{blue} 3.839e-4 & \cellcolor{blue}-3E-12  & N/A   \\ \hline
+%HATFLDH  & 4, 7 &  4, 0, 21  & & 0.05,1,5,2  &  -24.5002  & -24.375 & 24.5   \\ \hline
+%LOTSCHD  & 12,7  &  12, 7, 26 & eco. lot scheduling &  0.05,10,20,10   &  \cellcolor{blue}2398.416 &  \cellcolor{blue}165.6553  & N/A  \\ \hline
+%MOSARQP1 & 36, 10 & 36, 0, 46 &convex quadratic & 0.05,1,5,4     &  -24.13771 &  \cellcolor{yellow}-52.04917 & \cellcolor{yellow} -24.13768 \\ \hline
+% MOSARQP2 &36, 10 & 36, 0, 46 &     & 0.05,1,5,4   & -35.69815  & \cellcolor{yellow}-55.16234  & \cellcolor{yellow}-35.6981 \\ \hline
+%POWELL20 & 10,10  & 10,0,10 & degenerate convex & 0.05,1,5,2    & 57.8125 & 57.8125  & N/A  \\\hline
+%RDW2D52F & 18,1  & 18,1,36 & optimal control &  0.05,10,20,5 &  \cellcolor{blue}0.053016 & \cellcolor{blue} 0.020779 & N/A \\\hline
+%STCQP1  & 17, 8  &  17, 8, 50 & convex   &    0.05,1,5,5  & 494.4054  & 494.5208  & 4.95E+02 \\\hline
+%SOSQP1 &  20, 11 & 20, 11, 62 & non-convex & 0.05,1,5,2    & 5.9e-07 & -4E-16   & 0.0 \\\hline
+%SOSQP2 & 20,11  &  20, 11, 62 &    & 0.05,1,5,5	& -3.99779  & -4.04565  & -3.99781    \\\hline
+% S268   &   5,5   & 5,0,5  &Schittkowski   & 0.05,10,20,10  &    \cellcolor{blue}2.274e-3  &  \cellcolor{blue} -3.64E-12  & N/A  \\\hline
+%YAO   &  22,20  & 22, 0, 25 &   &  0.05,1,5,10 & 2.398829  & \cellcolor{yellow}3.715e-3 & \cellcolor{yellow}2.39883  \\\hline
+%ZECEVIC2 & 2,2 & 2,0,6  & &  0.05,1,5,2 & -4.1249  & -4.125  & N/A  \\\hline
 
-As can be seen, for most problems, the proposed Homotopy RSNK method and the preconditioner can deliver accurate solutions.  However, even with a small number of numerical tests, several valuable insights could be drawn: 
+Table~\ref{tab:cuter} shows that the globalized RSNK algorithm and the preconditioners proposed in this thesis can deliver accurate solutions. They even succeed in a few cases where SNOPT failed. Nonetheless, several points are worth noting:
 \begin{enumerate}
-\item While the current Homotopy RSNK optimization algorithm works as a general optimization method, irrelevant of the problem types and feature, it struggles on problems with any hint of ill-conditioning, such as degenerate problems where the constraint qualifications are not satisfied, badly scaled objective and constraint functions. 
-\item As CUTEr test problems do not involve the state variables and thus adjoint variables, the Homotopy RSNK's core strength of using second-order adjoints to approximate Hessian vector products is not applicable. In contrast, SNOPT can readily make good use of the explicit Jacobians 
-provided by the pyCUTEr tool, while Kona is only using the explicit matrices to calculate the products in order to form the Krylov subspace. Consequently, SNOPT is faster than Kona when solving the CUTEr problems on average.   
-\item The proposed matrix-free preconditioner is not general and is specifically designed for PDE-constrained optimization problems as introduced at the beginning of this thesis.  For bound-only constraints, it does not work that well. Because the constraint Jacobians are Identity matrix, the Krylov subspace built from it is only 1-rank, making the Lanczos method's SVD approximation very insufficient.  
-\item If the product of the constraint Jacobian with a vector of ones is always zero, then it will make the preconditioner crash. Because the Krylov subspace would be linearly dependent, making the Lanczos methods fail. Problems whose constraint Jacobian has the non-zero entries of e.g. $[-1, -3, 3, 1]$ on each row belong to this category, like the LISWET problems 
-\item For non-convex problems, sometimes the proposed Homotopy RSNK can work, and sometimes not. So more effort is needed to increase the robustness of the algorithm. 
+\item As a majority of CUTEr test problems do not involve state variables, except for a small sets of optimal control problems, the globalized RSNK algorithm loses its edge in saving the computing and storing costs for the constraint Jacobians. Therefore, on average, the globalized RSNK takes longer time than SNOPT to solve the CUTEr problems. 
+\item The parameters \textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $\mathbf{{n_{\mat{\Sigma}}}}$ play important roles in the convergence speed of the new algorithm. So in some cases the parameters have to changed manually to get convergence. In contrast, the parameters for SNOPT are not changed throughout. 
+\item The globalized RSNK algorithm is based on the constraint qualification assumption, therefore, it will fail for problems with redundant constraints.    
+\item If the null space of the inequality constraint Jacobian happen to be the range space of  a vector of ones, then the preconditioner will crash. Kona will start with calculating the Jacobian vector product with an incoming vector - a scaled vector of ones. For the problems whose inequality constraint Jacobian have certain structure, e.g. $[-1, -3, 3, 1]$ on each row like the LISWET problems, the matrix vector product will be zero, causing the Lanczos method to crash. 
 \end{enumerate} 
 
 

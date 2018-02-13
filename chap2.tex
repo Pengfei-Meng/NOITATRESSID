@@ -132,6 +132,62 @@ The solution to the optimization problem \eqref{eq:opt00x} is a saddle point for
 Note that the matrix in  \eqref{eq:kkt0} is nonsymmetric \footnote{By using a scaled slack block, $\tilde{p_s} = \mathcal{S}^{-1}e p_s $,  the system \eqref{eq:kkt0} can be turned into a symmetric one. We adopt the nonsymmetric version, as we think the preconditioner for this form has better numerical properties, see the section on preconditioner later}. 
 
 
+\section{Krylov Iterative Solver}\label{2:krylov}
+We use the flexible generalized minimal residual method,
+FGMRES~\cite{Saad1993fgmres}, to solve~\eqref{eq:Newton}.  One advantage of
+FGMRES, compared to most Krylov-based methods, is that is permits nonstationary
+preconditioners that vary from one Krylov iteration to the next.  While we do
+not take advantage of nonstationary preconditioners in this work, we have found
+this flexibility invaluable in the solution of multidisciplinary optimization
+problems~\cite{dener:idf2017, dener:2014}.
+
+To find an approximate solution to \eqref{eq:Newton}, FGMRES orthonormalizes a
+sequence of matrix-vector products using a generalized form of Arnoldi's
+method~\cite{saad:2003}.  Starting with $v_{1} = b/\|b\|$, the generalized
+Arnoldi's method produces the following relation at the $i$th iteration:
+\begin{equation}\label{eq:arnoldi}
+  (\nabla_q F) \mat{Z}_{i} = \mat{V}_{i+1} \bar{\mat{H}}_{i},
+\end{equation}
+where $\mat{V}_{i+1} \in \mathbb{R}^{N\times (i+1)}$ has orthogonal columns and
+$\bar{\mat{H}}_{i} \in \mathbb{R}^{(i+1)\times i}$ is upper Hessenberg.  The
+vectors in $\mat{Z}_{i} \in \mathbb{R}^{N\times i}$ form the subspace from which
+the approximate solution to \eqref{eq:Newton} is drawn (see below).  These
+vectors are related to the vectors in $\mat{V}_{i+1}$ by
+\begin{equation*}
+  z_{j} = P_j(v_{j}), \qquad \forall j = 1,2,\ldots,i,
+\end{equation*}
+where $P_j(\cdot)$ denotes the preconditioning operation at iteration $j$.    
+
+The FGMRES solution is given by $x_{i} = \mat{Z}_{i} y_{i}$, where $y_{i}$ is
+chosen to minimize the 2-norm of the residual, $r_i \equiv b -  (\nabla_q F) x_i = b -  (\nabla_q F)\mat{Z}_i y_i$, as
+follows:
+\begin{align*}
+  y_{i} = \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
+  \lVert b -  (\nabla_q F) \mat{Z}_i y \| 
+  &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
+  \lVert \mat{V}_{i+1} (\|b\| e_1 - \bar{\mat{H}}_{i} y \| \\
+  &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
+  \lVert \|b\| e_1 - \bar{\mat{H}}_{i} y \|,
+  \qquad\qquad\text{(since $\mat{V}_{i+1}^T \mat{V}_{i+1} = \mat{I}$)}
+\end{align*}
+where $e_{1} \in \mathbb{R}^{i+1}$ is the first column of the $(i+1)\times(i+1)$
+identity. The minimization problem on the final line is inexpensive to solve in
+practice, since $i$ is usually less than 100.
+
+Like most Krylov iterative methods, the FGMRES algorithm described above does
+not require the Jacobian $(\nabla_q F)$ explicitly.  From the user's
+perspective, the algorithm only requires matrix-vector products and
+preconditioning operations.  In this work, matrix-vector products involving
+$(\nabla_q F)$ are computed using second-order adjoints~\cite{wang:1992,
+  hicken:inexact2014}.  Briefly, each product with $(\nabla_q F)$ requires the
+solution of two discretized linear PDEs: a linear forward problem and a linear
+adjoint problem.  See \cite{dener:scitech2015} for further details regarding
+second-order adjoints in the context of reduced-space problems with state
+constraints.  The second required operation, preconditioning, is described in
+the next subsection.
+
+
+
 
 % a popular large-scale matrix-based active -set augmented-Lagrangian optimization method SNOPT.  
 

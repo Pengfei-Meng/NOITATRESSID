@@ -202,9 +202,9 @@ first-order necessary conditions in this work:
 The homotopy map \eqref{eq:homo0} is a favorable in the context of optimization
 for several reasons.  First, the term $\mu(x-x_0)$ helps to address nonconvexity
 by adding a positive diagonal matrix to the Lagrangian Hessian during the early
-stages of convergence.  Furthermore, the term $\mu(s - s_0) with s_0 > 0$ generates a path
+stages of convergence.  Furthermore, the term $\mu(s - s_0) \ \text{with} \ s_0 > 0$ generates a path
 that remains feasible with respect to the slack boundaries $s>0$.  Finally, the
-term $-\mu\lambda_{h} \text{and}  -\mu\lambda_{g}$ improves the conditioning of the
+term $-\mu\lambda_{h} \ \text{and} \ -\mu\lambda_{g}$ improves the conditioning of the
 KKT matrix; even when the constraint Jacobian is rank deficient the homotopy map
 will remain invertible.
 
@@ -502,11 +502,11 @@ compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Application I: Sphere Problem}
 \subsection{Problem Description}
-The first test problem to verify RSNK's globalization performance is on an analytical inequality constrained Sphere problem: 
+The first test problem to verify RSNK's globalization performance is an analytical inequality constrained Sphere problem: 
 \begin{equation*}
 \begin{aligned}
-\underset{x, y, z} {\text{min}}  & \quad & x + y + z \\
-   {\text{subject to}}  & \quad & x^2 + y^2 + z^2 <= 3 \\
+\underset{x, y, z} {\text{min}}  & \quad \quad x + y + z \\
+   {\text{subject to}}  & \quad \quad x^2 + y^2 + z^2 <= 3 \\
 \end{aligned}
 \end{equation*}
 
@@ -514,11 +514,12 @@ The solution to this problem is at $(-1,-1,-1)^T$. There is a local maximum poin
 first-order optimality condition (KKT condition) is also satisfied but not the second-order optimality condition. 
 
 \subsection{Results}
-To prove that the algorithm can bypass the local maximum, 100 random starting points around $(1,1,1)^T$ are generated using Gaussian random distribution, with a mean at 1, and standard deviation 0.1. Figure~\ref{fig:sphere_100} shows the sphere, with the starting points in blue circles, and the solutions in red starts. 
+To prove that the algorithm can bypass the local maximum, 100 random starting points around the local maximum $(1,1,1)^T$ are generated using Gaussian random distribution, with a mean at 1, and a standard deviation 0.1. Figure~\ref{fig:sphere_100} shows the sphere, with the starting points in blue circles, and the solutions in red stars. 
+As can be seen, even when the 100 starting points are all around the local maximum, they all converge to the minimum point as indicated by the red stars. The thick red star are actually 100 points stick together. 
 
  \begin{figure}[H]
   \centering
-  \includegraphics[clip,trim=20 40 20 70, width=1.0\columnwidth]{./figs/chap2/100_111.pdf}%  
+  \includegraphics[clip,trim=20 40 20 70, width=0.8\columnwidth]{./figs/chap2/100_111.pdf}%  
   \caption{100 Starting Points Around Local Maximum \label{fig:sphere_100}}
 \end{figure}
 
@@ -535,9 +536,11 @@ To prove that the algorithm can bypass the local maximum, 100 random starting po
   \caption{50 Random Standard Distributed Points \label{fig:sphere_50}}
 \end{figure}
 
-Figure~\ref{fig:sphere_1000} shows the distribution of 1000 starting points generated using the Standard 
-Normal Distribution method. The starting points are semi-transparent blue circles, while the solution points are in solid red stars. The red star shown in the picture is actually 1000 solutions points overlaid on top of each other. 
-Figure~\ref{fig:sphere_50} shows the same content but with 50 starting points. The test shows that the globalization of RSNK is working well.  
+Figure~\ref{fig:sphere_1000} shows the scatter plot of 1000 starting points randomly generated using the Standard 
+Normal Distribution method in semi-transparent blue circles. They all converge to the solid red star point, which is actually 1000 solutions points overlaid on top of each other. Figure~\ref{fig:sphere_50} is a less crowded symbolic
+plot with 50 starting points. 
+
+The test shows that the globalized RSNK method possesses fairly robust globalization ability that bypasses local maximum points  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

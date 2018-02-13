@@ -21,8 +21,8 @@ predictor-corrector algorithm.  The tangent and Newton update linear systems are
 solved using a Krylov iterative method.  To precondition the Krylov solver, we
 proposed a low-rank, approximate singular-value decomposition of the Schur
 complement of the KKT matrix with respect to the slacks and multipliers.  All
-the components of the algorithm --- the predictor-corrector scheme, the Krylov
-method, and the preconditioner --- require only matrix-vector products and,
+the components of the algorithm - the predictor-corrector scheme, the Krylov
+method, and the preconditioner - require only matrix-vector products and,
 thus, avoid the need to compute the constraint Jacobian or Lagrangian Hessian
 explicitly.
 
@@ -42,28 +42,27 @@ It is straightforward and clean to implement.
 \section{Future Works}
 
 \begin{enumerate}
-\item SNOPT's user solver interface is cleaner, can we adapt Kona in that sense a little? 
-During the numerical experiments with CUTEr and SNOPT, I realized that the interfaces 
-of the two are prepared for each other, in the sense that the problem formulation from CUTEr 
-are just in the form as required by SNOPT. As described in~\ref{sec:cuternm}, CUTEr separates 
+\item  As described in~\ref{sec:cuternm}, CUTEr separates 
 the bound constraints on the design variables from other types of constraints, providing $\text{bl}$ 
 and $\text{bu}$. For other types of constraints, CUTEr align them into a vector using $c(x)$, 
 together with the bound $\text{cl}$ and $\text{cu}$. SNOPT's solver interface exactly follows this 
 pattern, and the user only need to provide $\text{bl}$ and $\text{bu}$,  $\text{cl}$ and $\text{cu}$ 
-after defining $c(x)$. In Kona, the only separation in constraints 
-are equality and inequality. So if there are both a lower and an upper bound constraint for a certain 
+after defining $c(x)$. In contrast, in Kona, the bound constraints are not separated from other 
+types of constraints; inequality constraints are defined on only one side.  
+So if there are both a lower and an upper bound constraint for a certain 
 variable, $\text{bl} \leq x_i \leq \text{bl}$, it has to be defined as two inequality constraints 
-$x_i - \text{bl} \geq 0 $ and $\text{bu} - x_i \geq 0 $. 
+$x_i - \text{bl} \geq 0 $ and $\text{bu} - x_i \geq 0 $. Perhaps in the future the solver interface of Kona 
+can be changed in a simpler way?  
 
-\item Separating bound, linear, nonlinear constraints in Kona? While separating bound constraints 
+\item Separating linear and nonlinear constraints in Kona? While separating bound 
 from other types of constraints is out of conforming to convention, separating linear with nonlinear 
-constraints is for improving the robustness of the preconditioners as proposed in this thesis. For the 
-ASO problem, the linear constraints refers to the geometric constraints, whose Jacobians are cheap 
-to evaluate. The current preconditioner is using the Lanczos SVD method to approximate the whole 
-inequality block in~\ref{eq:svd}, and the explicit Jacobian matrix of those geometric constraints are 
-wasted in being computed and only to be multiplied with an incoming vector. After separating the linear 
-geometric constraints with nonlinear aerodynamic constraints, the SVD approximation will be only 
-applied to the nonlinear part, this way improving the effectiveness of the preconditioner. 
+constraints is for improving the robustness of the preconditioners proposed in this thesis. 
+The current preconditioner is using the Lanczos SVD method to approximate the whole 
+inequality Jacobian block in~\ref{eq:svd}, irrespective of linear or nonlinear constraints. 
+That is a wasteful practice for not making use of the linear constraint Jacobians fully, but computing it each time 
+and only use its matrix-vector product. The Lanczos SVD preconditioner will be more effective in approximating only the nonlinear inequality constraint part. Take the ASO problem for example, 
+the linear constraints are consist of the geometric constraints, whose Jacobians are cheap 
+to evaluate and only depend on the design variables. The nonlinear aerodynamic constraints are the part that benefit the most from matrix-vector product approximations using second-order adjoints. 
 One potential counter argument could be that since Kona is branded as the ``matrix-free '' preconditioner, 
 wouldn't it be self-deprecating to use explicit Jacobians for the linear constraints? We could be a little 
 utilitarian and say that ``matrix-free '' is only used when necessary, for those expensive nonlinear 
@@ -72,18 +71,21 @@ constraints dependent on state variables.
 \item The investigation on the non-convexity handling ability has just get started, a good start. 
 The amount of regularization from the homotopy term is limited, so it can not handle a sharply 
 nonconvex problem like $-1000x^2$.  Extra mechanism to detect negative curvatures is needed. 
-The novel solver \cite{hicken:flecs2014} could be used instead of the current FGMRES as well. 
+Moreover, the novel solver \cite{hicken:flecs2014} could be used instead of the current FGMRES. 
 
-\item After implementing the suggestions on separating the bounds, and only approximating the 
-nonlinear part of the constraints using Lanczos SVD method, the speed of the algorithm will be 
-much faster for the ASO problem, with the CPU time at least down by half. Then it's a good time to 
+\item After implementing the suggestions on separating the bounds, linear and nonlinear constraints, and  
+only approximating the nonlinear part of the constraints using Lanczos SVD method, the preconditioner 
+will be more effective and faster for the ASO problem. Then it's time to 
 tackle the transonic wing design problem based on RANS. 
 
-\item I notice that the pyOptSparse packages from MDOLab also contains the IPopt method. It is also 
-worthwhile to make some comparisons with IPopt on the CUTEr problems. Most likely Kona will 
-still be slow compared with IPopt. 
+\item I notice that the pyOptSparse packages from MDOLab also contains the IPopt method. It is 
+worthwhile to make some comparisons with IPopt on the CUTEr problems. 
 
-\item This proposed Homotopy RSNK is just in 1.0 version as a constrained optimization algorithm 
+\item The \textbf{HSx} problem family in CUTEr itself is a good collection of problems for optimization 
+algorithms. It incorporates different types of difficulties like bad scale, ill-condition, infeasible solution, 
+degenerate constraints, etc.  
+
+\item This proposed globalized RSNK is just in 1.0 version as a constrained optimization algorithm 
 in Kona, and more efforts are needed to make it faster and robust. Features like warm start, 
 intelligent parameter setting modules could be implemented. This way the user wouldn't have to 
 tune the parameters for some difficult problems by trial-and-error.  
