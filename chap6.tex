@@ -1,369 +1,100 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %                                                                 %
-%                            CHAPTER SIX                         %
+%                            CHAPTER SEVEN                         %
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{APPLICATION TO MODEL ENGINEERING DESIGN PROBLEMS}
-%\resetfootnote %this command starts footnote numbering with 1 again.
-The last chapter is on applications to two large-scale PDE-constrained optimization problems. 
+\chapter{CONCLUSIONS AND FUTURE WORKS}
 
+\section{Conclusions}
+When solving PDE-constrained design optimization problems, many practitioners
+favor a reduced-space formulation in which the state variables are implicit
+functions of the design variables.  However, conventional reduced-space
+algorithms are not well suited to problems with many state-based constraints,
+because these algorithms require the contraint Jacobian explicilty, which
+requires an adjoint for each row.
 
-\section{Stress-Constrained Mass Minimization}
-\subsection{Problem Description}
-Our next numerical experiment is a PDE-constrained structural sizing problem
-with state-based constraints.  The problem was previously considered by the
-authors in \cite{dener:scitech2016}, and the geometry and boundary conditions
-are illustrated in Figure~\ref{fig:struct}.  Informally, the problem consists of
-minimizing the plate mass, with respect to the thickness distribution, subject
-to bound constraints and von Mises stress criteria. 
-\begin{figure}[tbp]
-  \centering
-  \includegraphics[width=0.6\textwidth]{./figs/chap6_fstopo/struct.png}
-  \caption{Plate thickness design problem}
-  \label{fig:struct}
-\end{figure}
+In this work we have developed a matrix-free algorithm to handle reduced-space
+PDE-constrained optimization with state-based constraints.  To cope with
+possibly indefinite Hessians, we follow the zero curve of a homotopy map using a
+predictor-corrector algorithm.  The tangent and Newton update linear systems are
+solved using a Krylov iterative method.  To precondition the Krylov solver, we
+proposed a low-rank, approximate singular-value decomposition of the Schur
+complement of the KKT matrix with respect to the slacks and multipliers.  All
+the components of the algorithm - the predictor-corrector scheme, the Krylov
+method, and the preconditioner - require only matrix-vector products and,
+thus, avoid the need to compute the constraint Jacobian or Lagrangian Hessian
+explicitly.
 
-The response of the plate to the applied force is modeled using the equations of
-linear elasticity assuming 2D plane stress.  The governing equations are
-discretized using the finite element method with bilinear elements.
-A uniform mesh of $n_x \times n_y$ elements is employed, and the thickness
-distribution is piecewise constant over each element.  These thickness values
-are taken to be the design variables, so there are $n = n_x n_y$ design
-variables.
+The numerical experiments suggest that the matrix-free algorithm is effective.
+In particular, the results indicate that the algorithm can avoid stationary
+points that are not minimizers and that it scales well with the number of design
+variables.  On a synthetic quadratic optimization problem the proposed algorithm
+was shown to be competitive with a state-of-the-art (matrix-explicit) active-set
+SQP algorithm.  Furthermore, when applied to a difficult structural optimization
+problem the algorithm was able to satisfy the optimality and feasibility
+criteria whereas the matrix-explicit SQP algorithm failed to converge. 
 
-The formal optimization statement is
-\begin{equation*}
-  \begin{alignedat}{2}
-    \underset{x}{\text{min}} \quad &\textsf{mass}(x) = \sum_{i=1}^{n} m_i x_i, & &\\
-    \text{subject to} \quad &\textsf{stress}_i(x) \leq \sigma_{\max}, &
-    &\forall\; i = 1,2,\ldots,n \\
-      & x_l \leq x_i \leq  x_u, \qquad & &\forall\; i = 1,2,\ldots,n,
-  \end{alignedat}
-\end{equation*}
-where $\textsf{mass}(x)$ is the plate mass, and $\textsf{stress}_{i}(x)$ is the
-von Mises stress criterion on the $i$th element. The thickness of each element
-is bounded by the lower and upper values, $x_l = 0.02$ and $x_u = 0.98$. 
+The proposed algorithm indirectly uses the homotopy term as a globalization method, 
+thus is avoid of line-search or trust-region globalization techniques. 
+It is straightforward and clean to implement. 
 
-The mass is a linear function
-of the design variables and is given by
-\begin{equation*}
-  \textsf{mass}(x) = \sum_{i=1}^{n} m_i x_i,
-\end{equation*}
-where $m_i$ is the mass per unit thickness of the $i$th element of the
-structure.
+\section{Future Works}
 
-The objective function $\text{mass}(x)$, is a sum of all the elements' mass. 
-Each element's mass is obtained by a constant material density times the filtered thickness of that element. 
-The filtered thickness of each element is a weighted summation of the design variables 
-of the adjacent elements within the conic filter, with the weights determined by 
-$1-\frac{r}{r_0}$,  where $r_0$ is the radius of the conic, and $r$ is the distance 
-of the adjacent element to the central element.  
+\begin{enumerate}
+\item  As described in~\ref{sec:cuternm}, CUTEr separates 
+the bound constraints on the design variables from other types of constraints, providing $\text{bl}$ 
+and $\text{bu}$. For other types of constraints, CUTEr align them into a vector using $c(x)$, 
+together with the bound $\text{cl}$ and $\text{cu}$. SNOPT's solver interface exactly follows this 
+pattern, and the user only need to provide $\text{bl}$ and $\text{bu}$,  $\text{cl}$ and $\text{cu}$ 
+after defining $c(x)$. In contrast, in Kona, the bound constraints are not separated from other 
+types of constraints; inequality constraints are defined on only one side.  
+So if there are both a lower and an upper bound constraint for a certain 
+variable, $\text{bl} \leq x_i \leq \text{bl}$, it has to be defined as two inequality constraints 
+$x_i - \text{bl} \geq 0 $ and $\text{bu} - x_i \geq 0 $. Perhaps in the future the solver interface of Kona 
+can be changed in a simpler way?  
 
+\item Separating linear and nonlinear constraints in Kona? While separating bound 
+from other types of constraints is out of conforming to convention, separating linear with nonlinear 
+constraints is for improving the robustness of the preconditioners proposed in this thesis. 
+The current preconditioner is using the Lanczos SVD method to approximate the whole 
+inequality Jacobian block in~\ref{eq:svd}, irrespective of linear or nonlinear constraints. 
+That is a wasteful practice for not making use of the linear constraint Jacobians fully, but computing it each time 
+and only use its matrix-vector product. The Lanczos SVD preconditioner will be more effective in approximating only the nonlinear inequality constraint part. Take the ASO problem for example, 
+the linear constraints are consist of the geometric constraints, whose Jacobians are cheap 
+to evaluate and only depend on the design variables. The nonlinear aerodynamic constraints are the part that benefit the most from matrix-vector product approximations using second-order adjoints. 
+One potential counter argument could be that since Kona is branded as the ``matrix-free '' preconditioner, 
+wouldn't it be self-deprecating to use explicit Jacobians for the linear constraints? We could be a little 
+utilitarian and say that ``matrix-free '' is only used when necessary, for those expensive nonlinear 
+constraints dependent on state variables. 
 
-The von Mises stress
-criterion on the $i$th element can be expressed as
-\begin{equation*}
-  \textsf{stress}_i(x) = 1 - u(x)^T \mat{B}_i^T \mat{G} \mat{B}_i u(x),
-\end{equation*}
-where $\mat{B}_i u(x)$ gives the strain as a function of the displacement,
-$u(x)$, and $\mat{G}$ is a positive-definite matrix.  The displacement is a
-function of the design variables through the discretized governing equation
-\begin{equation*}
-  R(x,u) = \mat{K}(x) u - b,
-\end{equation*}
-where $\mat{K}(x)$ is the stiffness matrix and $b$ is the force vector.
+\item The investigation on the non-convexity handling ability has just get started, a good start. 
+The amount of regularization from the homotopy term is limited, so it can not handle a sharply 
+nonconvex problem like $-1000x^2$.  Extra mechanism to detect negative curvatures is needed. 
+Moreover, the novel solver \cite{hicken:flecs2014} could be used instead of the current FGMRES. 
 
-We consider a set of three mesh sizes by varying $n_x$ and $n_y$.  Table
-\ref{tab:mesh_sizes} lists the mesh dimensions and number of design variables
-for the three cases, which we will refer to as the small, medium, and large
-cases.
+\item After implementing the suggestions on separating the bounds, linear and nonlinear constraints, and  
+only approximating the nonlinear part of the constraints using Lanczos SVD method, the preconditioner 
+will be more effective and faster for the ASO problem. Then it's time to 
+tackle the transonic wing design problem based on RANS. 
 
-\begin{table}[tbp]
-  \begin{center}
-    \caption{Mesh dimensions ($n_x$ and $n_y$), number of design variables ($n =
-      n_x n_y$), and size of the approximate SVD preconditioner
-      ($n_{\mat{\Sigma}}$) for the plate-thickness optimization
-      problem \label{tab:mesh_sizes}}
-  \begin{tabular}{ l c c c c}
-    \textbf{Case} & $\mathbf{n_x}$  & $\mathbf{n_y}$ & $\mathbf{n}$
-    & $\mathbf{{n_{\mat{\Sigma}}}}$
-    \\ \hline
-    \rule{0ex}{3ex}%
-    Small  &   16 & 8  & 128  & 20 \\ 
-    Medium &   32 & 16 & 512  & 80 \\  
-    Large  &   64 & 32 & 2048 & 320  
-  \end{tabular}
-  \end{center}
-\end{table}
+\item I notice that the pyOptSparse packages from MDOLab also contains the IPopt method. It is 
+worthwhile to make some comparisons with IPopt on the CUTEr problems. 
 
-Table~\ref{tab:mesh_sizes} also lists the number of approximate singular values
-used in Algorithm~\ref{alg:precond}.  As the number of design variables
-increases in this structural optimization problem, the number of singular values
-in the SVD approximation also has to increase accordingly, at about $\frac{1}{6}$
-of the number of design variables.
-Figure~\ref{fig:svdrank} shows the convergence history of the Krylov iterative
-method applied to \eqref{eq:linsys}.  
+\item The \textbf{HSx} problem family in CUTEr itself is a good collection of problems for optimization 
+algorithms. It incorporates different types of difficulties like bad scale, ill-condition, infeasible solution, 
+degenerate constraints, etc.  
 
-\subsection{Effectiveness of Preconditioner}
-To show the effectiveness of the proposed preconditioner, 
-Figure~\ref{fig:svdrank} shows the convergence history of the Krylov
-method when the Lanczos-based preconditioner uses 
-increasing number of SVD ranks. The KKT system is extracted from 
-the first Newton step of the final Corrector phase 
-at $\mu < \epsilon_{\mu}$, the last homotopy iteration for the small case. 
+\item This proposed globalized RSNK is just in 1.0 version as a constrained optimization algorithm 
+in Kona, and more efforts are needed to make it faster and robust. Features like warm start, 
+intelligent parameter setting modules could be implemented. This way the user wouldn't have to 
+tune the parameters for some difficult problems by trial-and-error.  
 
-\begin{figure}[tbp]
-  \centering
-  \includegraphics[width=0.7\textwidth]{./figs/chap6_fstopo/tiny_svd_ranks.eps}
-  \caption{Impact of $\nsig$, the rank of the approximate SVD in
-    Algorithm~\ref{alg:precond}, on the Krylov iterative method.
-  \label{fig:svdrank}}
-\end{figure}
+\item Finally, it is unrealistic to provide universal preconditioners for PDE-constrained optimization 
+problems, the same reason why there is no universal PDE solvers. We can at best provide some good 
+preconditioner candidates for the types of problems that we are familiar with. 
 
-\subsection{Results}
-The structural optimization problem was solved using the proposed algorithm,
-with and without the preconditioner. Its convergence history were compared with 
-that of SNOPT, see Figures \ref{fig:small}, \ref{fig:med}, and \ref{fig:large} for the 
-small, medium, and larges cases, respectively. The cost on the horiztonal axis 
-measures the equivalent number of PDE solves, 
-\ie, the total CPU time divided by the time needed for one
-forward solution.  The vertical axis measures the change in relative optimality and
-absolute feasiblity.    
-  
-\begin{figure}[tbp]
-  \begin{center}
-    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_thickness_color.pdf}%
-    \caption{Optimal thickness distribution obtained using Algorithm~\ref{alg:pc} with Preconditioner.
-      \label{fig:thick}}
-  \end{center}
-\end{figure}
-
-\begin{figure}[tbp]
-  \begin{center}
-    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_eye_thickness_color.pdf}%
-    \caption{Optimal thickness distribution obtained using Algorithm~\ref{alg:pc} without Preconditioner.
-      \label{fig:thick_eye}}
-  \end{center}
-\end{figure}
-    
-The final optimal thickness distribution using Homotopy RSNK method with preconditioner, 
-for the large problem, is plotted in Figure~\ref{fig:thick}, while using the same method 
-without the preconditioner is in Figure~\ref{fig:thick_eye}. 
-The thickness distribution is in agreement with physical
-intuition of the problem. 
-
-%*[clip,trim=20 70 0 70, width=1.0\textwidth]
-
-The results in Figure~\ref{fig:struct2} highlight the need for preconditioning
-on this particular problem: without the approximate-SVD preconditioner the
-proposed algorithm is ineffective. 
-In contrast, when the approximate-SVD preconditioner is effective, the
-proposed inequality optimization algorithm can successfully reduce the optimality 
-and feasibility to the desired tolerance.
-
-Figures \ref{fig:small}--\ref{fig:large} also show that the performance of SNOPT
-degrades as the problem size increases; on the small problem, optimality is
-reduced by only three orders of magnitude, while on the large problem the optimality
-fluctuates and struggles to come down.  The feasibility achieved by SNOPT is somewhat better
-than its optimality, but it also degrades with problem size.  The proposed
-predictor-corrector algorithm is able to converge the optimality and feasiblity
-$10^{-5}$ orders of magnitude on all three problems. We see that the
-optimization cost increases approximately linearly with problem size on this
-problem, and the cost is driven primarily by the increasing number of singular values used
-in the preconditioner. 
-
-\begin{figure}[tbp]
-  \centering
-   \subfloat[small \label{fig:small}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/tiny_color.eps} }
-  \hspace{1em}
-  \subfloat[medium \label{fig:med}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/small_color.eps} }
-  \hspace{1em}
-    \subfloat[large \label{fig:large}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/medium_color.eps} }
-    \caption{Convergence histories for the three sizes of the structural
-      optimization problem. \label{fig:struct2}}
-\end{figure}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-\section{Aerodynamic Shape Optimization}
-
-The last application is a single-point Euler-based aerodynamic shape optimization problem on the NASA Common Research Model (CRM) wing~\cite{crm_wing} defined by the Aerodynamic Design Optimization Discussion Group (ADODG) ~\cite{adodg}, in which the drag coefficient is minimized with lift, pitching moment, and geometric constraints.    Previously, Lyu et al. presented a comprehensive set of results on aerodynamic shape optimization of the NASA CRM wing based on a RANS model with large numbers of shape variables using SNOPT~\cite{2015lyu_crm}. Although the study in this thesis at this stage is based on the Euler model and a coarser mesh grid than those in~\cite{2015lyu_crm}, the long term objective is to run on RANS model with a fine mesh.   
-
-\subsection{Problem Description}
-The baseline wing-only geometry is extracted from the CRM wing-body configuration with a blunt trailing edge. An IGES file is provided to the public as shown in Figure~\ref{fig:crm_wing}. The CRM is of a contemporary transonic commercial airline, with a size similar to that of Boeing 777. It has been optimized in aerodynamic performance, but with an aggressive pressure recovery in the outboard wing to be researched on, to provide room for performance improvements. 
-The nominal cruise flight condition for Boeing 777 is at Mach 0.85 and a Reynolds number of 5 million based on the mean aerodynamic chord. 
-
-The following geometric information are already given by ADODG, 
-The origin of the coordinate system is at the leading edge of the wing root, and all coordinates are scaled by the mean aerodynamic chord of 275.8 inches. Pitching moments are measured about the point $(1.2077, 0, 0.007669)$ using the reference length in units. All aerodynamic coefficients are computed in reference to the projected area $S_{\text{ref}}=3.407014$ squared reference units. 
-
-\begin{figure}[tbp]
-  \centering
-  \includegraphics[clip,width=0.75\textwidth]{./figs/chap7_aso/CRM-wing.png}%
-  \caption{CRM wing \label{fig:crm_wing}}
-\end{figure}
-
-
-\subsection{Mesh Generation, Parameterization and Flow Solver}
-The mesh CGNS file is generated by Michigan MDOLab's in-house hyperbolic mesh generator using an O-grid topology method from the wing surface to a garfield 25 times of the wing span. Three levels of mesh are available for Euler cases as shown in Table~\ref{tab:euler_mesh}:
-
-\begin{table}[H]
-  \begin{center}
-    \caption{Three grid levels and baseline aerodynamic coefficients for the Euler cases
-    \label{tab:euler_mesh}}
-  \begin{tabular}{ c r c c c c }
- \textbf{Mesh level}   &  \textbf{Mesh size}  & \textbf{CD} & \textbf{CL}  & \textbf{CM} & $\mathbf{\alpha}$  \\\hline
- L0                  &  840,192   & 0.00995   & 0.49879 & -0.20182  & $2.5^{\circ}$   \\
- L1                  &  105,024   & 0.01085   & 0.48925 & -0.19502    & $2.5^{\circ}$ \\
- L2 		      &   13,000    &  0.01417   & 0.46638    & -0.18142  &  	$2.5^{\circ}$ 	 
-  \end{tabular}
-  \end{center}
-\end{table}
-
-The wing geometry is parameterized using a free-form deformation (FFD) volume method~\cite{Kenway:2010:C}, where the wing geometry is embedded inside a FFD box, and the geometric changes of the wing surface are performed by changing the outer shape of the FFD volume. The derivatives of the wing surface points to the design variables representing the changes to the outer boundary of the FFD are easily available since FFD uses B-spline volumes. Figure~\ref{fig:crm_ffd} shows the FFD volume and the control points, where the displacement of the control points in the vertical (z) direction are the design variables. 
-
- \begin{figure}[tbp]
-  \centering
-  \includegraphics[clip,width=0.8\textwidth]{./figs/chap7_aso/CRM-wing-FFD.png}%
-  \caption{CRM FFD \label{fig:crm_ffd}}
-\end{figure}
-
-The flow solver used in this study is SUmb~\cite{sumb_pdf}, a finite-volume, cell-centered multi-block structured general flow solver that can solve a variety type of problems, including the compressible Euler, laminar Navier-Stokes and Reynolds-Averaged Navier-Stokes (RANS) equations. In this study, the compressible Euler equations are used. The DRP cluster on Rensselaer Polytechnic Institute's CCI is used, consisting of 64 nodes, and each node has 128GB of system memory and two eight-core 2.6 GHz Intel Xeon E5-2650 processors. 
-
-\subsection{Optimization Formulation}
-When doing optimization, sectional shapes are allowed to change by changing the vertical (z) coordinates 
-of each pair of top and bottom surface points in $n_x$ chord wise locations across the $n_y$ spanwise sections. The leading and trailing edges of the root section are fixed. For the other sections, the trailing edge are fixed while the leading edge is free. This way arbitrary wing twists could be implicitly represented by the remaining degrees of freedom. The wing planform is fixed, and the angle of attack is permitted to change.  
-
-The optimization problem can be formulated as: 
-\begin{equation*}
-  \begin{alignedat}{2}
-    \underset{x, \alpha}{\text{min}} \quad & C_D && \alpha: \text{angle of attack}; x:\text{FFD control points}   \\
-    \text{subject to} \quad & C_L \geq 0.5  && \text{Lift coefficient constraint}   \\
-      & C_{M_y} \geq -0.17          && \text{Pitching moment constraint}   \\
-      & t \geq 0.25 t_{\text{base}} && \text{Minimum thickness constraints}   \\
-      & V \geq V_{\text{base}} && \text{Minimum volume constraint}   \\
-      & \Delta z_{TE, \text{upper}} = -\Delta z_{TE, \text{lower}}  && \text{Fixed trailing edge constraints}   \\
-      & \Delta z_{LE, \text{upper, root}} = -\Delta z_{LE, \text{lower, root}} && \text{Fixed leading edge of the wing root}  
-  \end{alignedat}
-\end{equation*}
-The thicknesss constraints are imposed in 25 chord wise locations from 1\% to 99\% local chord and 30 span wise locations covering the full span.  The number of design variables include the angle of attack plus the shape design variables, or the number of FFD control points. The distributions of the FFD control points are listed in Table~\ref{tab:ffd_sizes}. Each spanwise station indicate a distinct airfoil shape, and the chordwise points control the shape of each airfoil, with half on the top and half on the bottom.  
- 
-\begin{table}[tbp]
-  \begin{center}
-    \caption{Number of design variables from six different FFD boxes
-    \label{tab:ffd_sizes}}
-  \begin{tabular}{ l c c c c c c}
-         & $\mathbf{72}$  & $\mathbf{192}$ & $\mathbf{320}$
-    & $\mathbf{480}$  &  $\mathbf{616}$  &  $\mathbf{768}$   \\
-    \hline
-    % \rule{0ex}{3ex}%
-    Chordwise  &   6 & 12  & 16  & 20 & 22 & 24 \\ 
-    Spanwise &   6 & 8 & 10  & 12 & 14 & 16 \\  
-    Vertical  &   2 & 2 & 2 & 2  & 2 & 2
-  \end{tabular}
-  \end{center}
-\end{table}
-
-The lift coefficient $C_L$, drag coefficient $C_D$ and pitching moment coefficient $C_{M_y}$ are aerodynamic coefficients calculated from the state variables - fluid mass density, velocity and pressure distributions across the mesh domain. While the state variables are related with the wing surface shape through the compressible Euler equations.  The flight condition considered is at Mach number 0.65. 
-
-
-\subsection{Results}
-This section presents the convergence results for both Kona and SNOPT. For Kona, the convergence plots contain 
-the iteration history of the infinity norm of the Complementarity products, the feasibility and optimality. For SNOPT, 
-the history of the merit function, the feasibility and optimality are plotted. Note that the definition of feasibility and optimality in Kona and SNOPT are slightly different. So it is reasonable that the two doesn't match each other exactly. 
-However, we can still get a conceptual idea of the progress of the optimization.    
-\subsubsection{Results-Kona}
-Figure~\ref{fig:kona_192}, \ref{fig:kona_480}, and \ref{fig:kona_768} shows the plots for the L1 grid, with no. of 
-design variables ranges from 192, 480 to 768. The first subplot in those figures shows the complementarity, feasibility and optimality history, while the second subplots shows history $CD$, $CL$, and $CMy$. Note that the 
-optimality and feasibility are only reduced by approximately $10^{-2}$, but that is also the case for SNOPT as shown in the figures in the next subsection. In addition, Figure 7 in~\cite{2015lyu_crm} also exhibits similar amount of 
-reduction in feasibility and optimality, although Figure 7 in~\cite{2015lyu_crm} is for RANS case. 
-
-Note that in Kona, the $CD$, $CL$, and $CMy$ do not conform to the inequality constraints very quickly, and they 
-stay a little far from it for the first half of the iteration. That could be explained by the stronger influence of the homotopy term on the optimization steps. At the second half, the inequality constraints are satisfied.   
-
-\begin{figure}[H]
-  \centering
-   \subfloat[\label{fig:kona192opt}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/kona/L1_192_comp_opt_feas.eps} } 
-  % \hspace{1em}
-  \subfloat[\label{fig:kona192cd}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/kona/L1_192_cdlm.eps} }
-  % \hspace{1em}
-   \caption{Convergence histories for L1 grid, no. of design 192 \label{fig:kona_192}}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-   \subfloat[\label{fig:kona480opt}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/kona/L1_480_comp_opt_feas.eps} } 
-  % \hspace{1em}
-  \subfloat[\label{fig:kona480cd}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/kona/L1_480_cdlm.eps} }
-  % \hspace{1em}
-   \caption{Convergence histories for L1 grid, no. of design 480 \label{fig:kona_480}}
-\end{figure}
-\begin{figure}[H]
-  \centering
-   \subfloat[\label{fig:kona768opt}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/kona/L1_768_comp_opt_feas.eps} }
-  % \hspace{1em}
-  \subfloat[\label{fig:kona768cd}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/kona/L1_768_cdlm.eps} }
-%   \hspace{1em}
-   \caption{Convergence histories for L1 grid, no. of design 768 \label{fig:kona_768}}
-\end{figure}
-
-
-\subsubsection{Results-SNOPT}
-Figure~\ref{fig:sn_192}, \ref{fig:sn_480}, and \ref{fig:sn_768} shows the plots for the L1 grid, with no. of 
-design variables ranges from 192, 480 to 768 using SNOPT. 
-
-\begin{figure}[H]
-  \centering
-   \subfloat[\label{fig:sn192opt}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/snopt/L1_192_opt_feas.eps} }
-  % \hspace{1em}
-  \subfloat[\label{fig:sn192cd}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/snopt/L1_192_cdlm.eps} }
-  % \hspace{1em}
-   \caption{Convergence histories for L1 grid, no. of design 192 \label{fig:sn_192}}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-   \subfloat[\label{fig:sn480opt}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/snopt/L1_480_opt_feas.eps} }
-  % \hspace{1em}
-  \subfloat[\label{fig:sn480cd}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/snopt/L1_480_cdlm.eps} }
-  % \hspace{1em}
-   \caption{Convergence histories for L1 grid, no. of design 480 \label{fig:sn_480}}
-\end{figure}
-\begin{figure}[H]
-  \centering
-   \subfloat[\label{fig:sn768opt}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/snopt/L1_768_opt_feas.eps}}
-  % \hspace{1em}
-  \subfloat[\label{fig:sn768cd}]{
-   \includegraphics[clip,width=0.55\textwidth]{./figs/chap7_aso/snopt/L1_768_cdlm.eps} }
-%   \hspace{1em}
-   \caption{Convergence histories for L1 grid, no. of design 768 \label{fig:sn_768}}
-\end{figure}
-
-\subsubsection{Discussion}
-The results above show that the Homotopy RSNK method can solve the Aerodynamic Shape Optimization 
-problem in its original form based on Euler. However, its speed is much slower than SNOPT. Consequently, 
-the scalability performance plot is not made. The low speed of Kona is largely due to the not so effective, but still 
-better than not being used, preconditioner. Because the there are only two nonlinear aerodynamic constraints in this problem, $CL$ and $CMy$, while the rest of the inequality constraints are large amount of linear geometric constraints, $750$ thickness constraints, $1$ volume constraint, the preconditioner is lumping the nonlinear and linear inequality constraints together when making SVD approximations.  The parameters used in Kona is listed as follows: 
-
-$\alpha_0=0.05,  \delta_{\text{targ}}=10, \phi^{\circ}_{\text{targ}}=20, n_{\mat{\Sigma}}=20 $ \\
-
-Suggestions for the next steps for this problem are proposed in the next chapter. 
-
-
+\end{enumerate}
 
 
 
