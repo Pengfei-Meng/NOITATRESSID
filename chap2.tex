@@ -41,7 +41,7 @@ H(q, q_0, \mu) = (1-\mu) F(q) + \mu G(q,q_0),\quad 0 \leq \mu \leq 1,
 where $\mu$ is the homotopy parameter, and $G : \mathbb{R}^N\times\mathbb{R}^{N}
 \rightarrow \mathbb{R}^N$ is chosen such that $G(q,q_0)=0$ is easy to solve and
 has the solution $q=q_0$.  %Formally, a homotopy is a continuous map from the 
-interval $[0,1]$ into a function space.
+% interval $[0,1]$ into a function space.
 
 We will use a simple, unconstrained optimization example to illustrate the
 homotopy idea. Consider the problem
@@ -255,7 +255,7 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
 \end{figure}
 
 
-\begin{description}
+\begin{description}\label{sec:desp}
 
   \item[Predictor:] During the predictor phase we first need to compute an
     approximate tangent direction $q' = dq/d\mu$, which is defined by taking the
@@ -306,9 +306,9 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
     we seek $q_{k+1}$ that reduces the relative residual below some tolerance:
     \begin{equation}\label{eq:cornt}
       \lVert H(q_{k+1},q_0,\mu_{k+1}) \rVert \leq
-      \epsilon_k \lVert H(\hat{q}_{k+1},q_0,\mu_{k+1}) \rVert.
+      \epsilon_H \lVert H(\hat{q}_{k+1},q_0,\mu_{k+1}) \rVert.
     \end{equation}
-    A loose relative tolerance of $\epsilon_k \in [0.1,0.5]$ is used for
+    A loose relative tolerance of $\epsilon_H \in [0.1,0.5]$ is used for
     homotopy parameter values $\mu > 0$ to avoid oversolving the corrector step.
     Once the algorithm reaches $\mu \leq \epsilon_\mu$, the tolerance is tightened to the
     user-specified value for the first-order necessary conditions.
@@ -328,7 +328,7 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
 \end{description}
 
 \begin{remark}
-  The above predictor-corrector approach is a classical \\  embedding
+  The above predictor-corrector approach is a classical  embedding \\
   method~\cite{allgower_georg_1993}, since the solution path is assumed to be
   parameterized by $\mu$; that is, the path has the form $(q(\mu),\mu)$.  This
   type of method cannot handle folds, or turning points, where the path reverses
@@ -425,7 +425,7 @@ slack $s_0$, and at the last point of the corrector step.
   the inequality multipliers are clipped to
     ensure they remain non-positive:
     \begin{equation}\label{eq:lclip}
-     \lambda \leftarrow \min(\lambda, 0)
+     \lambda_g \leftarrow \min(\lambda_g, 0)
     \end{equation}
       %\hat{\lambda}_{k+1} = \min(\lambda_{k} + \alpha_k (t_k)_{\lambda}, 0),
 
@@ -600,9 +600,9 @@ the arrangement of $1$ and $-1$ in $\mat{Q}$ is uniformly randomly generated;
  the initial point $x_0$ is also generated randomly with uniform probability in the domain
   $\Omega = \{ x \in \mathbb{R}^{100} \; | \; -2 \leq x_i \leq 2 \}$.  We call a solution successful if 
   its pattern is exact as given by \eqref{eq:pattern2}.  Table~\ref{tab:success} lists the success rate for different 
-  combinations of $\epsilon_{\text{krylov}}$ and $\epsilon_F$. 
-Note that $\epsilon_{\text{krylov}}$ is the tolerance of the Krylov solver introduced in Chapter~\ref{2:krylov}, 
-and $\epsilon_F$ XXXXX
+  combinations of $\epsilon_{\text{krylov}}$ and $\epsilon_H$. 
+Note that $\epsilon_{\text{krylov}}$ is the tolerance of the Krylov solver introduced in Chapter~\ref{2:krylov}; 
+$\tau$ and $\epsilon_H$ are the tolerances for the predictor and the corrector step as explained in Description~\ref{sec:desp}. 
  
 \begin{table}[H]
   \begin{center}
@@ -611,7 +611,7 @@ and $\epsilon_F$ XXXXX
   %\hline
  & \multicolumn{7}{  c   }{ $\epsilon_{\text{krylov}}$  } \\  \hline
  &   & $10^{-1}$  & $10^{-2} $     & $10^{-3} $    &  $10^{-4}$     & $ 10^{-5}$    & $10^{-6} $   \\  
-\multirow{2}{*}{$\tau$ and $\epsilon_F$ } &  $10^{-1}$ & 51\%  &90.0\% &94.2\% &94.6\% &93.9\% & 93.8\%  \\
+\multirow{2}{*}{$\tau$ and $\epsilon_H$ } &  $10^{-1}$ & 51\%  &90.0\% &94.2\% &94.6\% &93.9\% & 93.8\%  \\
 	               					      &  $ 10^{-2}$ & 47.2\%  &93.1\% &94.4\% &93.9\% &94.2\% &  94.5\%\\
    % \hline
   \end{tabular}
@@ -621,7 +621,7 @@ and $\epsilon_F$ XXXXX
 As can be seen from Table~\ref{tab:success}, the robustness of the algorithm for handling non-convexity 
 is obviously impacted by the tolerances, particularly $\epsilon_{\text{krylov}}$. The results show that 
 $\epsilon_{\text{krylov}}$ has to be below $ 10^{-2}$
-for effective non-convexity handling, and the predictor and corrector linear solve tolerance $\epsilon_F$ 
+for effective non-convexity handling, and the predictor and corrector linear solve tolerance $\epsilon_H$ 
 plays a smaller role than $\epsilon_{\text{krylov}}$.   
   
 % \begin{figure}[tbp]
@@ -630,7 +630,7 @@ plays a smaller role than $\epsilon_{\text{krylov}}$.
 %  \caption{Success Minimizers. \label{fig:nonconvex}}
 %\end{figure}   
   
-\textbf{  I would delete 3.6 and this paragraph.  Alternatively, you could have a table that shows the percentage for each failed dimension. (I have never liked Fig. 3.6, probably because the norm of the initial starting point is not very useful predictor). }
+%\textbf{  I would delete 3.6 and this paragraph.  Alternatively, you could have a table that shows the percentage for each failed dimension. (I have never liked Fig. 3.6, probably because the norm of the initial starting point is not very useful predictor). }
   
   
 The results show that the optimization method can start from infeasible points, and can handle certain 

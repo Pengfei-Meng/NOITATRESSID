@@ -361,14 +361,14 @@ left and right singular vectors.
 %     }}
 %\end{remark}
 
-\begin{remark}
- At the beginning of the homotopy iterations when the activeness of the constraints are far from 
-determined, it happens sometimes that  $ \mat{C}_\mu^{-1}  \mat{\Lambda}_{\mu}$ are close to 
-vector of zeros, resulting in rank dependent matrix-vector products in Lanczos iterations. To deal 
-with this issue, at the beginning, we use $  \mat{A}_\mu^T \mat{A}_\mu
-  \approx \mat{U} \mat{\Sigma} \mat{V}^T $ in the preconditioner at the beginning of the homotopy iteration. 
-  When $\mu$ gets smaller than $\Sigma_e$, we use \eqref{eq:svd} in the preconditioner. 	
-\end{remark}
+%\begin{remark}
+% At the beginning of the homotopy iterations when the activeness of the constraints are far from 
+%determined, it happens sometimes that  $ \mat{C}_\mu^{-1}  \mat{\Lambda}_{\mu}$ are close to 
+%vector of zeros, resulting in rank dependent matrix-vector products in Lanczos iterations. To deal 
+%with this issue, at the beginning, we use $  \mat{A}_\mu^T \mat{A}_\mu
+%  \approx \mat{U} \mat{\Sigma} \mat{V}^T $ in the preconditioner at the beginning of the homotopy iteration. 
+%  When $\mu$ gets smaller than $\Sigma_e$, we use \eqref{eq:svd} in the preconditioner. 	
+%\end{remark}
 
 Based on the above approximations, the (approximate) inverse of the matrix in
 \eqref{eq:schur} can be found using the Sherman-Morrison-Woodbury formula as follows:
@@ -547,13 +547,13 @@ where the major component is the following operation besides the matrix-vector p
 %\end{equation}
 By stacking $ \mat{A}_{h,\mu} $ and $\mat{A}_{g,\mu}$ together, 
 the following expressions can be derived: 
-\begin{equation}
+\begin{equation}\label{pc:eq1}
 \mat{W}_\mu  +  \mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu = 
 \mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
 + \frac{1}{\bar{\mu}}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} 
 \end{equation}
 where 
-\begin{equation}
+\begin{equation}\label{pc:eq2}
  \mat{A}_\mu = 
  \begin{bmatrix}
  \mat{A}_{h,\mu} \\
@@ -568,6 +568,7 @@ where
 This way we can use the Sherman-Morrison formula to compute the inverse of 
 $\mat{W}_\mu  +  \mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, and use the Lanczos method to find the SVD 
 approximation of $\mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, in the same manner as in the previous section. 
+
 
 \newpage
 \section{Scalable Quadratic Optimization Problem}
@@ -679,7 +680,7 @@ the problem size increases. As can be seen, the new method exhibits good scalabi
 
 \begin{figure}[tbp]
   \centering
-  \includegraphics[clip,width=0.8\textwidth]{./figs/chap4_test/quadratic_random_100_nocolor.eps}%
+  \includegraphics[clip,width=0.8\textwidth]{./figs/chap4_test/random_100_color.eps}%
   \caption{CPU cost versus number of design variables for the quadratic
     optimization problem.\label{fig:quad_scale}}
 \end{figure}

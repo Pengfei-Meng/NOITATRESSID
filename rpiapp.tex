@@ -8,51 +8,50 @@
 %\addcontentsline{toc}{chapter}{APPENDICES}             %toc entry  or:
 \addtocontents{toc}{\parindent0pt\vskip12pt APPENDICES} %toc entry, no page #
 
-\chapter{THIS IS AN APPENDIX}
-
+\chapter{PARAMETERS FOR THE RSNK ALGORITHM}
 \begin{landscape}     % ADD CUTER PROBLEM SETTNGS!  refer to this table for all problems involved!!
-\begin{longtable}{ l c c c c c c c }
+\begin{longtable}{ l c c c c c c c c}  %$\alpha_0=0.05,  \delta_{\text{targ}}=10, \phi^{\circ}_{\text{targ}}=20, n_{\mat{\Sigma}}=20 $ \\
 %  \begin{center}
     \caption{Parameters used in the test problems \label{tab:param}} \\
     \textbf{Parameters} & $\textbf{Default}$     & $\textbf{Range}$ &  $\textbf{Sphere}$    &   $\textbf{Non-convex}$ 
-    & $ \textbf{Quadratic} $   & \textbf{Structural}    &  \textbf{ASO} \\ \hline
+    & $ \textbf{Quadratic} $   & \textbf{CUTEr}   & \textbf{Structural}    &  \textbf{ASO} \\ \hline
     %\rule{0ex}{3ex}%
-    \multicolumn{8}{ l }{Predictor-Corrector Algorithm} \\   %  $\delta_{\text{targ}}$ and $\phi_{\text{targ}}$. 
+    \multicolumn{9}{ l }{Predictor-Corrector Algorithm} \\   %  $\delta_{\text{targ}}$ and $\phi_{\text{targ}}$. 
     \hline    
-    $K_{\max}$             	&  100     & $\geq$100   & 500      & 100 	 &  100       &    100  & 100    \\ 
-     $J_{\max}$  		&   2         & $\geq$2         & 2    & 2          & 2           &      2     & 2   \\
-    $\epsilon_F$ 	           		&  1e-6     & [1e-8, 1e-3]    & 1e-7   & 1e-7 	 & 1e-7       &    1e-4   & 1e-3  \\ 
-       $\tau$    		&   0.1      & [0.1,0.5]	    & 0.1    & 0.1          & 0.1	 &     0.1   & 0.1  \\
-    $\epsilon_H$    		&   0.1      & [0.1,0.5]	    & 0.1       & 0.1          & 0.1	 &     0.1   & 0.1    \\
+    $K_{\max}$             	&  100     & $\geq$100   & 500      & 100 	 &  100    & 500   &    100  & 100    \\ 
+     $J_{\max}$  		&   2         & $\geq$2         & 2    & 2          & 2           &    2  & 2     & 2   \\
+    $\epsilon_F$ 	           		&  1e-6     & [1e-8, 1e-3]    & 1e-7   & 1e-7 	 & 1e-7    &  1e-7  &    1e-4   & 1e-3  \\ 
+       $\tau$    		&   0.1      & [0.1,0.5]	    & 0.1    & 0.1          & 0.1    &  0.1	   &     0.1   & 0.1  \\
+    $\epsilon_H$    		&   0.1      & [0.1,0.5]	    & 0.1       & 0.1          & 0.1	& 0.1  &     0.1   & 0.1    \\
    % $\epsilon_{\mu} $   & 1e-9     & [1e-10, 1e-6]   &   &   1e-9  & 1e-9  & 1e-6  &  \\   
-    \textbf{$\alpha_0$}             &  0.05     & $\geq$0.01    & 0.05      & 0.05	 & [40,60,80,100,120]  &  0.05  & 0.05 \\
-    $\delta_{\text{targ}}$      &  1.0	& [1.0,10]       & 1	    & 10		 & 10    &   1.0   & 10	  \\
-    $\phi^{\circ}_{\text{targ}}$   & 10.0	& [5.0,50] 	     & 10     & 10		 & 20    &   10    & 20    \\
-    $\zeta_{\max}$ 		        &  50		& [10,50]	& 50       & 50		 & 50    	 &   50   & 50  \\
-    $\zeta_{\min}$ 		        &  0.5	& 0.5		& 0.001       & 0.001	 & 0.001    &   0.5  & 0.001 \\
-    $\Delta \mu_{\max}$		        &  -5e-4	& [-5e-4, -5e-1] & -5e-4 & -5e-4	 & -5e-4     &  -5e-4 & -5e-4 \\  
-    $\Delta \mu_{\min}$		        &  -0.9	& -0.9 	& -0.9	       & -0.9		 & -0.9       &  -0.9  & -0.9	  \\
-    $s_0$                           & $\mathbf{e}$     &   $>$ 0  & $g(x_0)$  &    5$\mathbf{e}$    &  10$\mathbf{e}$   &  $g(x_0)$  & $g(x_0)$  \\ 
-    $\tau_s$                      & 1e-6    & 1e-6    &  1e-6 &  1e-6   &  1e-6    & 1e-6  &  1e-6 \\
+    \textbf{$\alpha_0$}             &  0.05     & $\geq$0.01    & 0.05      & 0.05	 & [40,60,80,100,120]  &   *\footnote{*: provided in Table~\ref{tab:cuter}} & 0.05  & 0.05 \\
+    $\delta_{\text{targ}}$      &  1.0	& [1.0,10]       & 1	    & 10		 & 10    & *   & 1.0   & 10	  \\
+    $\phi^{\circ}_{\text{targ}}$   & 10.0	& [5.0,50] 	     & 10     & 10		 & 20            &  *  &   10    & 20    \\
+    $\zeta_{\max}$ 		        &  50		& [10,50]	& 50       & 50		 & 50    & 50	 &   50   & 50  \\
+    $\zeta_{\min}$ 		        &  0.5	& 0.5		& 0.001       & 0.001	 & 0.001    &  0.001  &   0.5  & 0.001 \\
+    $\Delta \mu_{\max}$		        &  -5e-4	& [-5e-4, -5e-1] & -5e-4 & -5e-4	 & -5e-4     & -5e-4   &  -5e-4 & -5e-4 \\  
+    $\Delta \mu_{\min}$		        &  -0.9	& -0.9 	& -0.9	       & -0.9		 & -0.9  & -0.9     &  -0.9  & -0.9	  \\
+    $s_0$                           & $\mathbf{e}$     &   $>$ 0  & $g(x_0)$  &    5$\mathbf{e}$    &  10$\mathbf{e}$ &10$\mathbf{e}$   &  $g(x_0)$  & $g(x_0)$  \\ 
+    $\tau_s$                      & 1e-6    & 1e-6    &  1e-6 &  1e-6   &  1e-6  &1e-6   & 1e-6  &  1e-6 \\
     \hline
-    \multicolumn{8}{ l }{Preconditioner} \\ 
+    \multicolumn{3}{ l }{Preconditioner}  & none & none & & & &  \\ 
     \hline    
-    $\mathbf{{n_{\mat{\Sigma}}}}$    & 5	       & $\geq$2	  & -    &  -	         &  2       &  [20,80,320]   & 20 \\
-    $\beta$				& 1.0	       & $>$0        & -      & -    &  -      &  0.1 & -  \\
-    $N_{\text{bfgs}}$		& 10	       & [1, 20]		& - 	&  -   	 &  10	& -     &  20    \\
-    $\mu_e$			& -1	       & [0, 1] 	& -	& -	         &  -	        & 1e-3  & 1e-3\\
-    $\Sigma_e$			& 1 	       & [0, 1]      & -           & -		& -		& 1e-3 & - \\
+    $n_{\mat{\Sigma}}$    & 5	       & $\geq$2	  & -    &  -	         &  2     &  *   &  [20,80,320]   & 20 \\
+    $\beta$				& 1.0	       & $>$0        & -      & -    &  -  & -   &  0.1 & -  \\
+    $N_{\text{bfgs}}$		& 10	       & [1, 20]		& - 	&  -   	 &  10   & 10 	& -     &  20    \\
+    $\mu_e$			& -1	       & [0, 1] 	& -	& -	         &  -	    & -    & 1e-3  & 1e-3\\
+    $\Sigma_e$			& 1 	       & [0, 1]      & -           & -		& -	& -	& 1e-3 & - \\
     \hline
     \multicolumn{8}{ l }{Krylov Iterative Solver} \\ 
     \hline       
-    $n_k$		& 20        & [10,30]              & 20	 & 20	 &  20       &  20   & 20  \\
-    $\epsilon_{\text{krylov}}$		& 1e-2     & [0, 0.1]    &1e-2       	&1e-2	 &  1e-2    &  1e-4  &1e-2\\
+    $n_k$		& 20        & [10,30]              & 20	 & 20	 &  20    &20   &  20   & 20  \\
+    $\epsilon_{\text{krylov}}$		& 1e-2     & [0, 0.1]    &1e-2       	&1e-2	 &  1e-2   & 1e-2 &  1e-4  &1e-2\\
     \hline
 %  \end{center}
 \end{longtable}    
 \end{landscape}
 
-
+\chapter{SUPPLEMENTS ON THE CUTER PROBLEMS}
 
 \section{Brief overview of the CUTEr test problems}\label{sec:cuternm}
 For each test problem, CUTEr provides access to the objective function and the constraint functions, as well as their derivatives.
@@ -146,15 +145,3 @@ The last two characters have the following options:
 \item \textbf{n} - \textbf{m}: the number of variables and constraints (fixed variables and bound constraints excluded), 
 \item \textbf{V} - \textbf{V}: an integer chosen by the user among the given list of fixed numbers.
 \end{itemize}
-
-
-\section{A Section Heading}
-
-This is how equations are numbered in an appendix:
-\begin{equation}
-x^2 + y^2 = z^2
-\end{equation} 
-This is a sentence to take up space and look like text.
-
-\chapter{THIS IS ANOTHER APPENDIX} 
-This is a sentence to take up space and look like text.
