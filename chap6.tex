@@ -4,7 +4,7 @@
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{CONCLUSIONS AND RECOMMENDATIONS}
+\chapter{CONCLUSIONS AND RECOMMENDATIONS}\label{chap:con}
 
 \section{Conclusions}
 When solving PDE-constrained design optimization problems, many practitioners
@@ -48,7 +48,8 @@ criteria whereas the matrix-explicit SQP algorithm failed to converge.
 
 \item During the course of this research, it was found that distinguishing between nonlinear and linear constraints is important for the construction of the matrix-free preconditioner. 
 Unfortunately, given the current API in Kona, the current implementation of the preconditioner must apply the Lanczos SVD method to approximate the whole inequality block in~\ref{eq:svd}, 
-After separating the linear constraints with nonlinear constraints, the SVDapproximation will be only applied to the nonlinear part; the explicit linear Jacobians could be stored and used in the same way as the conventional optimization methods. 
+After separating the linear constraints with nonlinear constraints, the SVD
+approximation will be only applied to the nonlinear part; the explicit linear Jacobians could be stored and used in the same way as the conventional optimization methods. 
 The explicit storage of the linear constraint Jacobian would mean that the algorithm is only "matrix-free" with respect to the nonlinear constraints, but the additional storage cost may be outweighed by the reduced computational cost. 
 
 \item While the homotopy-based globalization is effective, it often requires very small predictor steps and tight corrector tolerances to avoid local maximizers and saddle points.  Unfortunately, following the zero curve this closely is computationally costly.  It is recommended that other globalization methods be considered, including, perhaps, using no globalization but adding an a posterior check on the curvature of the Hessian. 

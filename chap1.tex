@@ -40,7 +40,7 @@ In such applications, an optimization library is coupled with PDE solvers. The o
 
  \begin{figure}[H]
   \centering
-  \includegraphics[clip, width=1.0\columnwidth]{./figs/chap1_intro/1_optFlow.png}%  
+  \includegraphics[clip, width=0.8\columnwidth]{./figs/chap1_intro/1_optFlow.png}%  
   \caption{Schematic Process of PDE-constrained Optimization\label{fig:outflow}}
 \end{figure}
 
@@ -65,26 +65,26 @@ In order to efficiently solve PDE-constrained optimization problems, optimizatio
 \underset{x,u}{\text{min}} \quad &f(x, u) &\\
 \text{subject to} \quad &  h(x,u) &= 0  \\
  &  g(x,u) &\geq 0  \\
-\text{governed by} \quad &  \mathcal{R}(x, u) &= 0, \\
+\text{governed by} \quad &  \mathsf{R}(x, u) &= 0, \\
 \end{aligned}
 \end{equation}
-where $x \in \mathbb{R}^n, u \in \mathbb{R}^v$ are the design and state vectors respectively, and $f: \mathbb{R}^n \rightarrow \mathbb{R}, h: \mathbb{R}^n \rightarrow \mathbb{R}^l, g:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are the objective, equality and inequality constraints respectively. We assume that $f$, $h$ and $g$ have continuous second derivatives. $\mathcal{R}(x, u)$ represents the PDE governing equations for the physics system. 
+where $x \in \mathbb{R}^n, u \in \mathbb{R}^v$ are the design and state vectors respectively, and $f: \mathbb{R}^n \rightarrow \mathbb{R}, h: \mathbb{R}^n \rightarrow \mathbb{R}^l, g:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are the objective, equality and inequality constraints respectively. We assume that $f$, $h$ and $g$ have continuous second derivatives. $\mathsf{R}(x, u)$ represents the PDE governing equations for the physics system. 
 
 A solution to~\eqref{eq:gen1} must satisfy the first-order necessary optimaltiy conditions~\cite{Nocedal2006NO}.  These conditions are most easily expressed in terms of the Lagrangian, which is the scalar function defined below
 \begin{equation}\label{eq:lag}
-\mathcal{L}(x, u, \psi, s, \lambda_h, \lambda_g) = f(x,u) + \lambda_h^T h(x, u) + \lambda_g^T (g(x,u)-s) + \psi^T \mathcal{R}(x,u),
+\mathsf{L}(x, u, \psi, s, \lambda_h, \lambda_g) = f(x,u) + \lambda_h^T h(x, u) + \lambda_g^T (g(x,u)-s) + \psi^T \mathsf{R}(x,u),
 \end{equation} 
 where $s \in \mathbb{R}^m$ are the so-called slack variables,  and $\lambda_h \in  \mathbb{R}^l$,  $\lambda_g \in  \mathbb{R}^m$ are the Lagrangian multiplier vectors for equality and inequality constraints, respectively. 
 
-Using $\mathcal{L}$, the first-order necessary, or the \textit{Karush-Kuhn-Tucker} (KKT) optimality conditions for \eqref{eq:gen1} can be expressed as
+Using $\mathsf{L}$, the first-order necessary, or the \textit{Karush-Kuhn-Tucker} (KKT) optimality conditions for \eqref{eq:gen1} can be expressed as
 \begin{equation}\label{eq:kktcond}
 \begin{aligned}
-\nabla_x \mathcal{L} &= \nabla_x f + \lambda_h^T \nabla_x h + \lambda_g^T \nabla_x g + \psi^T \nabla_x\mathcal{R} = 0, \\
-\nabla_u \mathcal{L} &= \nabla_u f + \lambda_h^T \nabla_u h + \lambda_g^T \nabla_u g + \psi^T \nabla_u\mathcal{R} = 0, \\
-\nabla_{\psi} \mathcal{L} &= \mathcal{R} = 0, \\
-\nabla_{\lambda_h} \mathcal{L} &= h = 0, \\
-\nabla_{\lambda_g} \mathcal{L} &= g - s = 0, \\
--\mathcal{S} \Lambda_g e &= 0,\\
+\nabla_x \mathsf{L} &= \nabla_x f + \lambda_h^T \nabla_x h + \lambda_g^T \nabla_x g + \psi^T \nabla_x\mathsf{R} = 0, \\
+\nabla_u \mathsf{L} &= \nabla_u f + \lambda_h^T \nabla_u h + \lambda_g^T \nabla_u g + \psi^T \nabla_u\mathsf{R} = 0, \\
+\nabla_{\psi} \mathsf{L} &= \mathsf{R} = 0, \\
+\nabla_{\lambda_h} \mathsf{L} &= h = 0, \\
+\nabla_{\lambda_g} \mathsf{L} &= g - s = 0, \\
+-\mathsf{S} \mathsf{\Lambda}_g e &= 0,\\
 s \geq 0, &\quad \lambda_g \leq 0. \\
 \end{aligned}
 \end{equation}
@@ -92,47 +92,44 @@ s \geq 0, &\quad \lambda_g \leq 0. \\
 
 %the solution of an $v\times v$ linear system, \ie a discretized PDE.  For example, the total derivative of the $i$th constraint $g_i$ in \eqref{eq:gen1} is given by
 %\begin{align}
-%\frac{d}{dx}\left(g_i\right) &= \frac{\partial}{\partial x}\left(g_i\right) + \psi ^T \left[ \frac{\partial}{\partial x}\mathcal{F} \right] \\
+%\frac{d}{dx}\left(g_i\right) &= \frac{\partial}{\partial x}\left(g_i\right) + \psi ^T \left[ \frac{\partial}{\partial x}\mathsf{F} \right] \\
 %\intertext{where $\psi \in \mathbb{R}^v$ is the adjoint which is governed by the discretized PDE,}
-%\left[ \frac{\partial}{\partial u}\mathcal{F} \right]^T \psi &= - \frac{\partial}{\partial u}\left(g_i\right) 
+%\left[ \frac{\partial}{\partial u}\mathsf{F} \right]^T \psi &= - \frac{\partial}{\partial u}\left(g_i\right) 
 %\end{align}
 %The computational cost of solving the adjoint equation is equivalent to that of the PDEs governing equation. Clearly, if the number of constraints $m$ is sufficiently large, it will be prohibitively expensive to compute all the total derivatives for optimization as each one entails an adjoint. 
 
 
 In the context of PDE-constraints, the nonlinear system of equations \eqref{eq:kktcond} can be solved in either the full space or the reduced space.  Full-space methods~\cite{DBLP:journals/siamsc/BirosG05,DBLP:journals/siamsc/BirosG05a,haber:2001} solve all the unknowns in \eqref{eq:kktcond} simultaneously. This results in a large algebraic system consisting of more than double the number of PDE state variables (due to the adjoint).  In addition, if Newton's method is used to solve~\eqref{eq:kktcond}, the resulting linear systems are highly sparse, indefinite, and ill-conditioned. An advantage of the full-space approach is that, 
-during the intermediate optimization iterations, the PDE state equation, $\mathcal{R} =0$, and adjoint equation, $\nabla_u \mathcal{L} = 0$, do not need to be solved exactly. This avoids the computational expense of tightly converging the PDE and adjoint equation residuals; however, this is also a potential disadvantage in practical engineering problems, because, if the optimization fails to converge, the intermediate solution may not be feasible with respect to the physics.  Furthermore, for highly nonlinear PDEs, \eg gas dynamics with shocks and boundary layers, practitioners have developed specialized globalization strategies that may be difficult to take advantage of in general-purpose full-space optimization algorithms.  Lastly, no general purpose optimization libraries exist for full-space methods.  
+during the intermediate optimization iterations, the PDE state equation, $\mathsf{R} =0$, and adjoint equation, $\nabla_u \mathsf{L} = 0$, do not need to be solved exactly. This avoids the computational expense of tightly converging the PDE and adjoint equation residuals; however, this is also a potential disadvantage in practical engineering problems, because, if the optimization fails to converge, the intermediate solution may not be feasible with respect to the physics.  Furthermore, for highly nonlinear PDEs, \eg gas dynamics with shocks and boundary layers, practitioners have developed specialized globalization strategies that may be difficult to take advantage of in general-purpose full-space optimization algorithms.  Lastly, no general purpose optimization libraries exist for full-space methods.  
 
 %Newton-based full-space methods possess good scaling, but are complicated to implement as they require intrusion to the PDE solver. 
 Reduced-space algorithms for solving~\eqref{eq:kktcond}  
-treat the states $u$ and the adjoints $\psi$ as implicit functions of the design variables through $\mathcal{R}(x,u(x)) = 0$, and $\nabla_u \mathcal{L} = 0$. Consequently, the reduced KKT conditions can be formulated as follows:
+treat the states $u$ and the adjoints $\psi$ as implicit functions of the design variables through $\mathsf{R}(x,u(x)) = 0$, and $\nabla_u \mathsf{L} = 0$. Consequently, the reduced KKT conditions can be formulated as follows:
 \begin{equation}\label{eq:opt00x}
  \begin{gathered}
     F(x,s,\lambda_h, \lambda_g) \equiv 
     \begin{bmatrix}
 \nabla_x f + \lambda_h^T \nabla_x h + \lambda_g^T \nabla_x g\\
--\mathcal{S} \Lambda_g e\\
+-\mathsf{S} \mathsf{\Lambda}_g e\\
 h  \\
 g - s 
 \end{bmatrix} =0,\\
 \text{subject to} \quad s_i \geq 0, \quad \text{and} \quad \lambda_{gi} \leq 0. \\
 \end{gathered}
 \end{equation}
-Where the unknown are $x^T, s^T, \lambda_h^T, \lambda_g^T$
-
-$q \equiv (x^T, s^T,
-\lambda_h^T, \lambda_g^T) \in \mathbb{R}^{N}$ is a vector of all the unknowns,
+where the unknowns are $x^T, s^T, \lambda_h^T, \lambda_g^T$, 
 and $F :\mathbb{R}^{N} \rightarrow \mathbb{R}^{N}$ is the vector-valued residual
 of the KKT conditions, excluding the inequalities on $s$ and $\lambda_g$.  For
 notational convenience, we have also introduced $e = [1,1,\ldots,1]^T$ and the diagonal
 matrices
 \begin{equation*}
-  \mat{S} = \mydiag\left(s_1,s_2,\ldots,s_m\right),\qquad\text{and}\qquad
-  \mat{\Lambda_g} = \mydiag\left(\lambda_{g1}, \lambda_{g2}, \ldots, \lambda_{gm}\right).
+  \mathsf{S} = \mydiag\left(s_1,s_2,\ldots,s_m\right),\qquad\text{and}\qquad
+  \mathsf{\Lambda}_g = \mydiag\left(\lambda_{g1}, \lambda_{g2}, \ldots, \lambda_{gm}\right).
 \end{equation*}
 
 The reduced-space approach to PDE-constrained optimization is attractive for a few reasons.  First, it should be clear that the KKT system~\eqref{eq:opt00x} is much smaller than~\eqref{eq:kktcond}.  Second, reduced-space algorithms are more modular, since they can make direct use of existing PDE primal and adjont solvers.  Of course, the reduced-space approach is not without difficulties.  
 
-The challenges include globalization, which refers to the ability to bypass local minimizers, and nonconvexity handling, which involves by passing maximizers. The first challenge is addressed in Chapter~\ref{chap:homotopy} and the second in Chapter~\ref{chap:linsys}. 
+The challenges include globalization, which refers to the ability to bypass local minimizers, and nonconvexity handling, which involves bypassing maximizers. The first challenge is addressed in Chapter~\ref{chap:homotopy} and the second in Chapter~\ref{chap:linsys}. 
 
 %\cite{rumpfkeil:2010b} uses a reduced-space Newton algorithm in Knitro to perform steady and unsteady aerodynamic shape optimization, with less computational cost compared with a quasi-Newton method; but the reduced Hessian is computed explicitly. 
 
@@ -144,8 +141,10 @@ also know as truncated-Newton methods in the optimization
 literature~\cite{nash:2000}.  
 
 With the exception of the bounds on $s$ and $\lambda_g$, the KKT conditions
-\eqref{eq:opt00x} form a set of nonlinear algebraic equations, $F(q)=0$.  These
-equations can be solved, in principle, using Newton iterations of the form
+\eqref{eq:opt00x} form a set of nonlinear algebraic equations, $F(q)=0$, 
+where $q \equiv (x^T, s^T,
+\lambda_h^T, \lambda_g^T) \in \mathbb{R}^{N}$ is a vector of all the unknowns.
+These equations can be solved, in principle, using Newton iterations of the form
 \begin{equation}
 (\nabla_q F) \Delta q^{(k)} = -F(q^{(k)}), \label{eq:Newton}
 \end{equation}
@@ -160,6 +159,7 @@ inexact-Newton condition
 \end{equation}
 for some parameter $\eta_k \in (0,1)$.
 
+
 There has been considerable success applying inexact-Newton methods to
 unconstrained optimization problems; see \cite{nash:2000} and the references
 therein.  On the other hand, inexact-Newton methods for general (nonconvex)
@@ -172,21 +172,21 @@ optimization has been disappointing.
 
 Applying Newton's method to \eqref{eq:opt00x}, the KKT system, also called primal-dual system is obtained:
 \begin{equation}\label{eq:kkt0}
-\begin{bmatrix} \nabla_{xx} \mathcal{L} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
-    0 & -\Lambda_g & 0 & -\mathcal{S} \\
-    \mathcal{A}_{h} & 0 & 0 & 0 \\
-    \mathcal{A}_{g} & -\mathcal{I} & 0 & 0 
+\begin{bmatrix} \nabla_{xx} \mathsf{L} & 0 & \nabla_x h^T  & \nabla_x g^T  \\
+    0 & -\mathsf{\Lambda}_g & 0 & -\mathsf{S} \\
+     \nabla_x h & 0 & 0 & 0 \\
+    \nabla_x g & -\mathsf{I} & 0 & 0 
     \end{bmatrix}
     \begin{bmatrix} p_x \\ p_s \\ p_h \\ p_g \end{bmatrix}
-    = - \begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g e \\ h \\ g - s \end{bmatrix}
+    = - \begin{bmatrix} \nabla_x \mathsf{L} \\ -\mathsf{S} \Lambda_g e \\ h \\ g - s \end{bmatrix}
 \end{equation}
-where $\mathcal{L}$ the Lagrangian is defined in \eqref{eq:lag}, $\mathcal{S}$ and $\Lambda_g$ are as defined previously. 
+where $\mathsf{L}$ the Lagrangian is defined in \eqref{eq:lag}, $\mathsf{S}$ and $\mathsf{\Lambda}_g$ are as defined previously. 
 
 NK method solves \eqref{eq:kkt0} using Krylov method, so it only need the matrix-vector product of the system matrix. The products are formed in a matrix-free way by solving two second-adjoint systems, for details, see~\cite{hicken:inexact2014, dener:idf2017} and the references therein.  However, while NK methods can avoid the cost associated with forming the explicit constraint Jacobian, the extension to inequality constraints faces several significant challenges. First, active-set and interior-point algorithms that make use of an explicit basis for the null space of the constraint Jacobian cannot be used, because such a basis requires the Jacobian to be explicitly available.  Second, the primal-dual saddle-point system raised in optimization is indefinite and ill-conditioned, making it difficult for iterative Krylov methods to converge to a sufficient tolerance, hurting the convergence rate of Newton's method. Third, dealing with nonconvex Hessian of the Lagrangian in the null space of the constraint Jacobian is also a non-trivial task. 
 
 
 %The solution to the optimization problem \eqref{eq:opt00x} is a saddle point for the Lagrangian \eqref{eq:lag}, as the optimal design point minimizes the Lagrangian, while the optimal multipliers maximizes the Lagrangian ~\cite{benzi2005numerical}. 
-%Note that the matrix in  \eqref{eq:kkt0} is nonsymmetric \footnote{By using a scaled slack block, $\tilde{p_s} = \mathcal{S}^{-1}e p_s $,  the system \eqref{eq:kkt0} can be turned into a symmetric one. We adopt the nonsymmetric version, as we think the preconditioner for this form has better numerical properties, see the section on preconditioner later}. 
+%Note that the matrix in  \eqref{eq:kkt0} is nonsymmetric \footnote{By using a scaled slack block, $\tilde{p_s} = \mathsf{S}^{-1}e p_s $,  the system \eqref{eq:kkt0} can be turned into a symmetric one. We adopt the nonsymmetric version, as we think the preconditioner for this form has better numerical properties, see the section on preconditioner later}. 
 
 
 %%%%%%%
@@ -231,8 +231,8 @@ The approach to addressing globalization is to introduce a homotopy map that
 implicitly defines a solution curve that connects the solution to an easy
 problem to the solution of the desired problem.  Then a
 predictor-corrector algorithm is proposed to follow the curve from the easy to the desired
-solution.  A related globalization is used in \cite{Perez2009homotopy} in the
-context of a trust-region managed sequential approximate optimization.  
+solution.  %A related globalization is used in \cite{Perez2009homotopy} in the
+%context of a trust-region managed sequential approximate optimization.  
 
 
 To address the conditioning of the KKT matrix, a low-rank approximation of 
@@ -250,19 +250,14 @@ complement. The matrix-vector products are obtained using approximate state and 
 \section{Thesis Outline}
 The following contents are organized as follows: 
 \begin{itemize}
-\item Chapter 2 lays out the mathematical foundations for the whole work. The first-order optimality conditions 
-for the reduced-space method that we are aiming to solve, the inexact-Newton methods that we use to solve it, 
-together with Krylov iterative method are all briefly explained. 
 
-\item Chapter 3 reviews homotopy-based globalization and the homotopy map adopted in this work. Then it describes the predictor-corrector path-following algorithm that traces the homotopy zero curve using Newton-Krylov method. To verify the proposed globalized algorithm, a Sphere problem with a linear objective and quadratic inequality constraints is tested. Then a constructed indefinite problem is used to examine the algorithm's ability to bypass local maximum points. 
+\item Chapter~\ref{chap:homotopy} reviews the homotopy-based globalization and the homotopy map adopted in this work. Then it describes the predictor-corrector path-following algorithm that traces the homotopy zero curve using Newton-Krylov method. To verify the proposed globalized algorithm, a Sphere problem with a linear objective and a quadratic inequality constraint is tested. Then a synthetic indefinite problem is used to examine the algorithm's ability to bypass local maximum points. 
 
-\item Chapter 4 is focused on describing the proposed matrix-free preconditioner, firstly for solving inequality constrained problems, then for solving problems with both equality and inequality constraints. A constructed quadratic problem with linear inequality constraints is used to investigate the effectiveness of the inequality preconditioner and the scalability performance of the algorithm. 
+\item Chapter~\ref{chap:linsys} is focused on describing the proposed matrix-free preconditioner, firstly for solving inequality constrained problems, then for solving problems with both equality and inequality constraints. A synthetic quadratic problem with linear inequality constraints is used to investigate the effectiveness of the inequality preconditioner and the scalability performance of the algorithm. 
 
-\item Chapter 5 begins with briefly introducing the optimization environment Kona, a state-of-the-art optimization algorithm SNOPT against which the performance of the new method is compared, and the parameter settings for the new method.  Then it briefly introduces the CUTEr problem format, its classification and the Kona-CUTEr interface. Lastly the proposed optimization algorithm and preconditioners are tested on a subset of the CUTEr problems. 
-  
-\item Chapter 6 applies the algorithm and the preconditioners on two engineering design problems: firstly on a mass minimization stress-constrained structural problem, where the results and the convergence history of the algorithm are compared with that of SNOPT; secondly on an aerodynamic shape optimization problem. 
-
-\item Chapter 7 provides conclusions and some suggestions for future works. 
+\item Chapter~\ref{chap:tests} begins with introducing the optimization environment Kona and a state-of-the-art optimization algorithm SNOPT against which comparisons will be made.  The new algorithm and the preconditioners are tested on three problems: firstly on a subset of the CUTEr problems, secondly on a mass minimization stress-constrained structural problem, and lastly on an aerodynamic shape optimization problem. 
+ 
+\item Chapter~\ref{chap:con} provides conclusions and some suggestions for future works. 
 \end{itemize}
 
 
@@ -292,14 +287,14 @@ together with Krylov iterative method are all briefly explained.
 % a popular large-scale matrix-based active -set augmented-Lagrangian optimization method SNOPT.  
 
 %\begin{equation}\label{eq:saddle}
-%\mathcal{A} = \begin{bmatrix}
+%\mathsf{A} = \begin{bmatrix}
 %A & B \\
 %C & D
 %\end{bmatrix}
 %\end{equation}
 %One type of Schur complement can be obtained by performing the following LDU decomposition 
 %\begin{equation}\label{eq:saddle:ldu}
-%\mathcal{A} = \begin{bmatrix}
+%\mathsf{A} = \begin{bmatrix}
 %A & B \\
 %C & D
 %\end{bmatrix} = 
@@ -357,7 +352,7 @@ together with Krylov iterative method are all briefly explained.
 %\begin{equation}\label{eq:kkt1}
 %\begin{aligned}
 %\nabla f(x) + \lambda_h^T \nabla h(x) + \lambda_g^T \nabla g(x) &= 0 \\
-%-\mathcal{S} \Lambda_g - \mu e &= 0\\
+%-\mathsf{S} \Lambda_g - \mu e &= 0\\
 %h(x) &= 0 \\
 %g(x) - s &= 0 \\
 %s \geq 0, \quad &\lambda_g \leq 0 \\
@@ -367,13 +362,13 @@ together with Krylov iterative method are all briefly explained.
 %
 %Newton's method is used to solve \ref{eq:kkt1} for each $\mu$, where each Newton step is as follows:
 %\begin{equation}
-%\begin{bmatrix} \mathcal{W} & 0 & \mathcal{A}_{h}^T & \mathcal{A}_{g}^T \\
-%    0 & -\Lambda_g & 0 & -\mathcal{S} \\
-%    \mathcal{A}_{h} & 0 & 0 & 0 \\
-%    \mathcal{A}_{g} & -\mathcal{I} & 0 & 0 
+%\begin{bmatrix} \mathsf{W} & 0 & \mathsf{A}_{h}^T & \mathsf{A}_{g}^T \\
+%    0 & -\Lambda_g & 0 & -\mathsf{S} \\
+%    \mathsf{A}_{h} & 0 & 0 & 0 \\
+%    \mathsf{A}_{g} & -\mathsf{I} & 0 & 0 
 %    \end{bmatrix}
 %    \begin{bmatrix} p_x \\ p_s \\ p_h \\ p_g \end{bmatrix}
-%    = -\begin{bmatrix} \nabla_x \mathcal{L} \\ -\mathcal{S} \Lambda_g - \mu e  \\ h(x) \\ g(x) - s \end{bmatrix}
+%    = -\begin{bmatrix} \nabla_x \mathsf{L} \\ -\mathsf{S} \Lambda_g - \mu e  \\ h(x) \\ g(x) - s \end{bmatrix}
 %\end{equation}
 %After the Newton step direction is computed, fraction to the boundary rule is applied to determine the maximum allowable step size to keep the slack and inequality multipliers away from the 0 bound. Then a backtracking line search is performed to find the step length that delivers sufficient decrease in the merit function or accepted by the filter. The barrier parameter is then updated for the next iteration. 
 %

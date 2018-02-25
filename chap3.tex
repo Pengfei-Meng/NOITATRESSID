@@ -76,16 +76,18 @@ subsection~\ref{sec:matfreepc}.
 
 
 \section{Review on Preconditioners for Optimization}\label{2:krylov:pc}
-Using Krylov methods to solve the linear systems saves the effort of computing and storing the constraint Jacobian and Lagrangian Hessian, but the convergence rate of Krylov solvers depends on the distribution of eigenvalues of the system matrix. If the eigenvalues are clustered in a small radius, the convergence rate is better. Poor convergence happens when the ratio of the largest to the smallest absolute eigenvalue is large, ($10^5$ to $10^9$). 
+Using Krylov methods to solve the linear systems saves the effort of computing and storing the constraint Jacobian and Lagrangian Hessian, but the convergence rate of Krylov solvers depends on the distribution of eigenvalues of the system matrix. If the eigenvalues are clustered in a small radius, the convergence rate is better. Poor convergence happens when the ratio of the largest to the smallest absolute eigenvalue is large, \eg $10^5$ to $10^9$. 
 
-In the context of the PDE-constrained optimization problem, there are two sources of ill-condition. The first one resides in PDE solvers. When the discretization is refined, some of the eigenvalues of the PDE system matrix could go towards zero, or in other words the PDE problem is ill-posed. The second source of ill-condition often arises from optimization algorithms themselves. For example in the interior-point method family, the slack variables are used to measure the activeness of the inequality constraints. When some of the inequality constraints get close to the boundary, the corresponding slack variables would approach zero, and some entries on the diagonal of the KKT matrix will go unbounded. The second type of ill-condition is the target in this thesis, as the first type is usually covered as part of the PDE solver.     
+In the context of the PDE-constrained optimization problem, there are two sources of ill-condition. The first one resides in PDE solvers. When the discretization is refined, some of the eigenvalues of the PDE system matrix could go towards zero. This is also called an ill-posed PDE problem. The second source of ill-condition often arises from optimization algorithms themselves. For example in the interior-point method family, the slack variables are used to measure the activeness of the inequality constraints. When some of the inequality constraints get close to the boundary, the corresponding slack variables would approach zero, and some entries on the diagonal of the KKT matrix will go unbounded. The second type of ill-condition is the target in this thesis, as the first type is usually covered as part of the PDE solver.     
 
-In presence of ill-conditioning, a nonsingular matrix, the preconditioner, could do similarity transformation to the linear system, resulting in a better conditioned system with the same solutions.   
+In the presence of ill-conditioning, a nonsingular matrix can transform the linear system to a better conditioned one with the same solutions. This nonsingular matrix is called the preconditioner, and it exists in the form of mathematical operations in matrix-free methods. 
 
 Several popular preconditioners exist for general optimization problems without PDE constraints, like incomplete factorizations~\cite{saad:2003}, which involve direct operations to the entries of the matrix,
-or the null space approach, which involves computing and working with the null space of constraint Jacobians to find the step updates. Those preconditioners would not work well for interior-point methods type optimization problems, as the diagonal entries could approach zero or infinity for inequality constraints. Specially, for matrix-free PDE constrained optimization problems, the Hessian or constraint Jacobian do not exist in explicit form, so it is not possible to use direct methods.  
+or the null space approach, which involves computing and working with the null space of constraint Jacobians to find the step updates. Those preconditioners would not work well for interior-point type optimization problems, as the diagonal entries could approach zero or infinity for inequality constraints. Moreover, for matrix-free PDE constrained optimization problems, the Hessian or constraint Jacobian do not exist in explicit forms, so it is not possible to use direct methods.  
 
-Inspired by domain-decomposed Schur preconditioners used in PDE solvers~\cite{keyes_domain} ,  where approximate subdomain solutions of the mesh field are used as preconditioners for the iterative solver of the PDE, \cite{DBLP:journals/siamsc/BirosG05} uses approximate state and adjoint solutions in the Schur of the KKT system as the preconditioner for the Krylov solver in each Newton step for the optimization problem. \cite{pc_kkt_control} presented a similar KKT matrix preconditioner for  optimization in distributed control problems using an interior-point method; it also used the block structure of the KKT matrix to decompose it, then used existing preconditioners for the PDE solvers to approximately solve the preconditioning system. However, the preconditioner is not ideal as the preconditioned system has both positive and negative eigenvalues. In addition, \cite{doi:10.1137/15M104075X} constructed a preconditioner for the full-space Lagrange-Newton method for multi-field problems. The preconditioner removes the field variables that are causing nonlinearity of the system, resulting in a well-balanced Newton system. The preconditioner proposed in this thesis is similar to  that proposed in \cite{pc_kkt_control}. 
+Inspired by the domain-decomposed Schur preconditioners  in PDE solvers~\cite{keyes_domain} ,  where approximate subdomain solutions of the mesh field are used as preconditioners for the iterative solver of the PDEs, \cite{DBLP:journals/siamsc/BirosG05} uses approximate state and adjoint solutions in the Schur of the KKT system as the preconditioner for the linear system of the optimization problem. 
+ \cite{pc_kkt_control} presented a similar KKT matrix preconditioner for  optimization in distributed control problems using an interior-point method; it decomposes the KKT matrix according to its block structures, 
+then used existing preconditioners for the PDE solvers to approximately solve the preconditioning system. However, the preconditioner is not ideal as the preconditioned system has both positive and negative eigenvalues. In addition, \cite{doi:10.1137/15M104075X} constructed a preconditioner for the full-space Lagrange-Newton method for multi-field problems. The preconditioner removes the field variables that are causing the nonlinearity of the system, resulting in a well-balanced Newton system. The preconditioner proposed in this thesis is similar to  that proposed in \cite{pc_kkt_control}. 
 
 
 \section{Matrix-free Preconditioner}\label{sec:matfreepc}
@@ -163,9 +165,9 @@ so that the third row and column of~\eqref{eq:ideal_precond} are removed.
 Subsequently, we will reintroduce equality constraints.
 
 
-The following subsections first derive the 
-solutions for inequality-only constrained systems, then extend to both equality and inequality 
-constrained systems. 
+%The following subsections first derive the 
+%solutions for inequality-only constrained systems, then extend to both equality and inequality 
+%constrained systems. 
 
 \subsection{Inequality-only Constrained Problems}
 When only inequality constraints are present, the linear system \eqref{eq:ideal_precond} 
@@ -306,9 +308,6 @@ slacks away from zero, so the inverse of $\mat{C}_{\mu}$ remains well defined in
 In particular, we use the fraction-to-the-boundary rule 
 at the end of the predictor step and explicit clipping at the end of the corrector step to make sure 
 the slack variables remain larger than $\tau_s$ . 
-The fraction-to-the-boundary rule we use is slightly 
-different than~\cite{Nocedal2006NO} in that we use a fixed absolute value $\tau_s$ as the boundary 
-instead of a fixed fraction boundary. 
 
 
 Having established that \eqref{eq:schur} is well defined for all iterates, we
@@ -417,17 +416,17 @@ preconditioner.
 \SetKw{Return}{return}
 \SetEndCharOfAlgoLine{}
 
-\Parameter{$c_{\min}$, $\nsig$, and values at which to evaluate matrices, $x$, $s$,
-  $\lambda_g$, and $\mu$}
-\Input{vectors to precondition, $u_x$, $u_s$, $u_\lambda$}
-\Output{preconditioned vectors, $v_x$, $v_s$, $v_\lambda$}
+\Parameter{values at which to evaluate matrices, $x$, $s$,  $\lambda_g$, and $\mu$};  $\nsig$
+ 
+\Input{vectors to precondition, $u_x$, $u_s$, $u_{\lambda_g}$}
+\Output{preconditioned vectors, $v_x$, $v_s$, $v_{\lambda_g}$}
 \BlankLine
 Build the truncated and approximate SVD \eqref{eq:svd}, using 
 preconditioner applications in place of exact second-order adjoint solves \\
 Solve for $v_x$ using \eqref{eq:vx}\\
 Solve for $v_s$ using \eqref{eq:vs}\\
-Solve for $v_\lambda$ using \eqref{eq:vlam}\\
-\Return $v_x$, $v_s$, and $v_\lambda$
+Solve for $v_{\lambda_g}$ using \eqref{eq:vlam}\\
+\Return $v_x$, $v_s$, and $v_{\lambda_g}$
 \caption{Matrix-free, approximate SVD preconditioner. \label{alg:precond}}
 \end{algorithm}
 

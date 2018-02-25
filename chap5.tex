@@ -4,7 +4,7 @@
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
-\chapter{NUMERICAL RESULTS: TESTS AND APPLICATIONS}
+\chapter{NUMERICAL RESULTS: TESTS AND APPLICATIONS}\label{chap:tests}
 %\resetfootnote %this command starts footnote numbering with 1 again.
 The goal of this chapter is to verify and apply the matrix-free RSNK optimization algorithm described in Chapters~\ref{chap:homotopy} and \ref{chap:linsys}.   We begin by summarizing the software implementation of the proposed algorithm.  We also describe the established algorithm we will compare against.  Next, we use the well-established CUTEr test set to verify the algorithm.  We then present the results of applying the algorithm to two large-scale PDE-constrained optimization problems.
 
@@ -78,7 +78,7 @@ The relative convergence criteria is not appropriate in the current context, bec
  initial complementarity products are zero due to the zero initial multipliers, 
  and the initial feasibility could be zero if $s_0 = g(x_0)$ is used for inequality-only constrained problems. 
 
-Table \ref{tab:param} in Appendix shows the complete list of parameters used in the test problems, including
+Table \ref{tab:param} in Appendix shows the complete list of the parameters used in the test problems, including
 the default values set in the algorithm and their recommended ranges.
 
 
@@ -94,11 +94,11 @@ using a limited-memory quasi-Newton method.
 SNOPT uses scaled feasibility and optimality criteria 
  to measure the progress of the 
 optimization iterations. The feasibility criterion measures the maximum nonlinear constraint violation, 
-and is normalized by the size of the solution:
+and is normalized by the norm of the current iterative point:
 \begin{equation*}
 \text{SNOPT feasibility} = \underset{i}{\text{max}}  \  c_i / \lVert x \rVert, \quad \text{where} \quad c= \left[ ( c(x) - cl)^T, (cu -c(x) )^T \right]   
 \end{equation*}        
-where $x$ is the current iterative point, $c(x)$ is defined in Section~\ref{sec:cuternm} below. 
+where $x$ is the current iterative point, and $c(x)$ is defined in Appendix~\ref{sec:cuternm}. 
 $c_i$ is the violation of the $i$th nonlinear constraint~\cite{snopt_manual}. The feasibility tolerance 
 $\epsilon_r$ has a default value of $10^{-6}$.
 
@@ -107,7 +107,8 @@ and it is calculated using the following formulas:
 \begin{equation*}
 \text{SNOPT optimality} = \underset{j}{\text{max}}  \ \text{Comp}_j / \lVert \pi \rVert 
 \end{equation*}
-where $\text{Comp}_j$ measures the complementarity slackness for $j$th variable and is defined by:
+where  $\pi$ is the Lagrangian multiplier vector; 
+$\text{Comp}_j$ measures the complementarity slackness for $j$th variable and is defined by:
 \begin{equation*}
 \text{Comp}_j = \begin{cases}
 (\nabla_x \mathcal{L})_j \text{min} (x_j - l_j, 1)  \quad \text{if} \ (\nabla_x \mathcal{L})_j \geq 0 \\
@@ -142,7 +143,7 @@ As the CUTEr test problem set contains a large collection of problems with assor
 
 Table~\ref{tab:cuter} lists the results on the selected subset of the Cuter problems. The first column, `Name' , lists the name of the problems 
 as found in the ASCII files from~\cite{cuter_probs}, which also include the
-problem origin, authors, classifications, SIF problem cards, and sometimes the solutions. The second column `n,  $m_{\text{CUTEr}}$, $m_{\text{eq}}$,  $m_{\text{ineq}}$' are the number of design variables $x$, number of constraints as described in Section~\ref{sec:cuternm}, equality constraints and inequality constraints interpreted in Kona's way. The third column describes the key word for the origin  of the problem. The fourth column lists the parameters used in the Homotopy RSNK algorithm that were changed for some of the problems, and include the initial step size $\textbf{$\alpha_0$}$, the nominal distance  $\delta_{\text{targ}}$  and nominal angle $\phi^{\circ}_{\text{targ}}$ as defined in Section~\ref{sec:step}, and the rank of the SVD approximation in Lanczos method used in the preconditioner~\ref{eq:svd}. The fifth column is the optimal value of the  objective function found using Kona, while the seventh column is optimal objective value found using SNOPT. The last column is the optimized objective function value as shown in the ascii file of~\cite{cuter_probs}. 
+problem origin, authors, classifications, SIF problem cards, and sometimes the solutions. The second column `n,  $m_{\text{CUTEr}}$, $m_{\text{eq}}$,  $m_{\text{ineq}}$' are the number of design variables $x$, number of constraints as described in Appendix~\ref{sec:cuternm}, equality constraints and inequality constraints interpreted in Kona's way. The third column describes the key word for the origin  of the problem. The fourth column lists the parameters used in the Homotopy RSNK algorithm that were changed for some of the problems, and include the initial step size $\textbf{$\alpha_0$}$, the nominal distance  $\delta_{\text{targ}}$  and nominal angle $\phi^{\circ}_{\text{targ}}$ as defined in Section~\ref{sec:step}, and the rank of the SVD approximation in Lanczos method used in the preconditioner~\ref{eq:svd}. The fifth column is the optimal value of the  objective function found using Kona, while the sixth column is optimal objective value found using SNOPT. The last column is the optimized objective function value as shown in the ascii file of~\cite{cuter_probs}. 
 
 \begin{landscape}
 \begin{longtable}{l | l |  l  |  >{\footnotesize}p{3cm} | l | l | l    }      %\toprule      % |  >{\centering}m{3.5cm}
@@ -271,12 +272,12 @@ The results in Table~\ref{tab:cuter} suggest
 that the globalized RSNK algorithm and the preconditioners proposed in this thesis can deliver accurate solutions. They even succeed in a few cases where SNOPT failed. Despite this success, several points are worth highlighting:
 \begin{enumerate}
 %\item As a majority of CUTEr test problems do not involve state variables, except for a small sets of optimal control problems, the globalized RSNK algorithm loses its edge in saving the computing and storing costs for the constraint Jacobians. Therefore, on average, the globalized RSNK takes longer time than SNOPT to solve the CUTEr problems. 
-\item CUTEr is used as verification only here, and it is not intended to demonstrate the efficiency of the RSNK algorithm.  Indeed, the CUTEr test problems are sufficiently small in size and have explicit Jacobians, so these problems do not benefit from the matrix-free RSNK algorithm.
+\item CUTEr is only used as verification here, and it is not intended to demonstrate the efficiency of the RSNK algorithm.  Indeed, the CUTEr test problems are sufficiently small in size and have explicit Jacobians, so these problems do not benefit from the matrix-free RSNK algorithm.
 
-\item The parameters \textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $n_{\mat{\Sigma}}$ play important roles in the convergence speed of the new algorithm. In some cases the parameters have to changed manually to get convergence. In contrast, the parameters for SNOPT remained unchanged for all the test problems. 
+\item The parameters \textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $n_{\mat{\Sigma}}$ play important roles in the convergence speed of the new algorithm. In some cases the parameters have to be changed manually to get convergence. In contrast, the parameters for SNOPT remained unchanged for all the test problems. 
 \item The globalized RSNK algorithm is based on the constraint qualification assumption, therefore, it will fail for problems with redundant constraints.    
 \item If the null space of the inequality constraint Jacobian includes a constant   a vector of ones, then the preconditioner will fail. This is because Kona will start the Lanczos algorithm (used to build the preconditioner) with a vector of ones.
- For the problems whose inequality constraint Jacobian have certain structure, \eg $[-1, -3, 3, 1]$ on each ro,w like the LISWET problems, the matrix vector product will be zero, causing the Lanczos method to crash. 
+ For the problems whose inequality constraint Jacobian have certain structure, \eg $[-1, -3, 3, 1]$ on each row like the LISWET problems, the matrix vector product will be zero, causing the Lanczos method to crash. 
 \end{enumerate} 
 
 

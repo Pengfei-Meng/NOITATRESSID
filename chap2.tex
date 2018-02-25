@@ -8,7 +8,7 @@
 
 \section{Homotopy-based Globalization}\label{sec:homotopy}
  \footnote{Portions of this chapter are extracted from the manuscript: P. Meng, A. Dener and J. E. Hicken, 
- Matrix-free Algorithm for Reduced-Space PDE-governed Optimization with Inequality Constraints}
+ Matrix-free Algorithm for Reduced-Space PDE-governed Optimization with Inequality Constraints.}
 Homotopy methods are robust, numerically stable, and globally convergent methods
 for solving nonlinear algebraic equations; see, for example,
 \cite{allgower_georg_1993} and \cite{Watson_1989}.  The interest of this thesis in these
@@ -184,7 +184,7 @@ first-order necessary conditions in this work:
     H(q, q_0, \mu) = (1-\mu)
     \begin{bmatrix}
       \nabla_x f(x) +   \lambda_h^T \nabla_x h(x)  +  \lambda_g^T \nabla_x g(x) \\
-      -\mat{S}\mat{\Lambda_g} e \\
+      -\mathsf{S}\mathsf{\Lambda_g} e \\
       h(x) \\
       g(x) - s 
     \end{bmatrix}
@@ -396,12 +396,14 @@ predictor-corrector scheme.
   \item During the predictor phase, the maximum allowable step size is bounded
     using a fraction-to-the-boundary-like rule~\cite{Nocedal2006NO} defined
     below.
-    
   \begin{equation}\label{eq:f2b}
       \alpha_{\max} = \max\left\{
       \alpha \in (0,1] \;|\; s + \alpha s' \geq \tau_s .\right\}.
     \end{equation}
-where $\tau_s = 10^{-6}$. 
+where $\tau_s = 10^{-6}$. The fraction-to-the-boundary rule we use is slightly 
+different than~\cite{Nocedal2006NO} in that we use a fixed absolute value $\tau_s$ as the boundary 
+instead of a fixed fraction boundary. 
+
 
 %If a particular slack variable gets close to zero, that is, if 
 %   \begin{equation*}
@@ -415,7 +417,7 @@ In addition, the following clipping rule to the slack variable:
     s \leftarrow \max(s, \tau_s)
 \end{equation}
 is applied at two locations: at the very beginning to the initial 
-slack $s_0$, and at the last point of the corrector step. 
+slack $s_0$, and at the last point of the corrector phase. 
 
     The maximum step size is enforced for all variables, including the design
     variables $x$.  We have found that synchronizing the step size across the
@@ -481,9 +483,9 @@ compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
   set $q_{k+1} \leftarrow \hat{q}_{k+1}$\\
   
   \For{$j = 0,1,2,\ldots,J_{\max}$}{ 
-     \ShowLn
-      \lIf{$\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$}
-     {\Break \Break}   %,  $s_{i} \geq 0$
+%     \ShowLn
+%      \lIf{$\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$}
+%     {\Break \Break}   %,  $s_{i} \geq 0$
      \lIf{$\lVert H(q_{k+1},q_0,\mu_{k+1}) \rVert \leq \epsilon_{H} \lVert
       H(\hat{q}_{k+1},q_0,\mu_{k+1}) \rVert$}{%
       \Break
