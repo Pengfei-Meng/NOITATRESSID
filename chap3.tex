@@ -14,22 +14,23 @@ and \eqref{eq:cor}, take the form
   (\nabla_q H) x = b,
 \end{equation}
 where $b \in
-\mathbb{R}^{N}$ is either $F - G$, in the case \eqref{eq:predictorx} for the tangential step or $-H$ in the case of \eqref{eq:cor} for a Newton step.  We inexactly solve these systems using a preconditioned
+\mathbb{R}^{N}$ is either $F - G$, in the case \eqref{eq:predictorx} for the predictor step or $-H$ in the case of \eqref{eq:cor} for a corrector step.  We inexactly solve these systems using a preconditioned
 Krylov-iterative method.  The primary challenge with this approach, as discussed
-in Chapter 1, is that the preconditioner itself must be matrix free.
+in Chapter~\ref{chap:1}, is that the preconditioner itself must be matrix free.
 
-To address this requirement, a matrix-free preconditioner has been proposed as part of this thesis. This chapter  briefly reviews the Krylov iterative solver; however, the bulk of the content focuses on the novel matrix-free preconditioner . 
+To address this requirement, a matrix-free preconditioner has been proposed as part of this thesis. 
+The bulk of this chapter focuses on describing the matrix-free preconditioner and exercising it on some numerical experiments.  However, we begin with a brief review of the Krylov iterative solver that needs the preconditioner.
 
 \section{Krylov Iterative Solver}\label{2:krylov}
 We use the flexible generalized minimal residual method,
-FGMRES~\cite{Saad1993fgmres}, to solve~\eqref{eq:Newton}.  One advantage of
-FGMRES, compared to most Krylov-based methods, is that is permits nonstationary
+FGMRES~\cite{Saad1993fgmres}, to solve~\eqref{eq:linsys}.  One advantage of
+FGMRES, compared to most Krylov-based methods, is that it permits nonstationary
 preconditioners that vary from one Krylov iteration to the next.  While we do
 not take advantage of nonstationary preconditioners in this work, we have found
 this flexibility invaluable in the solution of multidisciplinary optimization
 problems~\cite{dener:idf2017, dener:2014}.
 
-To find an approximate solution to \eqref{eq:Newton}, FGMRES orthonormalizes a
+To find an approximate solution to \eqref{eq:linsys}, FGMRES orthonormalizes a
 sequence of matrix-vector products using a generalized form of Arnoldi's
 method~\cite{saad:2003}.  Starting with $v_{1} = b/\|b\|$, the generalized
 Arnoldi's method produces the following relation at the $i$th iteration:
@@ -39,7 +40,7 @@ Arnoldi's method produces the following relation at the $i$th iteration:
 where $\mat{V}_{i+1} \in \mathbb{R}^{N\times (i+1)}$ has orthogonal columns and
 $\bar{\mat{H}}_{i} \in \mathbb{R}^{(i+1)\times i}$ is upper Hessenberg.  The
 vectors in $\mat{Z}_{i} \in \mathbb{R}^{N\times i}$ form the subspace from which
-the approximate solution to \eqref{eq:Newton} is drawn (see below).  These
+the approximate solution to \eqref{eq:linsys} is drawn (see below).  These
 vectors are related to the vectors in $\mat{V}_{i+1}$ by
 \begin{equation*}
   z_{j} = P_j(v_{j}), \qquad \forall j = 1,2,\ldots,i,
@@ -47,20 +48,19 @@ vectors are related to the vectors in $\mat{V}_{i+1}$ by
 where $P_j(\cdot)$ denotes the preconditioning operation at iteration $j$.    
 
 The FGMRES solution is given by $x_{i} = \mat{Z}_{i} y_{i}$, where $y_{i}$ is
-chosen to minimize the 2-norm of the residual, $r_i \equiv b -  (\nabla_q F) x_i = b -  (\nabla_q F)\mat{Z}_i y_i$, as
-follows:
+chosen to minimize the 2-norm of the residual, $r_i \equiv b -  (\nabla_q F) x_i = b -  (\nabla_q F)\mat{Z}_i y_i$. The solution to this minimization problem is 
 \begin{align*}
   y_{i} = \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
   \lVert b -  (\nabla_q F) \mat{Z}_i y \| 
   &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
-  \lVert \mat{V}_{i+1} (\|b\| e_1 - \bar{\mat{H}}_{i} y \| \\
+  \lVert \mat{V}_{i+1} (\|b\| e_1 - \bar{\mat{H}}_{i} y) \| \\
   &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
   \lVert \|b\| e_1 - \bar{\mat{H}}_{i} y \|,
   \qquad\qquad\text{(since $\mat{V}_{i+1}^T \mat{V}_{i+1} = \mat{I}$)}
 \end{align*}
 where $e_{1} \in \mathbb{R}^{i+1}$ is the first column of the $(i+1)\times(i+1)$
-identity. The minimization problem on the final line is inexpensive to solve in
-practice, since $i$ is usually less than 100.
+identity. The least-squares minimization problem on the final line is inexpensive to solve 
+in our applications,  since $i$ is usually less than 100.
 
 Like most Krylov iterative methods, the FGMRES algorithm described above does
 not require the Jacobian $(\nabla_q F)$ explicitly.  From the user's
@@ -76,47 +76,57 @@ subsection~\ref{sec:matfreepc}.
 
 
 \section{Review on Preconditioners for Optimization}\label{2:krylov:pc}
-Using Krylov methods to solve the linear systems saves the effort of computing and storing the constraint Jacobian and Lagrangian Hessian, but the convergence rate of Krylov solvers depends on the distribution of eigenvalues of the system matrix. If the eigenvalues are clustered in a small radius, the convergence rate is better. Poor convergence happens when the ratio of the largest to the smallest absolute eigenvalue is large, \eg $10^5$ to $10^9$. 
+Using Krylov methods to solve the linear systems saves the effort of computing and storing the constraint Jacobian and Lagrangian Hessian, but the convergence rate of Krylov solvers depends on the distribution 
+of the system's eigenvalues. If the eigenvalues are clustered in a small radius, the convergence rate is 
+generally better, and poor convergence often arises 
+when the ratio of the largest to the smallest eigenvalue modulus is large, \eg $10^5$ to $10^9$. 
 
-In the context of the PDE-constrained optimization problem, there are two sources of ill-condition. The first one resides in PDE solvers. When the discretization is refined, some of the eigenvalues of the PDE system matrix could go towards zero. This is also called an ill-posed PDE problem. The second source of ill-condition often arises from optimization algorithms themselves. For example in the interior-point method family, the slack variables are used to measure the activeness of the inequality constraints. When some of the inequality constraints get close to the boundary, the corresponding slack variables would approach zero, and some entries on the diagonal of the KKT matrix will go unbounded. The second type of ill-condition is the target in this thesis, as the first type is usually covered as part of the PDE solver.     
+%In the context of the PDE-constrained optimization problem, there are two sources of ill-condition. The first one resides in PDE solvers. When the discretization is refined, some of the eigenvalues of the PDE system matrix could go towards zero. This is also called an ill-posed PDE problem. The second source of ill-condition often arises from optimization algorithms themselves. For example in the interior-point method family, the slack variables are used to measure the activeness of the inequality constraints. When some of the inequality constraints get close to the boundary, the corresponding slack variables would approach zero, and some entries on the diagonal of the KKT matrix will go unbounded. The second type of ill-condition is the target in this thesis, as the first type is usually covered as part of the PDE solver.     
 
 In the presence of ill-conditioning, a nonsingular matrix can transform the linear system to a better conditioned one with the same solutions. This nonsingular matrix is called the preconditioner, and it exists in the form of mathematical operations in matrix-free methods. 
+A preconditioner is an operator that is designed to cluster a system's eigenvalues;  
+it usually does this indirectly by approximating the action of the matrix inverse and should be inexpensive to apply.  When the preconditioner is stationary, it can be represented as a matrix $P \in \mathbb{R}^{N\times N}$.  Thus, in the present case we would like
+\begin{equation*}
+P_j(u) \approx (\nabla_q H)^{-1}u                        %P v \approx (\nabla_q H)^{-1},
+\end{equation*}
+in some sense where $u \in \mathbb{R}^{N}$ is arbitrary. 
 
-Several popular preconditioners exist for general optimization problems without PDE constraints, like incomplete factorizations~\cite{saad:2003}, which involve direct operations to the entries of the matrix,
-or the null space approach, which involves computing and working with the null space of constraint Jacobians to find the step updates. Those preconditioners would not work well for interior-point type optimization problems, as the diagonal entries could approach zero or infinity for inequality constraints. Moreover, for matrix-free PDE constrained optimization problems, the Hessian or constraint Jacobian do not exist in explicit forms, so it is not possible to use direct methods.  
 
-Inspired by the domain-decomposed Schur preconditioners  in PDE solvers~\cite{keyes_domain} ,  where approximate subdomain solutions of the mesh field are used as preconditioners for the iterative solver of the PDEs, \cite{DBLP:journals/siamsc/BirosG05} uses approximate state and adjoint solutions in the Schur of the KKT system as the preconditioner for the linear system of the optimization problem. 
- \cite{pc_kkt_control} presented a similar KKT matrix preconditioner for  optimization in distributed control problems using an interior-point method; it decomposes the KKT matrix according to its block structures, 
-then used existing preconditioners for the PDE solvers to approximately solve the preconditioning system. However, the preconditioner is not ideal as the preconditioned system has both positive and negative eigenvalues. In addition, \cite{doi:10.1137/15M104075X} constructed a preconditioner for the full-space Lagrange-Newton method for multi-field problems. The preconditioner removes the field variables that are causing the nonlinearity of the system, resulting in a well-balanced Newton system. The preconditioner proposed in this thesis is similar to  that proposed in \cite{pc_kkt_control}. 
+Many general preconditioners have been developed for saddle-point 
+problems\\~\cite{benzi2005numerical}, such as incomplete LU factorizations~\cite{BENZI2002418, NLA:NLA320, saad:2003}, incomplete null-space factorization~\cite{nullspace_precond, 2015arXiv151106845L}, and approximate Schur complement decompositions~\cite{Bergamaschi2004, DBLP:journals/corr/LiXS15}. 
+These preconditioners all involve direct operations to the entries of the system matrix, which would be infeasible for matrix-free methods. Furthermore, the diagonal entries of the system matrix in interior-point type optimizations could approach zero or infinity for inequality constraints, causing linear algebraic error in direct factorization methods. 
 
+In addition, many specialized preconditioners have been investigated for full-space PDE-constrained optimization; see, for example,~\cite{Rees2010optimal}.
+However, most full-space PDE-constrained optimization preconditioners also rely on
+the availability of a matrix-based preconditioner for the state Jacobian. There
+is no analogous matrix-based preconditioners for the total Jacobian $\nabla_x g$
+in the reduced-space, and, as explained in Chapter~\ref{chap:1}, forming $\nabla_x
+g$ explicitly is not feasible. In the making of this thesis, a Uzawa type 
+preconditioner~\cite{Hu_uzawa} has been investigated but without success. 
+The preconditioner proposed in this thesis is also based on approximate Schur complement decompositions. 
+
+
+%Inspired by the domain-decomposed Schur preconditioners  in PDE solvers~\cite{keyes_domain} ,  where approximate subdomain solutions of the mesh field are used as preconditioners for the iterative solver of the PDEs, \cite{DBLP:journals/siamsc/BirosG05} uses approximate state and adjoint solutions in the Schur of the KKT system as the preconditioner for the linear system of the optimization problem. 
+% \cite{pc_kkt_control} presented a similar KKT matrix preconditioner for  optimization in distributed control problems using an interior-point method; it decomposes the KKT matrix according to its block structures, 
+%then used existing preconditioners for the PDE solvers to approximately solve the preconditioning system. However, the preconditioner is not ideal as the preconditioned system has both positive and negative eigenvalues. In addition, \cite{doi:10.1137/15M104075X} constructed a preconditioner for the full-space Lagrange-Newton method for multi-field problems. The preconditioner removes the field variables that are causing the nonlinearity of the system, resulting in a well-balanced Newton system. 
 
 \section{Matrix-free Preconditioner}\label{sec:matfreepc}
 As $\mu$ approaches zero, the system \eqref{eq:linsys} becomes an increasingly
 ill-conditioned saddle-point problem.  Consequently, solving this problem with
 an iterative Krylov solver, like FGMRES, requires an effective preconditioner.  
-
-Many specialized preconditioners have been developed for saddle-point
-problems~\cite{benzi2005numerical}, including those arising in full-space
-PDE-constrained optimization; see, for example,~\cite{Rees2010optimal}.
-However, most full-space PDE-constrained optimization preconditioners rely on
-the availability of a matrix-based preconditioner for the state Jacobian. There
-is no analogous matrix-based preconditioners for the total Jacobian $\nabla_x g$
-in the reduced-space, and, as explained in Chapter 1, forming $\nabla_x
-g$ explicitly is not feasible.  Therefore, one of the primary contributions of
+ One of the primary contributions of
 this work is a matrix-free\footnote{In this context, matrix-free means that we
   do not require a matrix whose size is the same size as $\nabla_x g$; however,
   we do use low-rank matrices.} preconditioner for reduced-space PDE-constrained
 optimization with state-based constraints.
 
-An effective preconditioner should be inexpensive to apply and approximate the
-action of the inverse Jacobian in some sense: $P_j(u) \approx (\nabla_q H)^{-1}
-u$ where $u \in \mathbb{R}^{N}$ is arbitrary.  To motivate our preconditioner,
-we begin by examining the exact Jacobian $\nabla_q H$ in  \eqref{eq:predictorx} and \eqref{eq:cor}, 
+ To motivate our preconditioner,
+we begin by examining the exact Jacobian $\nabla_q H$ in  \eqref{eq:predictorx} and \eqref{eq:cor}:
 \begin{equation}\label{eq:dHdq}
 \begin{aligned}
 \nabla_q H &= (1 - \mu) \nabla_{q} F(q) + \mu \nabla_q G(q,q_0) \\
 &=  (1-\mu)\begin{bmatrix}
- \nabla_{xx} \mathsf{L}   & \boldsymbol{0} & \nabla_x h^T   &  \nabla_x g^T   \\   % \mathsf{A}^T_h
+ \nabla_{xx} \mathcal{L}   & \boldsymbol{0} & \nabla_x h^T   &  \nabla_x g^T   \\   % \mathsf{A}^T_h
 \boldsymbol{0}     &   - \mat{\Lambda}_g   & \boldsymbol{0} & -\mathsf{S}     \\
 \nabla_x h &  \boldsymbol{0}   & \boldsymbol{0} &  \boldsymbol{0}  \\
 \nabla_x g  & -\mathsf{I}  &  \boldsymbol{0}  & \boldsymbol{0}   \\
@@ -135,10 +145,10 @@ we begin by examining the exact Jacobian $\nabla_q H$ in  \eqref{eq:predictorx} 
 \end{bmatrix}
 \end{aligned}
 \end{equation}
-where $\mat{I}$ is the $m\times m$ identity matrix and the sub-Jacobians are
-defined by
+where $\mat{I}$ is the identity matrix, whose size can be inferred from the context; 
+and the sub-Jacobians are defined by
 \begin{gather*}
-	\mat{W}_{\mu} \equiv (1-\mu) \left[\nabla_x^2 f + \lambda^T \nabla_x^2 g\right] + \mu \mat{I},\qquad
+	\mat{W}_{\mu} \equiv (1-\mu) \left[\nabla_x^2 f + \lambda_h^T \nabla_x^2 h  + \lambda_g^T \nabla_x^2 g\right] + \mu \mat{I},\qquad
 	\mat{A}_{h, \mu} \equiv (1-\mu) \nabla_x h, \\
 	\mat{A}_{g, \mu} \equiv (1-\mu) \nabla_x g, \qquad 
 	\mat{S}_{\mu} \equiv (1-\mu)\mat{S},\qquad
@@ -147,22 +157,23 @@ defined by
 
 In the ideal case, a preconditioner application corresponds to solving the
 linear system
-\begin{equation}\label{eq:ideal_precond}
-  \begin{bmatrix} 
-	\mat{W}_\mu & \phantom{-}\mat{0} & \phantom{-}\mat{A}_{h,\mu}^T  & \phantom{-}\mat{A}_{g,\mu}^T \\
-	\mat{0}  & -\mat{\Lambda}_\mu & \phantom{-}\mat{0}   & -\mat{S}_\mu \\
-	\mat{A}_{h, \mu} & \phantom{-}\mat{0} &  -\mu \mat{I} & \phantom{-}\mat{0}  \\
-	\mat{A}_{g, \mu} &  -(1-\mu)\mat{I} &  \phantom{-}\mat{0}     &   -\mu \mat{I}
-\end{bmatrix}
-\begin{bmatrix} v_x \\ v_s \\ v_{h} \\  v_{g} \end{bmatrix} 
-= 
-\begin{bmatrix} u_x \\ u_s \\ u_{h} \\ u_{g}  \end{bmatrix},
+\begin{equation}\label{eq:precond}
+(\nabla_q H) v = u 
 \end{equation}
-where $u_x, v_x \in \mathbb{R}^n$, $u_s, v_s \in \mathbb{R}^{m}$, and $u_h, v_h \in
-\mathbb{R}^{l}$,  $u_g, v_g \in \mathbb{R}^{m}$.  To simplify the presentation, 
+for $v \in \mathbb{R}^{N}$ given an arbitrary $u \in \mathbb{R}^{N}$, where
+\begin{align*}
+u &=
+\begin{bmatrix}
+u_x^T & u_s^T & u_h^T & u_g^T \end{bmatrix}, \\
+v &=
+\begin{bmatrix}
+v_x^T & v_s^T & v_h^T & v_g^T \end{bmatrix}, 
+\end{align*}
+and $u_x, v_x \in \mathbb{R}^n$, $u_s, v_s \in \mathbb{R}^{m}$,  $u_h, v_h \in
+\mathbb{R}^{l}$,  and $u_g, v_g \in \mathbb{R}^{m}$.  To simplify the presentation, 
 we will first consider the case when only inequality constraints are present, 
-so that the third row and column of~\eqref{eq:ideal_precond} are removed.  
-Subsequently, we will reintroduce equality constraints.
+in which case the third row and column of~\eqref{eq:precond} are removed.  
+Subsequently, we will reintroduce the equality constraints.
 
 
 %The following subsections first derive the 
@@ -170,7 +181,7 @@ Subsequently, we will reintroduce equality constraints.
 %constrained systems. 
 
 \subsection{Inequality-only Constrained Problems}
-When only inequality constraints are present, the linear system \eqref{eq:ideal_precond} 
+When only inequality constraints are present, the  linear system~\eqref{eq:precond} 
 simplifies to 
 \begin{equation}\label{eq:ideal_precond_ineq}
   \begin{bmatrix} 
@@ -185,7 +196,7 @@ simplifies to
 If at least one constraint is active, it is easy to show that
 the lower right $2m \times 2m$ block in the above matrix will become singular as
 $\mu \rightarrow 0$; however, for the moment, we consider the case $\mu > 0$ and
-use this block to express $v_s$ and $v_g$ as functions of $v_x$:
+invert this block to express $v_s$ and $v_g$ as functions of $v_x$:
 \begin{equation}\label{eq:vs_and_vlam}
   \begin{bmatrix} v_s \\ v_g \end{bmatrix}
   =
@@ -211,47 +222,9 @@ is a diagonal matrix.  Substituting the expression for $v_g$ from
   \right] v_x = u_x - \mat{A}_{g,\mu}^T \mat{C}_{\mu}^{-1} \left[(1-\mu) u_s -
   \mat{\Lambda}_\mu u_g \right].
 \end{equation}
-Note that~\eqref{eq:schur} results from direct substition of~\eqref{eq:vs_and_vlam} into~\eqref{eq:ideal_precond_ineq}.
+%Note that~\eqref{eq:schur} results from direct substition of~\eqref{eq:vs_and_vlam} into~\eqref{eq:ideal_precond_ineq}.
 
 \begin{remark}
-%To derive \eqref{eq:vs_and_vlam} and \eqref{eq:schur}, the system matrix in \eqref{eq:ideal_precond_ineq} can be partitioned into a $2 \times 2$ block matrix. 
-%\begin{equation}\label{eq:sch}
-%\left[
-%\begin{array}{c | c c} 
-%	   \mat{W}_\mu   &   \phantom{-}\mat{0}  &   \phantom{-}\mat{A}_{g,\mu}^T   \\
-%	   \hline
-%	   \mat{0}    &   -\mat{\Lambda}_\mu & -\mat{S}_\mu \\
-%	  \mat{A}_{g,\mu}     &  -(1-\mu)\mat{I} & -\mu \mat{I}   
-%\end{array}  
-%\right]
-%\left[  \begin{array}{c} v_x \\ \hline v_s \\ v_g \end{array} \right]
-%= 
-%\left[ \begin{array}{c} u_x \\  \hline u_s \\ u_g \end{array} \right]
-%\end{equation}
-%Assuming that $\mat{D}$ is invertible, the solution of the following linear system
-%\begin{equation*}
-%\begin{bmatrix}
-%\mat{A}  & \mat{B} \\
-%\mat{C}  & \mat{D} 
-%\end{bmatrix} 
-%\begin{bmatrix}
-%x \\ y
-%\end{bmatrix}
-%= 
-%\begin{bmatrix}
-%a \\ b
-%\end{bmatrix}
-%\end{equation*}
-%can be obtained by: 
-%\begin{equation}\label{eq:schx}
-%\begin{aligned}
-%\left( \mat{A} - \mat{B} \mat{D}^{-1}\mat{C}  \right)x &= a - \mat{B} \mat{D}^{-1}b \\
-%\mat{C}  x +  \mat{D} y &= b 
-%\end{aligned}
-%\end{equation}
-%Note that the inverse of the lower right block matrix in \eqref{eq:sch} is equivalent to the 
-%system matrix in \eqref{eq:vs_and_vlam}. 
-
 To derive~\eqref{eq:vs_and_vlam}, note that the matrices involved in the lower $2m\times 2m$ block in~\eqref{eq:ideal_precond_ineq} are all diagonal.  Consequently, we can apply the formula for the inverse of a $2\times 2$ matrix.  This yields
 
 \begin{equation*}
@@ -270,21 +243,23 @@ To derive~\eqref{eq:vs_and_vlam}, note that the matrices involved in the lower $
   \end{bmatrix}
 \end{equation*}
 where $\mat{C}_\mu$ holds the determinant of each $2\times 2$ matrix on its diagonal.
-
-%with $\mat{C}_\mu$ being its determinant. Then  \eqref{eq:vs_and_vlam} and 
-%\eqref{eq:schur} can be derived by filling the corresponding blocks from \eqref{eq:sch} 
-%to \eqref{eq:schx}.   
 \end{remark}
 
 \begin{remark}
-  Consider the case where all the inequality constraints are active.  Then, as
-  $\mu\rightarrow 0$, the matrix in \eqref{eq:schur} becomes the Hessian for an
+  Consider the case where all the inequality constraints are active.  $\mat{S}_\mu = 0$ and 
+  the matrix in \eqref{eq:schur} becomes the Hessian for an
   augmented-Lagrangian-like function with linearized constraints:
   \begin{equation*}
+  \begin{aligned}
     \lim_{\mu\rightarrow 0} W_{\mu} + \mat{A}_{g,\mu}^T \mat{C}_{\mu}^{-1}
-    \mat{\Lambda}_\mu \mat{A}_{g,\mu} = \nabla_x^{2} f + \lambda^T \nabla_x^2 g +
-    \frac{1}{\tau_s}\mat{A}_g^{T} \mat{\Lambda}_g \mat{A}_g.
+    \mat{\Lambda}_\mu \mat{A}_{g,\mu} & = \nabla_x^{2} f + \lambda^T \nabla_x^2 g +
+    \mat{S}^{-1}\mat{A}_g^{T} \mat{\Lambda}_g \mat{A}_g \\
+    &= \nabla_x^{2} f + \lambda^T \nabla_x^2 g +
+     \frac{1}{\tau_s}\mat{A}_g^{T} \mat{\Lambda}_g \mat{A}_g \\
+   \end{aligned}
   \end{equation*}
+  Notice that the fixed-value fraction-to-the-boundary rule applied to the slack variable in this thesis 
+  would impose the value of $\tau_s$ on all slack variables.  
 \end{remark}
 
 
@@ -304,10 +279,10 @@ The first situation is desirable, since the constraint is inactive and should
 not influence the step $v_x$.  The second situation is obviously undesirable;
 however, the safeguards in place during the predictor-corrector phases bound the
 slacks away from zero, so the inverse of $\mat{C}_{\mu}$ remains well defined in practice.
-
 In particular, we use the fraction-to-the-boundary rule 
 at the end of the predictor step and explicit clipping at the end of the corrector step to make sure 
-the slack variables remain larger than $\tau_s$ . 
+the slack variables remain larger than $\tau_s$; see Section~\ref{sec:fraction} for details.
+
 
 
 Having established that \eqref{eq:schur} is well defined for all iterates, we
@@ -328,7 +303,7 @@ approximation of $\mat{A}_{g,\mu}^T \mat{C}_\mu^{-1} \mat{\Lambda}_\mu
 where $\mat{\Sigma} = \textsf{diag}(\sigma_1,\sigma_2,\ldots,\sigma_{\nsig}) \in
 \mathbb{R}^{\nsig\times \nsig}$ is a diagonal matrix holding estimates for the
 $\nsig$ largest singular values, and $\mat{U} \in \mathbb{R}^{m\times \nsig}$ and
-$\mat{V} \in \mathbb{R}^{m\times \nsig}$ are corresponding approximations to the
+$\mat{V} \in \mathbb{R}^{m\times \nsig}$ are the corresponding approximations to the
 left and right singular vectors. 
 
 \begin{remark}
@@ -340,10 +315,7 @@ left and right singular vectors.
   Furthermore, by replacing accurate second-order adjoint PDE solves with
   corresponding preconditioner applications, the cost of the Lanczos-based SVD
   can be significantly reduced.  This idea is explored in the numerical
-  experiments.  In our preconditioner, we use a parameter $\mu_e$ 
-   to delimit using exact or approximate second-order adjoints. Only after 
-   $\mu \leq \mu_e $ are the exact second-order adjoints are used in the preconditioner 
-   to save computational cost. 
+  experiments in Chapter~\ref{chap:tests}.  
 \end{remark}
 
 %\begin{remark}
@@ -402,7 +374,7 @@ find $v_s$ and $v_\lambda$;
 \end{align}
 
 
-We conclude this section by summarizing the complete matrix-free preconditioner
+We conclude this section by summarizing the inequality-only matrix-free preconditioner
 in Algorithm~\ref{alg:precond}.  Note that the approximate SVD can be performed
 before each Krylov iterative solve, or it can be performed periodically to
 reduce cost, possibly at the risk of descreasing the effectiveness of the
@@ -430,13 +402,14 @@ Solve for $v_{\lambda_g}$ using \eqref{eq:vlam}\\
 \caption{Matrix-free, approximate SVD preconditioner. \label{alg:precond}}
 \end{algorithm}
 
-\subsection{Both Inequality and Equality Constrained Problems}
+\subsection{Preconditioner for Problems with both Inequality and Equality Constraints}
 %it is not obvious to reduce the system in 
 %\eqref{eq:ideal_precond} using the Schur complement method.
 When both equality and inequality constraints are present, it is straightforward 
-to extend the system reduction into mixed equality and inequality 
-constrained case, since the equality multipliers do not spend on $v_s$ or $v_g$. 
-The reduced system is:
+to extend the preconditioner to handle the general 
+constrained case, since the 
+equality-constraint rows in~\eqref{eq:precond} do not involve $v_s$ or $v_g$.
+Indeed, in the general case the reduced system becomes
 \begin{equation}\label{eq:schur_equ2}
 \begin{bmatrix}
 \mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu    \mat{A}_{g,\mu}    & \mat{A}_{h,\mu}^T   \\
@@ -444,24 +417,23 @@ The reduced system is:
 \end{bmatrix}
 \begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
 =
-\begin{bmatrix} u_x - \mat{A}_{g,\mu}^T \mat{C}_\mu^{-1}  \left[(1-\mu) u_s  - \mat{\Lambda}_\mu u_g     \right]  \\ u_h  \end{bmatrix} 
+\begin{bmatrix} u_x - \mat{A}_{g,\mu}^T \mat{C}_\mu^{-1}  \left[(1-\mu) u_s  - \mat{\Lambda}_\mu u_g     \right]  \\ u_h  \end{bmatrix}. 
 \end{equation}
-Therefore, when both equality and inequality constraints present, we need to solve \eqref{eq:schur_equ2}. Subsequently,  $v_s$ and $v_g$ can be recovered by \eqref{eq:vs_and_vlam} the same way as in the inequality-only case. Thus, the problem becomes how to solve the following system using matrix-free methods: 
-\begin{equation}\label{eq:reduce}
-\begin{bmatrix}
-\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}    & \mat{A}_{h,\mu}^T   \\
-\mat{A}_{h,\mu}  & -\mu \mat{I}
-\end{bmatrix}
-\begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
-=
-\begin{bmatrix} \hat{u}_x   \\ u_h  \end{bmatrix} 
-\end{equation}
-Note that the first row in the right-hand-side of \eqref{eq:schur_equ2} is denoted by $\hat{u}_x$ in \eqref{eq:reduce}.  
+When both equality and inequality constraints present, we need to solve \eqref{eq:schur_equ2} rather than~\eqref{eq:schur}. Subsequently,  $v_s$ and $v_g$ can be recovered by \eqref{eq:vs_and_vlam} the same way as in the inequality-only case. Thus, the problem becomes how to solve \eqref{eq:schur_equ2} 
+ using matrix-free methods. Once again we take advantage of the Schur complement. 
+%\begin{equation}\label{eq:reduce}
+%\begin{bmatrix}
+%\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}    & \mat{A}_{h,\mu}^T   \\
+%\mat{A}_{h,\mu}  & -\mu \mat{I}
+%\end{bmatrix}
+%\begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
+%=
+%\begin{bmatrix} \hat{u}_x   \\ u_h  \end{bmatrix} 
+%\end{equation}
+%Note that the first row in the right-hand-side of \eqref{eq:schur_equ2} is denoted by $\hat{u}_x$ in \eqref{eq:reduce}.  
 
-Once again we take advantage of the Schur complement. 
-\begin{remark}
-Assuming that $\mat{D}$ is invertible, and $\left( A-BD^{-1}C \right) $ is also invertible. 
-The solution of the following linear system 
+Recall that, if $\mat{D}$ and $\left( A-BD^{-1}C \right) $ are invertible,  
+then the solution of the linear system 
 \begin{equation*}
 \begin{bmatrix}
 \mat{A}  & \mat{B} \\
@@ -473,27 +445,14 @@ x \\ y
 = 
 \begin{bmatrix}
 a \\ b
-\end{bmatrix}
+\end{bmatrix}, 
 \end{equation*}
-can be obtained by, 
-\begin{equation*}
+is given by, 
+\begin{equation}\label{eq:schur_inv}
 \begin{bmatrix}
 x \\ y
 \end{bmatrix}=
 \begin{bmatrix}
-\mat{A}  & \mat{B} \\
-\mat{C}  & \mat{D} 
-\end{bmatrix} ^{-1}
-\begin{bmatrix}
-a \\ b
-\end{bmatrix}
-\end{equation*}
-where 
-\begin{equation}\label{eq:schur_inv}
-\begin{bmatrix}
-A & B \\ C & D 
-\end{bmatrix} ^{-1}
-= \begin{bmatrix}
 I  & 0 \\
 -D^{-1}C  & I 
 \end{bmatrix}
@@ -505,16 +464,20 @@ I  & 0 \\
 I  &   -BD^{-1} \\
 0  &  I 
 \end{bmatrix}
+\begin{bmatrix}
+a \\ b
+\end{bmatrix}
 \end{equation}
-\end{remark}
-To use the above factorization in~\eqref{eq:reduce}, we have to consider two situations: 
+
+
+To use the above factorization in~\eqref{eq:schur_equ2}, we have to consider two situations: 
 \begin{enumerate}
-\item When $\mu$ is not small, \eg $\mu > \tau_{\mu}$ then $- \mu \mat{I}$ is invertible and we can use \eqref{eq:schur_inv}, $\bar{\mu} =  \mu$. 
-\item When $\mu$ gets close to zero, \eg $\mu < \tau_{\mu}$, we enforce the following clipping rule 
+\item When $\mu$ is not small, \eg $\mu > \tau_{\mu}$, then $- \mu \mat{I}$ is invertible and we can use \eqref{eq:schur_inv}.   %, $\bar{\mu} =  \mu$. 
+\item When $\mu$ gets close to zero, \eg $\mu < \tau_{\mu}$, we enforce the clipping rule 
 $ \bar{\mu} = \max(\mu, \tau_\mu) $ 
-to prevent $\mu$ from being too small in the preconditioner, where we use $\tau_{\mu} = 10^{-4}$ for all the numerical experiments. This way \eqref{eq:schur_inv} can still be used.
+to prevent $\mu$ from being too small in the preconditioner. We use $\tau_{\mu} = 10^{-4}$ for all the numerical experiments in this work. With this safeguard,  \eqref{eq:schur_inv} can still be used as a preconditioner.
 \end{enumerate}
-Thus, $v_x$ and $v_h$ can be obtained as follows.
+To summarize, in the general constrained case, $v_x$ and $v_h$ can be obtained as follows:
 \begin{equation}\label{eq:core_equ}
 \begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
 =
@@ -533,23 +496,23 @@ I  & \frac{1}{\bar{\mu}} \mat{A}_{h,\mu}^T  \\
 \end{bmatrix}
 \begin{bmatrix}
 \hat{u}_{x} \\ u_h
-\end{bmatrix}
+\end{bmatrix},
 \end{equation}
-where the major component is the following operation besides the matrix-vector product operations with $\mat{A}_{h,\mu}$: 
+where $\hat{u}_x$ denotes the $x$-component of the right-hand side of~\eqref{eq:schur_equ2}.  The most involved operation in~\eqref{eq:core_equ} is the application of the inverse Schur complelement:
 \begin{equation}
 \left(\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
-+ \frac{1}{\bar{\mu}}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} \right)^{-1}  \left(\bar{u}_x + \frac{1}{\bar{\mu}} \mat{A}_{h,\mu}^T u_{h}  \right)
++ \frac{1}{\bar{\mu}}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} \right)^{-1}  \left(\hat{u}_{x} + \frac{1}{\bar{\mu}} \mat{A}_{h,\mu}^T u_{h}  \right). 
 \end{equation}
 %where $y$ refers to 
 %\begin{equation}
 %y = \text{rhs} + \frac{1}{\mu} \mat{A}_{h,\mu}^T u_h
 %\end{equation}
 By stacking $ \mat{A}_{h,\mu} $ and $\mat{A}_{g,\mu}$ together, 
-the following expressions can be derived: 
+the Schur complement can be expressed as
 \begin{equation}\label{pc:eq1}
 \mat{W}_\mu  +  \mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu = 
 \mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
-+ \frac{1}{\bar{\mu}}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} 
++ \frac{1}{\bar{\mu}}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu}, 
 \end{equation}
 where 
 \begin{equation}\label{pc:eq2}
@@ -557,19 +520,15 @@ where
  \begin{bmatrix}
  \mat{A}_{h,\mu} \\
  \mat{A}_{g,\mu}
- \end{bmatrix},   \quad 
+ \end{bmatrix} \qquad\text{and}\qquad
   \Sigma_{\mu} = 
   \begin{bmatrix}  
   \frac{1}{\bar{\mu}} \mat{I}  & 0 \\
   0   &  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu 
   \end{bmatrix}.
 \end{equation}
-This way we can use the Sherman-Morrison formula to compute the inverse of 
-$\mat{W}_\mu  +  \mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, and use the Lanczos method to find the SVD 
-approximation of $\mat{A}_\mu ^T \Sigma_{\mu} \mat{A}_\mu$, in the same manner as in the previous section. 
+Inspecting~\eqref{pc:eq1}, we see that it has the same form as the matrix on the left-hand side of~\eqref{eq:smw}.  Therefore, as before, we use the Lanczos method to construct an approximate singular-value decomposition of $\mat{A}_\mu^T \mat{\Sigma}_\mu \mat{A}_\mu$, and replace $\mat{W}_{\mu}$ with a diagonal or quasi-Newton approximation.  Subsequently, we can use the Sherman-Morrison-Woodbury formula to invert the approximation in the same manner as in the previous section. 
 
-
-\newpage
 \section{Scalable Quadratic Optimization Problem}
 \subsection{Problem Description}
 We conclude this chapter with a numerical experiment to test the effectiveness of the approximate SVD
@@ -596,7 +555,7 @@ The Hessian $\mat{Q}$ is diagonal with entries
   \end{cases}
 \end{equation*}
 where $\kappa \leq n$.  This definition produces a Hessian with a condition
-number of $\kappa$,  so that the condition number 
+number of $\kappa$,  so that its condition number 
 can be controlled independently of the problem dimension.
 
 The constraint Jacobian $\mat{A} \in \mathbb{R}^{n\times n}$ is constructed as follows. First, a diagonal matrix 
@@ -651,7 +610,8 @@ optimization library.
 Without the preconditioner, the predictor-corrector algorithm is not competitive
 and does not converge within the time shown.  This illustrates the need for preconditioning Newton-Krylov
 optmization algorithms, even for modest sized problems.  The results
-also indicate that the proposed algorithm is competitive with SNOPT when $n=200$ and the proposed algorithm outperforms SNOPT when $n=500$. In both cases, the feasibility of SNOPT sharply decrease at certain iteration when the correct set of active constraints are located. It is notable that when  $n=500$, SNOPT takes significantly longer time than the new algorithm to converge. 
+also indicate that the proposed algorithm is competitive with SNOPT when $n=200$ and the proposed algorithm outperforms SNOPT when $n=500$. In both cases, the feasibility of SNOPT sharply 
+decreases once when the correct set of active constraints are determined. It is notable that when  $n=500$, SNOPT takes significantly longer time than the new algorithm to converge. 
 %When $n=200$, SNOPT is able to establish feasiblity within the same time as the
 %predictor-corrector algorithm, but it takes significantly longer to converge the
 %first-order optimality conditions.
@@ -659,10 +619,10 @@ also indicate that the proposed algorithm is competitive with SNOPT when $n=200$
 \begin{figure}[tbp]
   \centering
   \subfloat[$n=200$\label{fig:quad_200}]{
-   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/quadratic_200_color.eps} }
+   \includegraphics[clip,width=1.0\linewidth]{./figs/chap4_test/quadratic_200_color.eps} }
    \hspace{1em}
    \subfloat[$n=500$\label{fig:quad_500}]{
-   \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/quadratic_500_color.eps} }
+   \includegraphics[clip,width=1.0\linewidth]{./figs/chap4_test/quadratic_500_color.eps} }
    \caption{Convergence histories for the scalable quadratic problem with $n=200$ and
   $n=500$. The results for the proposed algorithm, with and without
   preconditioning, are plotted together with the results from
@@ -670,24 +630,64 @@ also indicate that the proposed algorithm is competitive with SNOPT when $n=200$
 \end{figure}
 
 To further explore the scalability of the proposed algorithm, we ran 100 random cases for 
-each fixed sized problem, for $n = 100, 200, 300, 400, 500$.  In each random case, the gradient 
+each fixed sized problem, for $n = 100, 200, 300, 400, 500$.  In each random sample, the gradient 
 of the objective function $g$, and the right hand side vector $b$ in the linear constraint in \eqref{eq:quadra} 
 were randomly generated as described earlier. The diagonal matrices $\mat{Q}$ and $\mat{D}$ remain fixed, while $\mat{A}_L$ and $\mat{A}_R$ are randomly generated. Thus the constraint Jacobian $\mat{A}$ 
 also varies for each case. 
-is also changing. The starting point for each run is also randomly generated. Figure~\ref{fig:quad_scale} shows the two standard deviations in time while
+The starting point for each run is also randomly generated. Figure~\ref{fig:quad_scale} shows the two standard deviations in time while
 the problem size increases. As can be seen, the new method exhibits good scalability relative to SNOPT. 
 
 \begin{figure}[tbp]
   \centering
-  \includegraphics[clip,width=0.8\textwidth]{./figs/chap4_test/random_100_color.eps}%
+  \includegraphics[clip,width=1.0\textwidth]{./figs/chap4_test/random_100_color.eps}%
   \caption{CPU cost versus number of design variables for the quadratic
     optimization problem.\label{fig:quad_scale}}
 \end{figure}
 
 We should emphasize that the proposed SVD preconditioner is particularly effective for this synthetic problem, because it is designed in such a way that the constraint Jacobian can be approiximated effectively using the Lanzcos-based SVD approximation.
-Put another way, the SVD approximation can capture the main characteristics of the matrix in~\eqref{eq:svd}. For real-world problems, the distribution of the singular values of the constraint Jacobian is unknown, and may possess unfavorable distribution patterns for the proposed preconditioner to remain effective.
+Put another way, the SVD approximation can capture the main characteristics of the matrix in~\eqref{eq:svd}. For real-world problems, the distribution of the singular values of the constraint Jacobian is unknown, and may possess an unfavorable distribution pattern for the proposed preconditioner to remain effective.
 
 %distribution of the singular values for the constraint Jacobian is readily separable, with the largest few dominates, and there are only linear inequality constraints. 
+
+
+%To derive \eqref{eq:vs_and_vlam} and \eqref{eq:schur}, the system matrix in \eqref{eq:ideal_precond_ineq} can be partitioned into a $2 \times 2$ block matrix. 
+%\begin{equation}\label{eq:sch}
+%\left[
+%\begin{array}{c | c c} 
+%	   \mat{W}_\mu   &   \phantom{-}\mat{0}  &   \phantom{-}\mat{A}_{g,\mu}^T   \\
+%	   \hline
+%	   \mat{0}    &   -\mat{\Lambda}_\mu & -\mat{S}_\mu \\
+%	  \mat{A}_{g,\mu}     &  -(1-\mu)\mat{I} & -\mu \mat{I}   
+%\end{array}  
+%\right]
+%\left[  \begin{array}{c} v_x \\ \hline v_s \\ v_g \end{array} \right]
+%= 
+%\left[ \begin{array}{c} u_x \\  \hline u_s \\ u_g \end{array} \right]
+%\end{equation}
+%Assuming that $\mat{D}$ is invertible, the solution of the following linear system
+%\begin{equation*}
+%\begin{bmatrix}
+%\mat{A}  & \mat{B} \\
+%\mat{C}  & \mat{D} 
+%\end{bmatrix} 
+%\begin{bmatrix}
+%x \\ y
+%\end{bmatrix}
+%= 
+%\begin{bmatrix}
+%a \\ b
+%\end{bmatrix}
+%\end{equation*}
+%can be obtained by: 
+%\begin{equation}\label{eq:schx}
+%\begin{aligned}
+%\left( \mat{A} - \mat{B} \mat{D}^{-1}\mat{C}  \right)x &= a - \mat{B} \mat{D}^{-1}b \\
+%\mat{C}  x +  \mat{D} y &= b 
+%\end{aligned}
+%\end{equation}
+%Note that the inverse of the lower right block matrix in \eqref{eq:sch} is equivalent to the 
+%system matrix in \eqref{eq:vs_and_vlam}. 
+
 
 
 % However, by using a basic row block by 

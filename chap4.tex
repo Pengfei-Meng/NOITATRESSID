@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %                                                                 %
-%                            CHAPTER SIX                         %
+%                            CHAPTER FOUR                         %
 %                                                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
@@ -8,22 +8,28 @@
 %\resetfootnote %this command starts footnote numbering with 1 again.
 The goal of this chapter is to verify and apply the matrix-free RSNK optimization algorithm described in Chapters~\ref{chap:homotopy} and \ref{chap:linsys}.   We begin by summarizing the software implementation of the proposed algorithm.  We also describe the established algorithm we will compare against.  Next, we use the well-established CUTEr test set to verify the algorithm.  We then present the results of applying the algorithm to two large-scale PDE-constrained optimization problems.
 
+
+%In our preconditioner, we use a parameter $\mu_e$ 
+%   to determine when to switch from approximate to exact second-order adjoints.
+%    Only after $\mu \leq \mu_e $ are the exact second-order adjoints are used in the preconditioner 
+%   to save computational cost. 
+
 \section{Software Implementation and Benchmarking}
 
-This section begins with an overview of Kona, the software library in which the algorithms from Chapters~\ref{chap:homotopy} and~\ref{chap:linsys} are implemented.  This is followed by a descrption of the convergence criteria used in the matrix-free algorithm. Lastly a description of SNOPT, an independent and popular optimization library against which we will compare Kona, is provided. 
+This section begins with an overview of Kona, the software library in which the algorithms from Chapters~\ref{chap:homotopy} and~\ref{chap:linsys} are implemented.  This is followed by a descrption of the convergence criteria used in the matrix-free algorithm. Lastly, we provide a description of SNOPT, an independent and popular optimization library against which we will compare Kona.
 
 \subsection{The Kona Optimization Library}\label{sec:kona_mv}
-The globalized RSNK method and matrix-free preconditioners are part of 
+The globalized RSNK method and preconditioners are part of 
 an in-house optimization package, Kona~\cite{dener:scitech2016}. Kona is a matrix-free, 
 architecture-agnostic optimization package designed to solve reduced-space PDE-constrained 
 optimization problems.  Kona implements several optimization 
 algorithms including an unconstrained 
 reduced-space quasi-Newton method, an unconstrained reduced-space 
 Newton-CG method, an equality constrained reduced-space Newton-Krylov method 
-based on FLECS~\cite{hicken:flecs2014}, and a composite-step RSNK algorithm.
+based on FLECS~\cite{hicken:flecs2014}, and an equality-constrained composite-step RSNK algorithm.
 These high-level optimization algorithms are built from modular components that implement various optimization subroutines including:
-iterative matrix-free solvers like FGMRES, STCG, FLECS for the linear systems; 
-globalization techniques like trust-region, backtracking line search and a line search based on 
+iterative matrix-free solvers like FGMRES, STCG, FLECS for solving linear systems; 
+globalization techniques like trust-region, backtracking line search, and a line search based on 
 the strong Wolfe conditions;   and merit functions like the augmented Lagrangian and the $l_2$ 
 merit function.  In addition, Kona can evaluate Hessian- and Jacobian-vector products by solving the approriate adjoint equations. 
 
@@ -32,7 +38,7 @@ Architecturally, Kona uses an abstract interface to separate the optimization al
 the function operations listed in Table 4.1 of~\cite{dener_thesis_2017}. In particular, this solver interface 
 provides the objective, constraint, gradient, Jacobian-vector, and vector-Jacobian products.
 These products allow Kona to evaluate more complex total sensitivities (\eg Hessian- and Jacobian-vector products)
-that are needed for RSNK.
+that are needed for RSNK algorithms.
 
 
 %During the optimization process, 
@@ -65,14 +71,14 @@ To measure the progress of the optimization iterations, Kona evaluates the infin
 norm of each block row in $F(x)$. Specifically, we will refer to optimality,
 complementarity, and feasibility as defined below:
 \begin{align*}\label{eq:optfeas}
-\text{Optimality} &= \max_{j} | (\nabla_x \mathcal{L})_j |   \\           % \lVert   \nabla_x f(x) + \lambda^T \nabla_x g(x)  \rVert _{\infty} \\
-\text{Complementarity} &= \max_{j} | -s_j \lambda_j |      \\            % \lVert   -\mat{S}\mat{\Lambda} e   \rVert _{\infty}   \\
-\text{Feasibility} &=  \max_{j} |   c_j     |  , \quad \text{where} \quad c = \left[ h(x)^T,  (g(x) - s)^T \right]         % \begin{Vmatrix} h(x) g(x) - s  \end{Vmatrix} _{\infty} 
+\text{Optimality} &= \max_{j} | (\nabla_x \mathcal{L})_j |,  \\           % \lVert   \nabla_x f(x) + \lambda^T \nabla_x g(x)  \rVert _{\infty} \\
+\text{Complementarity} &= \max_{j} | s_j \lambda_j |,     \\            % \lVert   -\mat{S}\mat{\Lambda} e   \rVert _{\infty}   \\
+\text{Feasibility} &=  \max_{j} |   c_j     |  , \quad \text{where} \quad c = \left[ h(x)^T,  (g(x) - s)^T \right].         % \begin{Vmatrix} h(x) g(x) - s  \end{Vmatrix} _{\infty} 
 \end{align*}
 
 %$\max_{j} | (\nabla_x \mathcal{L})_j |$
 
-In the following tests, the convergence plots display the above metrics versus
+In the subsequent tests, the convergence plots display the above metrics versus
 computational cost.  In the past we have reported the relative convergence criteria, which normalizes the above quantities by their initial values; however, in the tests below we report the absolute criteria.
 The relative convergence criteria is not appropriate in the current context, because the
  initial complementarity products are zero due to the zero initial multipliers, 
@@ -84,8 +90,8 @@ the default values set in the algorithm and their recommended ranges.
 
 
 \subsection{SNOPT}
-We will benchmark the performance of Kona against the software library SNOPT.
-SNOPT, which is short for Sparse Nonlinear OPTimizer~\cite{gill:2002}, is a gradient-based sequential 
+We will benchmark the performance of Kona against the software library
+SNOPT, which is short for Sparse Nonlinear OPTimizer~\cite{gill:2002}. SNOPT is a gradient-based sequential 
 quadratic optimization method for solving large-scale nonlinear problems 
 with thousands of constraints and design variables. It uses an augmented Lagrangian 
 merit function, and the Hessian of the Lagrangian is approximated
@@ -94,21 +100,22 @@ using a limited-memory quasi-Newton method.
 SNOPT uses scaled feasibility and optimality criteria 
  to measure the progress of the 
 optimization iterations. The feasibility criterion measures the maximum nonlinear constraint violation, 
-and is normalized by the norm of the current iterative point:
+and is normalized by the norm of the current estimated solution, denoted $x^{(k)}$ below:
 \begin{equation*}
-\text{SNOPT feasibility} = \underset{i}{\text{max}}  \  c_i / \lVert x \rVert, \quad \text{where} \quad c= \left[ ( c(x) - cl)^T, (cu -c(x) )^T \right]   
+\text{SNOPT feasibility} = \underset{i}{\text{max}}  \  c_i / \lVert x^{(k)} \rVert, \quad \text{where} \quad 
+c = \left[ h(x)^T,  (g(x) - s)^T \right].  %c= \left[ ( c(x) - cl)^T, (cu -c(x) )^T \right]   
 \end{equation*}        
-where $x$ is the current iterative point, and $c(x)$ is defined in Appendix~\ref{sec:cuternm}. 
-$c_i$ is the violation of the $i$th nonlinear constraint~\cite{snopt_manual}. The feasibility tolerance 
-$\epsilon_r$ has a default value of $10^{-6}$.
+where $x$ is the current iterative point, and 
+$c_i$ is the violation of the $i$th nonlinear constraint~\cite{snopt_manual}. SNOPT's feasibility tolerance, 
+$\epsilon_r$, has a default value of $10^{-6}$. %defined in Appendix~\ref{sec:cuternm}. 
 
 The optimality criterion measures the maximum complementarity slackness for the design variables, 
 and it is calculated using the following formulas:
 \begin{equation*}
 \text{SNOPT optimality} = \underset{j}{\text{max}}  \ \text{Comp}_j / \lVert \pi \rVert 
 \end{equation*}
-where  $\pi$ is the Lagrangian multiplier vector; 
-$\text{Comp}_j$ measures the complementarity slackness for $j$th variable and is defined by:
+where  $\pi = [\lambda_h^T, \lambda_g^T]^T$ is the Lagrangian multiplier vector; 
+$\text{Comp}_j$ measures the complementarity slackness for the $j$th variable and is defined by:
 \begin{equation*}
 \text{Comp}_j = \begin{cases}
 (\nabla_x \mathcal{L})_j \text{min} (x_j - l_j, 1)  \quad \text{if} \ (\nabla_x \mathcal{L})_j \geq 0 \\
@@ -120,8 +127,8 @@ where $l_j$ and $u_j$ denote the lower and upper bounds on the $j$th variable.
 %$a_j$ is the $j$th constraint Jacobian, $\pi$ is the dual variables. 
 
 \section{CUTEr Test Problems}\label{sec:cuter1}
-We have chosen to verify the algorithms presented in Chapters~\ref{chap:homotopy} and~\ref{chap:linsys}  using the CUTEr test problem set ~\cite{cuter_opt, cuter_gould}. This section begins with a brief description of the CUTEr test suite, then it presents the results of applying Kona and SNOPT to a subset of the CUTEr problems.
-The CUTEr problem set, its interface and its classification methods are discussed in Appendix~\ref{sec:cuternm}, \ref{sec:konacut} and \ref{sec:cuter_clas}.  
+We have chosen to verify the algorithms presented in Chapters~\ref{chap:homotopy} and~\ref{chap:linsys}  using the CUTEr test problem set ~\cite{cuter_opt, cuter_gould}. This section begins with a brief description of the CUTEr test suite, and then it presents the results of applying Kona and SNOPT to a subset of the CUTEr problems.
+The CUTEr problem set, its interface, and its classification methods are discussed in Appendix~\ref{sec:cuternm}, \ref{sec:konacut} and \ref{sec:cuter_clas}.  
 
 \subsection{Problem Description}
 The CUTEr set is a collection of 
@@ -129,27 +136,28 @@ test problems to test new optimization codes and develop new algorithms. The pro
 Some of the test problems exhibit challenges and numerical difficulties observable in practice, such as bad scaling in the objective and/or constraint functions, multiple local solutions, non-regular solutions where the linearly-independent constraint qualification is not satisfied, etc. A number of optimization packages have interfaced with CUTEr~\cite{cuter_interface}, including Ipopt, Knitro, Minos, and SNOPT, to name a few.
 %  ill-conditioned \textbf{Jacobians}
 
-The problems are written in the so-called Standard Input Format (SIF)~\cite{Conn1992}. A decoder works to translate the problems written in SIF to a library written in Fortran 77 that provide the tools to access the function values, Jacobians, and sometimes Hessians to the optimization packages. %It is important for a developing optimization algorithm to test on a good, quality, and suitable subset of problems in CUTEr/CUTEst to validate its accuracy and robustness. 
+The problems are written in the so-called Standard Input Format (SIF)~\cite{Conn1992}. A decoder translates the problems written in SIF to a library written in Fortran 77 that provide the tools to access the function values, Jacobians, and, sometimes, Hessians to the optimization packages. %It is important for a developing optimization algorithm to test on a good, quality, and suitable subset of problems in CUTEr/CUTEst to validate its accuracy and robustness. 
 
 \subsection{Results}
-As the CUTEr test problem set contains a large collection of problems with assorted features, some of which are inappropriate for the RSNK algorithm, only a subset of the problems are considered here. Several criteria are used to remove certain problems from being considered in the following tests, see Appendix~\ref{sec:cuter_clas} for the classification of the CUTEr problems, 
+As the CUTEr test problem set contains a large collection of problems with assorted features, some of which are inappropriate for the RSNK algorithm, only a subset of the problems are considered here. The following criteria were used to remove certain problems from being considered in the tests; see Appendix~\ref{sec:cuter_clas} for further details on the classification of the CUTEr problems. 
 \begin{itemize} \itemsep -8pt 
 \item Objective functions with the following type: \textbf{U},  \textbf{C}, and \textbf{L}
 \item Constraint functions with the following type: \textbf{U},  \textbf{X}
 \item Irregular problems 
 % \item Large number of design and constraints, more than a few hundreds
 \item Problems with no correct solutions provided
-\end{itemize}
+\end{itemize}   %$m_{\text{eq}}$,  $m_{\text{ineq}}$
 
 Table~\ref{tab:cuter} lists the results on the selected subset of the Cuter problems. The first column, `Name' , lists the name of the problems 
-as found in the ASCII files from~\cite{cuter_probs}, which also include the
-problem origin, authors, classifications, SIF problem cards, and sometimes the solutions. The second column `n,  $m_{\text{CUTEr}}$, $m_{\text{eq}}$,  $m_{\text{ineq}}$' are the number of design variables $x$, number of constraints as described in Appendix~\ref{sec:cuternm}, equality constraints and inequality constraints interpreted in Kona's way. The third column describes the key word for the origin  of the problem. The fourth column lists the parameters used in the Homotopy RSNK algorithm that were changed for some of the problems, and include the initial step size $\textbf{$\alpha_0$}$, the nominal distance  $\delta_{\text{targ}}$  and nominal angle $\phi^{\circ}_{\text{targ}}$ as defined in Section~\ref{sec:step}, and the rank of the SVD approximation in Lanczos method used in the preconditioner~\ref{eq:svd}. The fifth column is the optimal value of the  objective function found using Kona, while the sixth column is optimal objective value found using SNOPT. The last column is the optimized objective function value as shown in the ascii file of~\cite{cuter_probs}. 
+as found in the ASCII files from~\cite{cuter_probs}.  The files from~\cite{cuter_probs} also include the
+problem origin, authors, classifications, SIF problem cards, and, sometimes, the solutions. The second column `n,  $m_{\text{CUTEr}}$, l, m' are the number of design variables, the number of constraints as described in Appendix~\ref{sec:cuternm}, and the number of equality and inequality constraints as defined in this thesis. 
+The third column provides the origin of the problem, if available. The fourth column lists the parameters used in the homotopy RSNK algorithm that were changed for some of the problems: the initial step size $\textbf{$\alpha_0$}$, the nominal distance  $\delta_{\text{targ}}$  and nominal angle $\phi^{\circ}_{\text{targ}}$ as defined in Section~\ref{sec:step}, and the rank of the SVD approximation in Lanczos method used in the preconditioner~\ref{eq:svd}. The fifth column is the optimal value of the  objective function found using Kona, while the sixth column is optimal objective value found using SNOPT. The last column is the optimized objective function value as provided by Reference~\cite{cuter_probs}. 
 
 \begin{landscape}
 \begin{longtable}{l | l |  l  |  >{\footnotesize}p{3cm} | l | l | l    }      %\toprule      % |  >{\centering}m{3.5cm}
 \caption{Subsets of Cuter Problem Results}\label{tab:cuter} \\
  \hline 
-Name      &  n,  $m_{\text{CUTEr}}$, $m_{\text{eq}}$,  $m_{\text{ineq}}$        &     Origin      &\textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $n_{\mat{\Sigma}}$      & $ f_{\text{kona}} $   & $ f_{\text{snopt}} $ &$ f^*$    \\ \hline
+Name      &  n,  $m_{\text{CUTEr}}$, l,  m        &     Origin      &\textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $n_{\mat{\Sigma}}$      & $ f_{\text{kona}} $   & $ f_{\text{snopt}} $ &$ f^*$    \\ \hline
 AIRPORT    &  84,  42, 0, 210  &    &  0.05, 20, 20, 40 & 47952.976  & 47952.702  & 47952.696   \\ \hline
 BIGGSC4    &  4, 7, 0, 21  &    & 0.05, 1, 5, 2  &  -24.49999  & -24.375   & -24.5    \\ \hline
 BLOCKQP1 &  25, 11, 10, 71  &     & 0.05, 1, 5, 2 & 2.403846   & 2.4038461  &  -6.4988    \\ \hline
@@ -269,15 +277,15 @@ YAO   &  22, 20, 0, 25 & & 0.05,1,5,10& 2.398829  & 0.0037148 & 2.39883  \\\hlin
 %ZECEVIC2 & 2,2 & 2,0,6  & &  0.05,1,5,2 & -4.1249  & -4.125  & N/A  \\\hline
 
 The results in Table~\ref{tab:cuter} suggest 
-that the globalized RSNK algorithm and the preconditioners proposed in this thesis can deliver accurate solutions. They even succeed in a few cases where SNOPT failed. Despite this success, several points are worth highlighting:
+that the globalized RSNK algorithm and the preconditioners proposed in this thesis can deliver accurate solutions. They even succeed in a few cases where SNOPT fails. Despite this success, several points are worth highlighting:
 \begin{enumerate}
 %\item As a majority of CUTEr test problems do not involve state variables, except for a small sets of optimal control problems, the globalized RSNK algorithm loses its edge in saving the computing and storing costs for the constraint Jacobians. Therefore, on average, the globalized RSNK takes longer time than SNOPT to solve the CUTEr problems. 
 \item CUTEr is only used as verification here, and it is not intended to demonstrate the efficiency of the RSNK algorithm.  Indeed, the CUTEr test problems are sufficiently small in size and have explicit Jacobians, so these problems do not benefit from the matrix-free RSNK algorithm.
 
-\item The parameters \textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $n_{\mat{\Sigma}}$ play important roles in the convergence speed of the new algorithm. In some cases the parameters have to be changed manually to get convergence. In contrast, the parameters for SNOPT remained unchanged for all the test problems. 
-\item The globalized RSNK algorithm is based on the constraint qualification assumption, therefore, it will fail for problems with redundant constraints.    
-\item If the null space of the inequality constraint Jacobian includes a constant   a vector of ones, then the preconditioner will fail. This is because Kona will start the Lanczos algorithm (used to build the preconditioner) with a vector of ones.
- For the problems whose inequality constraint Jacobian have certain structure, \eg $[-1, -3, 3, 1]$ on each row like the LISWET problems, the matrix vector product will be zero, causing the Lanczos method to crash. 
+\item The parameters \textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $n_{\mat{\Sigma}}$ play important roles in the robustness and efficiency of the new algorithm. In some cases the parameters have to be changed manually to get convergence. In contrast, the parameters for SNOPT remained unchanged for all the test problems. 
+\item The globalized RSNK algorithm is based on the constraint qualification assumption; therefore, it will fail for problems with redundant constraints.    
+\item If the null space of the inequality constraint Jacobian includes a constant   vector of ones, then the preconditioner will fail. This is because Kona will start the Lanczos algorithm (used to build the preconditioner) with a vector of ones.
+ For the problems whose inequality constraint Jacobian has a certain structure, \eg $[-1, -3, 3, 1]$ on each row like the LISWET problems, the matrix vector product will be zero, causing the Lanczos method to crash. 
 \end{enumerate} 
 
 
@@ -290,8 +298,8 @@ Our next numerical experiment is a PDE-constrained structural sizing problem
 with state-based constraints.  The problem was previously considered by the
 authors in \cite{dener:scitech2016}, and the geometry and boundary conditions
 are illustrated in Figure~\ref{fig:struct}.  Informally, the problem consists of
-minimizing the plate mass, with respect to the thickness distribution, subject
-to bound constraints and von Mises stress criteria. 
+minimizing the plate mass with respect to the thickness distribution, subject
+to bound constraints and the von Mises stress criteria. 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.6\textwidth]{./figs/chap6_fstopo/struct.png}
@@ -310,7 +318,7 @@ variables.
 The formal optimization statement is
 \begin{equation*}
   \begin{alignedat}{2}
-    \underset{x}{\text{min}} \quad &\textsf{mass}(x) = \sum_{i=1}^{n} m_i x_i, & &\\
+    \underset{x}{\text{min}} \quad &\textsf{mass}(x) \\  % = \sum_{i=1}^{n} m_i x_i, & &\\
     \text{subject to} \quad &\textsf{stress}_i(x) \leq \sigma_{\max}, &
     &\forall\; i = 1,2,\ldots,n, \\
       & x_l \leq x_i \leq  x_u, \qquad & &\forall\; i = 1,2,\ldots,n,
@@ -320,20 +328,18 @@ where $\textsf{mass}(x)$ is the plate mass, and $\textsf{stress}_{i}(x)$ is the
 von Mises stress criterion on the $i$th element. The thickness of each element
 is bounded by the lower and upper values, $x_l = 0.02$ and $x_u = 0.98$. 
 
-The mass is a linear function
+The objective function, $\textsf{mass}(x)$, is a sum of all the elements' mass. 
+Each element's mass is obtained by a constant material density times the filtered thickness of that element. 
+The filtered thickness of each element is a weighted sum of the design variables 
+of the adjacent elements within a conic filter, with the weights determined by 
+$1-\frac{r}{r_0}$ and normalized so that the sum is $1$;   the radius of the conic $r_0=2$, and $r$ is the distance 
+of the adjacent element to the central element.  In summary, the mass is a linear function
 of the design variables and is given by
 \begin{equation*}
   \textsf{mass}(x) = \sum_{i=1}^{n} m_{i} \sum_{j} w_{ij} x_j,     % \sum_{i=1}^{n} m_i x_i,
 \end{equation*}
 where $m_i$ is the mass per unit thickness of the $i$th element of the
 structure, and $w_{ij}$ is the weight from the filter. 
-
-The objective function $\textsf{mass}(x)$, is a sum of all the elements' mass. 
-Each element's mass is obtained by a constant material density times the filtered thickness of that element. 
-The filtered thickness of each element is a weighted summation of the design variables 
-of the adjacent elements within the conic filter, with the weights initially determined by 
-$1-\frac{r}{r_0}$ and normalized afterwards,  where $r_0=2$ is the radius of the conic, and $r$ is the distance 
-of the adjacent element to the central element.  
 
 
 The von Mises stress
@@ -351,7 +357,7 @@ where $\mat{K}(x)$ is the stiffness matrix and $b$ is the force vector.
 
 We consider a set of three mesh sizes by varying $n_x$ and $n_y$.  Table
 \ref{tab:mesh_sizes} lists the mesh dimensions and number of design variables
-for the three cases, which we will refer to as the small, medium, and large
+for the three cases. We will informally refer to these three cases as the small, medium, and large
 cases.
 
 \begin{table}[tbp]
@@ -373,25 +379,25 @@ cases.
 \end{table}
 
 Table~\ref{tab:mesh_sizes} also lists the number of approximate singular values
-used in Algorithm~\ref{alg:precond}.  As the number of design variables
+used in Algorithm~\ref{alg:precond} to construct the preconditioner.  As the number of design variables
 increases in this structural optimization problem, the number of singular values
-in the SVD approximation also has to increase accordingly, at about $\frac{1}{6}$
+in the SVD approximation has to increase accordingly, at about $\frac{1}{6}$
 of the number of design variables.
 %Figure~\ref{fig:svdrank} shows the convergence history of the Krylov iterative
 %method applied to \eqref{eq:linsys}.  
 
 \subsection{Effectiveness of Preconditioner}
 To show the effectiveness of the proposed preconditioner, 
-Figure~\ref{fig:svdrank} shows the convergence history of the Krylov
-method when the Lanczos-based preconditioner uses 
+Figure~\ref{fig:svdrank} plots the convergence history of the Krylov
+method when the Lanczos-based preconditioner uses an 
 increasing number of SVD ranks. The KKT system is extracted from 
-the first Newton step of the final Corrector phase 
-at $\mu < \epsilon_{\mu}$, the last homotopy iteration for the small case. 
-The KKT system is most ill-conditioned at the final corrector phase, so this particular system provides the most stringent test for the preconditioner.
+the first Newton step of the final corrector phase 
+at $\mu < \epsilon_{\mu}$ (\ie the last homotopy iteration) for the small case. 
+The KKT system is most ill-conditioned at the final corrector step, so this particular system provides the most stringent test for the preconditioner.
 
 \begin{figure}[tbp]
   \centering
-  \includegraphics[width=0.7\textwidth]{./figs/chap6_fstopo/tiny_svd_ranks.eps}
+  \includegraphics[width=1.0\textwidth]{./figs/chap6_fstopo/tiny_svd_ranks.eps}
   \caption{Impact of $\nsig$, the rank of the approximate SVD in
     Algorithm~\ref{alg:precond}, on the Krylov iterative method.
   \label{fig:svdrank}}
@@ -400,43 +406,59 @@ The KKT system is most ill-conditioned at the final corrector phase, so this par
 \subsection{Optimal Thickness and Comparison with SNOPT}
 The structural optimization problem was solved using the proposed algorithm,
 with and without the preconditioner. Convergence histories are compared with 
-that of SNOPT, in Figures \ref{fig:small}, \ref{fig:med}, and \ref{fig:large} for the 
+those of SNOPT in Figures \ref{fig:small}, \ref{fig:med}, and \ref{fig:large} for the 
 small, medium, and larges cases, respectively. The cost on the horiztonal axis 
 measures the equivalent number of PDE solves, 
 \ie, the total CPU time divided by the time needed for one
-forward solution.  The vertical axis measures the change in relative optimality and
-absolute feasiblity.    
+forward solution.  The vertical axis measures the change in absolute optimality, 
+absolute feasiblity, and absolute complementarity.    
   
-\begin{figure}[tbp]
-  \begin{center}
-    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_thickness_color.pdf}%
-    \caption{Optimal thickness distribution obtained using Algorithm~\ref{alg:pc} with Preconditioner.
-      \label{fig:thick}}
-  \end{center}
-\end{figure}
+%\begin{figure}[tbp]
+%  \begin{center}
+%    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_thickness_color.pdf}%
+%    \caption{Optimal thickness distribution obtained using Algorithm~\ref{alg:pc} with Preconditioner.
+%      \label{fig:thick}}
+%  \end{center}
+%\end{figure}
+%
+%\begin{figure}[tbp]
+%  \begin{center}
+%    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_eye_thickness_color.pdf}%
+%    \caption{Optimal thickness distribution obtained using Algorithm~\ref{alg:pc} without Preconditioner.
+%      \label{fig:thick_eye}}
+%  \end{center}
+%\end{figure}
+%
+%\begin{figure}[tbp]
+%  \begin{center}
+%    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_thickness_snopt2.pdf}%
+%    \caption{Optimal thickness distribution using SNOPT.
+%      \label{fig:thick_snopt}}
+%  \end{center}
+%\end{figure}
+
 
 \begin{figure}[tbp]
-  \begin{center}
-    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_eye_thickness_color.pdf}%
-    \caption{Optimal thickness distribution obtained using Algorithm~\ref{alg:pc} without Preconditioner.
-      \label{fig:thick_eye}}
-  \end{center}
+  \centering
+   \subfloat[Algorithm~\ref{alg:pc} with Preconditioner \label{fig:thick}]{
+   \includegraphics[clip,width=0.85\textwidth]{./figs/chap6_fstopo/medium_thickness_color.pdf} }
+  \hspace{1em}
+  \subfloat[Algorithm~\ref{alg:pc} without Preconditioner \label{fig:thick_eye}]{
+   \includegraphics[clip,width=0.85\textwidth]{./figs/chap6_fstopo/medium_eye_thickness_color.pdf} }
+  \hspace{1em}
+    \subfloat[SNOPT \label{fig:thick_snopt}]{
+   \includegraphics[clip,width=0.85\textwidth]{./figs/chap6_fstopo/medium_thickness_snopt2.pdf} }
+    \caption{Optimal thickness distribution using Algorithm~\ref{alg:pc} with Preconditioner, without Preconditioner, and SNOPT \label{fig:thick3}}
 \end{figure}
 
-\begin{figure}[tbp]
-  \begin{center}
-    \includegraphics*[width=0.8\textwidth]{./figs/chap6_fstopo/medium_thickness_snopt2.pdf}%
-    \caption{Optimal thickness distribution using SNOPT.
-      \label{fig:thick_snopt}}
-  \end{center}
-\end{figure}
+
 
     
-The final optimal thickness distribution on the large mesh obtained using the homotopy-globalized RSNK method with SVD preconditioner is plotted in Figure~\ref{fig:thick}; the distribution obtained without the preconditioner are shown in Figure~\ref{fig:thick_eye}; the thickness distribution obtained using SNOPT is in Figure~\ref{fig:thick_snopt}. 
-The thickness distribution pattern in all three plots are in agreement with the physical
-intuition of the problem. 
+The final optimal thickness distribution on the large mesh obtained using the homotopy-globalized RSNK method with SVD preconditioner is plotted in Figure~\ref{fig:thick}; the distribution obtained without the preconditioner is shown in Figure~\ref{fig:thick_eye}; finally, the thickness distribution obtained using SNOPT is shown in Figure~\ref{fig:thick_snopt}. 
+The thickness distribution pattern in all three plots is qualitatively similar and in agreement with physical
+intuition for this problem. 
 
-However, the solution using the globalized RSNK method with the preconditioner has a sharper resolution than that without the preconditioner. In addition, The thickness distribution using SNOPT is ruffled along the trapezoid edges; this is consistent with the convergence plots of SNOPT in \ref{fig:large} below, which shows that SNOPT is having difficulty converging. 
+However, the solution using the globalized RSNK method with the preconditioner has a sharper resolution than that without the preconditioner. In addition, The thickness distribution using SNOPT is ruffled along the trapezoid edges; this is consistent with the convergence plots of SNOPT in \ref{fig:large} below, which shows that SNOPT is having difficulty converging the large problem. 
 
 %*[clip,trim=20 70 0 70, width=1.0\textwidth]
 
@@ -445,7 +467,7 @@ on this particular problem: without the approximate-SVD preconditioner, the opti
 feasibility cannot be sufficiently reduced, despite the fact that the thickness distribution 
 still looks reasonable. 
 In contrast, when the approximate-SVD preconditioner is used the
-proposed inequality optimization algorithm can successfully reduce the optimality 
+proposed algorithm can successfully reduce the optimality 
 and feasibility to the desired tolerance.
 
 Figures \ref{fig:small}--\ref{fig:large} also show that the performance of SNOPT
@@ -455,20 +477,20 @@ fluctuates and struggles to decrease significantly. The feasibility achieved by 
 than its optimality, but it also degrades with problem size.  The proposed
 predictor-corrector algorithm is able to converge the optimality and feasiblity
 five orders of magnitude on all three problems. We see that the
-optimization cost increases approximately linearly with problem size on this
+optimization cost increases approximately linearly with $n$ on this
 problem, and the cost is driven primarily by the increasing number of singular values used
 in the preconditioner. 
 
 \begin{figure}[tbp]
   \centering
    \subfloat[small \label{fig:small}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/tiny_color.eps} }
+   \includegraphics[clip,width=0.8\textwidth]{./figs/chap6_fstopo/tiny_color.eps} }
   \hspace{1em}
   \subfloat[medium \label{fig:med}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/small_color.eps} }
+   \includegraphics[clip,width=0.8\textwidth]{./figs/chap6_fstopo/small_color.eps} }
   \hspace{1em}
     \subfloat[large \label{fig:large}]{
-   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/medium_color.eps} }
+   \includegraphics[clip,width=0.8\textwidth]{./figs/chap6_fstopo/medium_color.eps} }
     \caption{Convergence histories for the three sizes of the structural
       optimization problem. \label{fig:struct2}}
 \end{figure}

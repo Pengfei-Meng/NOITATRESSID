@@ -31,7 +31,7 @@
     $\zeta_{\min}$ 		        &  0.5	& 0.5		& 0.001       & 0.001	 & 0.001    &  0.001  &   0.5  & 0.001 \\
     $\Delta \mu_{\max}$		        &  -5e-4	& [-5e-4, -5e-1] & -5e-4 & -5e-4	 & -5e-4     & -5e-4   &  -5e-4 & -5e-4 \\  
     $\Delta \mu_{\min}$		        &  -0.9	& -0.9 	& -0.9	       & -0.9		 & -0.9  & -0.9     &  -0.9  & -0.9	  \\
-    $s_0$                           & $\mathbf{e}$     &   $>$ 0  & $g(x_0)$  &    5$\mathbf{e}$    &  10$\mathbf{e}$ &10$\mathbf{e}$   &  $g(x_0)$  & $g(x_0)$  \\ 
+    $s_0$                           & $\mathbf{e}$\footnote{ $\mathbf{e} = [1, 1, ..., 1]$ } &   $>$ 0  & $g(x_0)$  &    5$\mathbf{e}$    &  10$\mathbf{e}$ &10$\mathbf{e}$   &  $g(x_0)$  & $g(x_0)$  \\ 
     $\tau_s$                      & 1e-6    & 1e-6    &  1e-6 &  1e-6   &  1e-6  &1e-6   & 1e-6  &  1e-6 \\
     \hline
     \multicolumn{3}{ l }{Preconditioner}  & none & none & & & &  \\ 
@@ -65,7 +65,7 @@ The constraints include bound constraints on the variable and other types of con
 \begin{equation*}
 \text{bl}_i \leq x_i \leq \text{bu}_i  
 \end{equation*}
-where $\text{bl}_i$ and $\text{bu}_i$ are the lower and upper bound on $x_i$. When there is no lower or upper bound on $x_i$, then $\text{bl}_i = -1e20$ or $\text{bu}_i = 1e20$. 
+where $\text{bl}_i$ and $\text{bu}_i$ are the lower and upper bound on $x_i$. When there is no lower or upper bound on $x_i$, then $\text{bl}_i = -10^{20}$ or $\text{bu}_i = 10^{20}$. 
 
 With the exception of the bound constraints, all remaining 
 constraints are gathered in a single vector-valued function $c(x) \in \mathbb{R}^m$, which is then bounded as follows:   
@@ -121,8 +121,8 @@ The second character defines the constraint function type, with the options:
 
 The third character shows the smoothness of the problem, with the option of:
 \begin{itemize}  \itemsep -8pt 
-\item  \textbf{R} : the problem is regular, and its first and second derivatives exist and continuous everywhere,
-\item  \textbf{I}: the problem is irregular.
+\item \textbf{R}: the problem is regular, and its first and second derivatives exist and continuous everywhere,
+\item \textbf{I}: the problem is irregular.
 \end{itemize}
 
 The third character \textbf{r} holds an integer among 0, 1 and 2, indicating the highest derivatives provided analytically.

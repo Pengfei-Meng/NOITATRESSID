@@ -1,3 +1,132 @@
+
+@article{mengpf_2018,
+    author = {P. Meng, A. Dener, J. Hicken, G. Kennedy},
+    journal = {TBD},
+    title = {Matrix-free Algorithm for Reduced-Space PDE-governed Optimization with Inequality Constraints},
+}
+
+
+@article{Hu_uzawa,
+ author = {Hu, Qiya and Zou, Jun},
+ title = {An Iterative Method with Variable Relaxation Parameters for Saddle-Point Problems},
+ journal = {SIAM J. Matrix Anal. Appl.},
+ issue_date = {2001},
+ volume = {23},
+ number = {2},
+ month = feb,
+ year = {2001},
+ issn = {0895-4798},
+ pages = {317--338},
+ numpages = {22},
+ url = {http://dx.doi.org/10.1137/S0895479899364064},
+ doi = {10.1137/S0895479899364064},
+ acmid = {587753},
+ publisher = {Society for Industrial and Applied Mathematics},
+ address = {Philadelphia, PA, USA},
+ keywords = {indefinite systems, inexact Uzawa method, preconditioning, saddle-point},
+} 
+
+
+
+@article{DBLP:journals/corr/LiXS15,
+  author    = {Ruipeng Li and
+               Yuanzhe Xi and
+               Yousef Saad},
+  title     = {Schur Complement based domain decomposition preconditioners with Low-rank
+               corrections},
+  journal   = {CoRR},
+  volume    = {abs/1505.04340},
+  year      = {2015},
+  url       = {http://arxiv.org/abs/1505.04340},
+  archivePrefix = {arXiv},
+  eprint    = {1505.04340},
+  timestamp = {Wed, 07 Jun 2017 14:41:04 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/LiXS15},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+@Article{Bergamaschi2004,
+author="Bergamaschi, Luca
+and Gondzio, Jacek
+and Zilli, Giovanni",
+title="Preconditioning Indefinite Systems in Interior Point Methods for Optimization",
+journal="Computational Optimization and Applications",
+year="2004",
+month="Jul",
+day="01",
+volume="28",
+number="2",
+pages="149--171",
+abstract="Every Newton step in an interior-point method for optimization requires a solution of a symmetric indefinite system of linear equations. Most of today's codes apply direct solution methods to perform this task. The use of logarithmic barriers in interior point methods causes unavoidable ill-conditioning of linear systems and, hence, iterative methods fail to provide sufficient accuracy unless appropriately preconditioned. Two types of preconditioners which use some form of incomplete Cholesky factorization for indefinite systems are proposed in this paper. Although they involve significantly sparser factorizations than those used in direct approaches they still capture most of the numerical properties of the preconditioned system. The spectral analysis of the preconditioned matrix is performed: for convex optimization problems all the eigenvalues of this matrix are strictly positive. Numerical results are given for a set of public domain large linearly constrained convex quadratic programming problems with sizes reaching tens of thousands of variables. The analysis of these results reveals that the solution times for such problems on a modern PC are measured in minutes when direct methods are used and drop to seconds when iterative methods with appropriate preconditioners are used.",
+issn="1573-2894",
+doi="10.1023/B:COAP.0000026882.34332.1b",
+url="https://doi.org/10.1023/B:COAP.0000026882.34332.1b"
+}
+
+
+
+
+@ARTICLE{2015arXiv151106845L,
+   author = {{Lu}, C. and {Delaney}, T. and {Jiao}, X.},
+    title = "{OPINS: An Orthogonally Projected Implicit Null-space Method for Singular and Nonsingular Saddle-point Systems}",
+  journal = {ArXiv e-prints},
+archivePrefix = "arXiv",
+   eprint = {1511.06845},
+ primaryClass = "math.NA",
+ keywords = {Mathematics - Numerical Analysis},
+     year = 2015,
+    month = nov,
+   adsurl = {http://adsabs.harvard.edu/abs/2015arXiv151106845L},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+
+
+@article{nullspace_precond,
+Abstract = {The null-space method is a technique that has been used for many years to reduce a saddle point system to a smaller, easier to solve, symmetric positive definite system. This method can be understood as a block factorization of the system. Here we explore the use of preconditioners based on incomplete versions of a particular null-space factorization and compare their performance with the equivalent Schur complement based preconditioners. We also describe how to apply the nonsymmetric preconditioners proposed using the conjugate gradient method (CG) with a nonstandard inner product. This requires an exact solve with the (1,1) block, and the resulting algorithm is applicable in other cases where Bramble-Pasciak CG is used. We verify the efficiency of the newly proposed preconditioners on a number of test cases from a range of applications. [ABSTRACT FROM AUTHOR]},
+Author = {PESTANA, JENNIFER and REES, TYRONE},
+ISSN = {08954798},
+Journal = {SIAM Journal on Matrix Analysis and Applications},
+Keywords = {SADDLEPOINT approximations, FACTORIZATION (Mathematics), CONJUGATE gradient methods, INNER product, SCHUR complement, NONSYMMETRIC matrices, null-space method, preconditioning, saddle point systems},
+Number = {3},
+Pages = {1103 - 1128},
+Title = {NULL-SPACE PRECONDITIONERS FOR SADDLE POINT SYSTEMS.},
+Volume = {37},
+URL = {http://libproxy.rpi.edu/login?url=https://search.ebscohost.com/login.aspx?direct=true&db=aph&AN=119815837&site=eds-live&scope=site},
+Year = {2016},
+}
+
+
+@article {NLA:NLA320,
+author = {Benzi, Michele and Tůma, Miroslav},
+title = {A robust incomplete factorization preconditioner for positive definite matrices},
+journal = {Numerical Linear Algebra with Applications},
+volume = {10},
+number = {5-6},
+publisher = {John Wiley & Sons, Ltd.},
+issn = {1099-1506},
+url = {http://dx.doi.org/10.1002/nla.320},
+doi = {10.1002/nla.320},
+pages = {385--400},
+keywords = {sparse linear systems, positive definite matrices, preconditioned conjugate gradients, incomplete factorization, A-orthogonalization, SAINV},
+year = {2003},
+}
+
+
+@article{BENZI2002418,
+title = "Preconditioning Techniques for Large Linear Systems: A Survey",
+journal = "Journal of Computational Physics",
+volume = "182",
+number = "2",
+pages = "418 - 477",
+year = "2002",
+issn = "0021-9991",
+doi = "https://doi.org/10.1006/jcph.2002.7176",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999102971767",
+author = "Michele Benzi"
+} 
+
+
 @article{Rees2010optimal,
     author = {Rees, Tyrone and Dollar, H. Sue and Wathen, Andrew J.},
     citeulike-article-id = {14459329},
@@ -204,6 +333,8 @@ keywords = "Optimisation, Gradient-based optimisation, Gradient-free optimisatio
   year = {2018}, 
   note = "[Online; accessed 18–January-2018]”
 }
+
+
 
 @techreport{cuter_gould,
     author = {Nicholas I. M. Gould, Dominique Orban and Philippe L. Toint},
@@ -7757,6 +7888,19 @@ sensitivity that disables traditional sensitivity analysis methods.}},
     year = {1996}
 }
 
+
+@techreport{aviation:co2,
+    address = {},
+    author = {Oxley, David. Goodger, David.},
+    institution = {IATA},
+    keywords = {Air Passenger},
+    posted-at = {2015},
+    priority = {0},
+    title = {{Air Passenger Forecasts Global Report}},
+    year = {2015}
+}
+
+
 @proceedings{icao:2007,
     address = {Montr\'{e}al, Canada},
     citeulike-article-id = {10673755},
@@ -13767,6 +13911,45 @@ sensitivity that disables traditional sensitivity analysis methods.}},
     series = {A Wiley-Interscience Publication},
     title = {{Practical methods of optimization}},
     year = {2000}
+}
+
+
+@Inbook{Byrd2006,
+author="Byrd, Richard H.
+and Nocedal, Jorge
+and Waltz, Richard A.",
+editor="Di Pillo, G.
+and Roma, M.",
+title="Knitro: An Integrated Package for Nonlinear Optimization",
+bookTitle="Large-Scale Nonlinear Optimization",
+year="2006",
+publisher="Springer US",
+address="Boston, MA",
+pages="35--59",
+abstract="This paper describes Knitro 5.0, a C-package for nonlinear optimization that combines complementary approaches to nonlinear optimization to achieve robust performance over a wide range of application requirements. The package is designed for solving large-scale, smooth nonlinear programming problems, and it is also effective for the following special cases: unconstrained optimization, nonlinear systems of equations, least squares, and linear and quadratic programming. Various algorithmic options are available, including two interior methods and an active-set method. The package provides crossover techniques between algorithmic options as well as automatic selection of options and settings.",
+isbn="978-0-387-30065-8",
+doi="10.1007/0-387-30065-1_4",
+url="https://doi.org/10.1007/0-387-30065-1_4"
+}
+
+
+
+
+@Article{Wachter2006,
+author="W{\"a}chter, Andreas
+and Biegler, Lorenz T.",
+title="On the implementation of an interior-point filter line-search algorithm for large-scale nonlinear programming",
+journal="Mathematical Programming",
+year="2006",
+month="Mar",
+day="01",
+volume="106",
+number="1",
+pages="25--57",
+abstract="We present a primal-dual interior-point algorithm with a filter line-search method for nonlinear programming. Local and global convergence properties of this method were analyzed in previous work. Here we provide a comprehensive description of the algorithm, including the feasibility restoration phase for the filter method, second-order corrections, and inertia correction of the KKT matrix. Heuristics are also considered that allow faster performance. This method has been implemented in the IPOPT code, which we demonstrate in a detailed numerical study based on 954 problems from the CUTEr test set. An evaluation is made of several line-search options, and a comparison is provided with two state-of-the-art interior-point codes for nonlinear programming.",
+issn="1436-4646",
+doi="10.1007/s10107-004-0559-y",
+url="https://doi.org/10.1007/s10107-004-0559-y"
 }
 
 @book{nocedal:2006,

@@ -5,14 +5,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
 \chapter{HOMOTOPY-BASED GLOBALIZATION}\label{chap:homotopy}
+\blfootnote{Portions of this chapter previously appeared as: \cite{mengpf_2018}.}
+
 
 \section{Homotopy-based Globalization}\label{sec:homotopy}
- \footnote{Portions of this chapter are extracted from the manuscript: P. Meng, A. Dener and J. E. Hicken, 
- Matrix-free Algorithm for Reduced-Space PDE-governed Optimization with Inequality Constraints.}
+Recall that Newton-Krylov (NK) root-finding algorithms cannot distinguish between (desired) local minimizers and other stationary points.  Thus, the basic NK algorithm must be augmented with a globalization that avoids local maximizers and saddle points.  This chapter describes one such globalization approach based on homotopy methods. 
+
 Homotopy methods are robust, numerically stable, and globally convergent methods
 for solving nonlinear algebraic equations; see, for example,
-\cite{allgower_georg_1993} and \cite{Watson_1989}.  The interest of this thesis in these
-methods began as a means of globalizing difficult computational aerodynamics
+\cite{allgower_georg_1993} and \cite{Watson_1989}.  
+These methods have been used to globalize nonlinear PDEs, including 
+difficult computational aerodynamics
 problems~\cite{hicken:cfd2009, hicken:cfd2011b, Brown_2016}, but globally
 convergent probability-one homotopy methods have also been successfully applied
 to solve engineering optimization problems~\cite{WATSON1989289}.  Watson~\cite{Watson_2001} reviewed
@@ -28,7 +31,7 @@ conjugate gradient method. While their method achieves global linear convergence
 under the normal cone condition, it is limited to convex objectives and
 constraint functions.
 
-\subsection{Example}
+\subsection{An Example}
 
 Conceptually, the idea of homotopy methods is easy to understand. To find the
 solution of a difficult nonlinear equation, $F(q)=0$, a homotopy map is
@@ -183,8 +186,8 @@ first-order necessary conditions in this work:
 \begin{equation}\label{eq:homo0}
     H(q, q_0, \mu) = (1-\mu)
     \begin{bmatrix}
-      \nabla_x f(x) +   \lambda_h^T \nabla_x h(x)  +  \lambda_g^T \nabla_x g(x) \\
-      -\mathsf{S}\mathsf{\Lambda_g} e \\
+      \nabla_x f(x) +   \lambda_h^T \nabla_x h(x)  +   \lambda_g^T \nabla_x g(x) \\
+      -\mathsf{S}\mathsf{\Lambda}_g e \\
       h(x) \\
       g(x) - s 
     \end{bmatrix}
@@ -262,7 +265,7 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
     total derivative of $H(q,q_0,\mu) = 0$ with respect to $\mu$, \ie by applying the
     implicit function theorem:
     \begin{equation}
-      \left(\nabla_q H\right)_{k} q_{k}' = -\nabla_\mu H_{k} = F(q_k)  - G(q_k,q_0)
+      \left(\nabla_q H\right)_{k} q_{k}' = -\nabla_\mu H_{k} = F(q_k)  - G(q_k,q_0), 
       \label{eq:predictorx}
     \end{equation}
     where $\nabla_q H$ and $\nabla_\mu H$ are evaluated at $q_k$, the previous
@@ -313,7 +316,7 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
     Once the algorithm reaches $\mu \leq \epsilon_\mu$, the tolerance is tightened to the
     user-specified value for the first-order necessary conditions.
     
-    At each Newton subiteration within the corrector, we must solve a linear
+    At each Newton subiteration within the corrector, we must (inexactly) solve a linear
     system of the form
     \begin{equation}\label{eq:cor}
       \left(\nabla_q H \right)_{k+1} \Delta q_{k+1} = -H,
@@ -338,9 +341,8 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
   example,~\cite{walker:1999}.
 \end{remark}
 
-\subsection{Implementation details}
 
-\subsubsection{Adaptive step-size control}\label{sec:step}
+\subsection{Adaptive step-size control}\label{sec:step}
 
 The step length $\alpha$ along the tangent direction is calculated using the
 asymptotic expansion method \cite{allgower3}, which we briefly review here.
@@ -353,7 +355,7 @@ safeguards on the maximum step size:
   \alpha_{k} = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right),
 \end{equation*}
 where $\Delta \mu_{\max}$ is the maximum allowable change in $\mu$,
-$\alpha_{\max}$ is allowable step size permitted by the fraction-to-the-boundary
+$\alpha_{\max}$ is the allowable step size permitted by the fraction-to-the-boundary
 rule (see Section~\ref{sec:fraction}), and the scaling factor for $\alpha_{k-1}$ is given by
 \begin{equation*}
   \zeta_{k} \equiv \max\left( \sqrt{\delta_k/\delta_{\text{targ}}}, \phi_k / \phi_{\text{targ}} \right).
@@ -386,7 +388,7 @@ allowable step $\alpha_{\max}$.
   dependent.
 \end{remark}
 
-\subsubsection{Safeguards on the slacks and inequality multipliers}\label{sec:fraction}
+\subsection{Safeguards on the slacks and inequality multipliers}\label{sec:fraction}
 One of the differences between solving \eqref{eq:opt00x} and solving a generic
 nonlinear system of equations is that the slacks and inequality multipliers must
 remain nonnegative and nonpositive, respectively.  To cope with this additional
@@ -401,30 +403,22 @@ predictor-corrector scheme.
       \alpha \in (0,1] \;|\; s + \alpha s' \geq \tau_s .\right\}.
     \end{equation}
 where $\tau_s = 10^{-6}$. The fraction-to-the-boundary rule we use is slightly 
-different than~\cite{Nocedal2006NO} in that we use a fixed absolute value $\tau_s$ as the boundary 
-instead of a fixed fraction boundary. 
-
-
-%If a particular slack variable gets close to zero, that is, if 
-%   \begin{equation*}
-%   0 <  s \leq \tau_s, 
-%   \end{equation*}
-% then its value is frozen and it is excluded from the above
-% calculation of $\alpha_{\max}$.
-
-In addition, the following clipping rule to the slack variable: 
-\begin{equation}\label{eq:sclip}
-    s \leftarrow \max(s, \tau_s)
-\end{equation}
-is applied at two locations: at the very beginning to the initial 
-slack $s_0$, and at the last point of the corrector phase. 
+different than~\cite{Nocedal2006NO} in that we use a fixed absolute value $\tau_s$ to define the boundary instead of a fixed fraction boundary. 
 
     The maximum step size is enforced for all variables, including the design
     variables $x$.  We have found that synchronizing the step size across the
     design, slack and multipliers improves the performance of the algorithm.
+
+\item In addition, the following clipping rule is applied to the slack variable: 
+\begin{equation}\label{eq:sclip}
+    s \leftarrow \max(s, \tau_s).
+\end{equation}
+This clipping rule is applied at two points in the algorithm: at the very beginning to the initial 
+slack $s_0$, and at the last point of the corrector phase. 
+
     
-  \item After both the predictor and the corrector step,
-  the inequality multipliers are clipped to
+  \item At the end of both the predictor and corrector phases, 
+    the inequality multipliers are clipped to
     ensure they remain non-positive:
     \begin{equation}\label{eq:lclip}
      \lambda_g \leftarrow \min(\lambda_g, 0)
@@ -438,7 +432,7 @@ slack $s_0$, and at the last point of the corrector phase.
 
 While the slacks and inequality multipliers both have similar bound constraints, their treatment is
 slightly different in the above safeguards.  Our motivation for bounding the
-slacks away from zero, in both the predictor corrector phases, is to avoid
+slacks away from zero, in both the predictor and corrector phases, is to avoid
 severe ill-conditioning in the system matrix and its preconditioner; see
 Section~\ref{sec:matfreepc} for further details.  The inequality multipliers, in contrast,
 do not lead to conditioning problems if they vanish, so we can clip the
@@ -450,8 +444,8 @@ With most of its elements described, we summarize the predictor-corrector method
 in Algorithm~\ref{alg:pc}.  The solution of the tangent step,
 line~\ref{line:tang}, and the solution of the Newton step, line
 \ref{line:newton}, are the only components of the algorithm that require further
-explanation.  Note that the initial tangent step line~\ref{line:tang0} is a linear system that 
-is trivial to solve. % The solution of these linear systems is detailed in the next chapter.
+explanation.  Note that the initial tangent step on line~\ref{line:tang0} is a linear system that 
+is trivial to solve, because $\nabla_q H$ is diagonal when $\mu=1$. % The solution of these linear systems is detailed in the next chapter.
 \\
 \LinesNumberedHidden
 \begin{algorithm}[H]\setstretch{1.35}
@@ -471,15 +465,15 @@ Clip $s_0$ if necessary: $s_0 \leftarrow \max(s_0,\tau_s)$  \\
 Set $q_0 = \begin{bmatrix} x_0^T & s_0^T& 0^T & 0^T \end{bmatrix}$, $q  \leftarrow q_0 $  \\
 compute state $u$,  adjoint $\psi$ for $q_0$ \\
 \ShowLn
-inexactly solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k} $ \label{line:tang0}   
- for $q_{k}'$ to required tolerance $\tau$ \label{line:initPred} \\
+ solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k} $ \label{line:tang0}   
+ for $q_{k}'$  \label{line:initPred} \\
 compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
 
 \For{$k = 0,1,2,\ldots,K_{\max}$}{
  compute $\alpha_{k} (\alpha_0 \text{~if~} k\equiv0) = \min\left( \sqrt{\|q_{k}'\|^2 + 1}\Delta \mu_{\max}, \alpha_{\max}, \alpha_{k-1}/\zeta_{k} \right)$\\
   use \eqref{eq:pred} to update $\hat{q}_{k+1}$ and $\mu_{k+1}$\\
   clip $\lambda_{g, k+1}$ if necessary:  $\lambda_{g, k+1} = \min(\lambda_{g, k+1}, 0)$  \\
-  update state $u$, adjoint $\psi$ at $\hat{q}_{k+1}$ \\
+  update state $u$ and adjoint $\psi$ at $\hat{q}_{k+1}$ \\
   set $q_{k+1} \leftarrow \hat{q}_{k+1}$\\
   
   \For{$j = 0,1,2,\ldots,J_{\max}$}{ 
@@ -494,9 +488,9 @@ compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
     inexactly solve $\left(\nabla_q H \right)_{k+1} \Delta q_{k+1} =
     -H_{k+1}$ for $\Delta q_{k+1}$ \label{line:newton} \\
     $q_{k+1} \leftarrow q_{k+1} + \Delta q_{k+1}$ \\
-    update state $u$, adjoint $\psi$ at $q_{k+1}$ \\ 
+    update state $u$ and adjoint $\psi$ at $q_{k+1}$ \\ 
   }
-  \ShowLn
+  %\ShowLn
     \lIf{$\mu_{k} < \epsilon_{\mu}$}{\Return $q_{k}$} 
    % $\| F(q_{k}) \| \leq \epsilon_{F} \|F(q_{0})\|$,  $s_{i} \geq 0$ ,
    % and $\lambda_{i} \leq 0$
@@ -512,50 +506,53 @@ compute the normalized tangent direction $t_{k}$ using \eqref{eq:tk} \\
   $\lambda_{k+1} \leftarrow \min(\lambda_{k+1},0)$ \\
   % $k \leftarrow k+1$   $\lambda_{k+1}$ and $s_{k+1}$
   }
-\caption{Inexact-Newton predictor-corrector algorithm for PDE-Constrained
+\caption{Inexact-Newton predictor-corrector algorithm for reduced-space PDE-Constrained
   optimization.\label{alg:pc}}
 \end{algorithm}
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Globalization Numerical Experiments}
-In theory, Newton-based methods can successfully solve the first-order necessary optimality conditions, but cannot guarantee that the solution also satisfies the second-order sufficient optimality conditions. However, the added homotopy term in the homotopy map~\eqref{eq:homo0} functions like regularization to the optimization problem, thus enable the proposed algorithm a certain amount of non-convex handling capacity. To verify this quality, two numerical examples are tested: the first one is a 3D Sphere constrained problem with a linear objective, and the second one is an indefinite quadratic problem with bound constraints. The goal is to check whether the proposed algorithm can bypass local maximum points.  
+In theory, Newton-based methods can successfully solve the first-order necessary optimality conditions, but cannot guarantee that the solution also satisfies the second-order sufficient optimality conditions. However, the added homotopy term in the homotopy map~\eqref{eq:homo0} functions like a regularization in the optimization problem, and thus provides  the proposed algorithm 
+the capacity to handle a certain amount of nonconvexity. 
+To investigate this capacity, two numerical examples are tested: the first one is a 3D sphere constrained problem with a linear objective, and the second example is an indefinite quadratic problem with bound constraints. The goal is to check whether the proposed algorithm can avoid converging to local maximizers and saddle points.  
 
 
 \subsection{Sphere Problem Description}
-The first test problem to verify RSNK's globalization performance has a linear objective and a feasible domain that is the inside of a sphere:
+The first test problem to verify the homotopy-based globalization 
+ has a linear objective and a feasible domain that is the inside of a sphere:
 \begin{equation*}
 \begin{aligned}
 \underset{x, y, z} {\text{min}}  & \quad \quad x + y + z \\
-   {\text{subject to}}  & \quad \quad x^2 + y^2 + z^2 \leq 3 \\
+   {\text{subject to}}  & \quad \quad x^2 + y^2 + z^2 \leq 3. \\
 \end{aligned}
 \end{equation*}
 
-The solution to this problem is at $(-1,-1,-1)^T$. There is a local maximum point at $(1,1,1)^T$, where the 
-first-order optimality condition (KKT condition) is also satisfied but not the second-order optimality condition. 
+The solution to this problem is at $(-1,-1,-1)^T$. There is also a local maximum point at $(1,1,1)^T$, where the 
+first-order optimality condition (KKT condition) is  satisfied but not the second-order optimality conditions. 
 The presence of this local maximizer provides a test for the homotopy-based globalization algorithm.
 
 \subsection{Sphere Problem Results}
-To prove that the algorithm can bypass the local maximum, 100 random starting points around the local maximum $(1,1,1)^T$ where generating by adding Gaussian perturbations, $\Delta x_i \sim \mathcal{N}(0,0.1^2)$, to each coordinate. Figure~\ref{fig:sphere_100_start} shows 100 random initial points as blue circles and the exact solution as a red star; Figure~\ref{fig:sphere_100_end} shows the final iterates as blue circles and the exact solution as a red star. As can be seen, even when the 100 starting points are near the local maximizer, they all converge to the minimum point.  
+To demonstrate that the algorithm can bypass the local maximizer, 100 random starting points around the point $(1,1,1)^T$ where generating by adding Gaussian perturbations, $\Delta x_i \sim \mathcal{N}(0,0.1^2)$, to each coordinate. Figure~\ref{fig:sphere_100_start} shows 100 random initial points as blue circles and the exact solution as a red star. Figure~\ref{fig:sphere_100_end} shows the final iterates as blue circles and the exact solution as a red star. As can be seen, even when the 100 starting points are near the local maximizer, they all converge to the minimum point.  
 
  \begin{figure}[H]
   \centering
-  \subfloat[100 Starting Points Around Local Maximum \label{fig:sphere_100_start}]{
+  \subfloat[100 initial points, $x_0$, around the local maximizer. \label{fig:sphere_100_start}]{
   \includegraphics[clip, trim=20 10 20 30, width=0.7\columnwidth]{./figs/chap2/100_startingPoints.pdf} }  % 
   \hspace{1em}
-   \subfloat[100 Ending Points \label{fig:sphere_100_end}]{
+   \subfloat[100 converged points, $x^*$. \label{fig:sphere_100_end}]{
   \includegraphics[clip, trim=20 10 20 30, width=0.7\columnwidth]{./figs/chap2/100_endingPoints.pdf} } 
-   \caption{100 Starting and Ending Points \label{fig:sphere_100}}  
+   \caption{100 initial and converged points \label{fig:sphere_100}}  
 \end{figure}
 
  \begin{figure}[H]
   \centering
-  \subfloat[1000 Starting Points \label{fig:sphere_1000_start}]{
+  \subfloat[1000 initial points, $x_0$, distributed about the origin. \label{fig:sphere_1000_start}]{
   \includegraphics[clip, trim=20 10 20 40, width=0.7\columnwidth]{./figs/chap2/1000_startingPoints.pdf} } 
   \hspace{1em}
-   \subfloat[1000 Ending Points  \label{fig:sphere_1000_end}]{
+   \subfloat[1000 converged points, $x^*$.  \label{fig:sphere_1000_end}]{
   \includegraphics[clip, trim=20 10 20 30, width=0.7\columnwidth]{./figs/chap2/1000_endingPoints.pdf} } 
-   \caption{1000 Starting and Ending Points \label{fig:sphere_1000}}  
+   \caption{1000 initial and converged points \label{fig:sphere_1000}}  
 \end{figure}
 
 To further test the robustness of the globalization, we seeded the algorithm with 1000 initial guesses whose $x_0$ were drawn from a standard normal distribution. Figure~\ref{fig:sphere_1000_start} shows a scatter plot of these 1000 points.  All $x_0$ values converge to the local minimizer, as shown in Figure~\ref{fig:sphere_1000_end}.  
@@ -571,10 +568,9 @@ For our second numerical experiment, we consider the following simple 100-dimens
 & &-1 \leq x_i \leq 1 \qquad \forall i = 1,2,\ldots,100, \\
 \end{aligned}
 \end{equation*}
-where Q is a diagonal matrix whose entries are $-1$ or $1$ with uniform probability.
-This problem is challenging for Newton-based optimization algorithms, which 
-tends to locate stationery points  but cannot differentiate between 
-minimizers or maximizers. As the objective function can be separated into 
+where Q is a diagonal matrix whose entries are $-1$ or $1$ with equal probability, 
+ \ie according to a Rademacher distribution. 
+ As the objective function can be separated into 
 individual dimensions, it is easy to see that 
 valid minimizers for this problem have the following dependence on Q:
 %\begin{equation}\label{eq:pattern}
@@ -598,13 +594,13 @@ individual maximums where the gradient of the Lagrangian is zero in that dimensi
 \subsection{Non-convex Problem Results}
 We ran the optimization algorithm on the non-conex problem with 1000 randomly generated Q matrices.
 For each case, 
-the arrangement of $1$ and $-1$ in $\mat{Q}$ is uniformly randomly generated; 
- the initial point $x_0$ is also generated randomly with uniform probability in the domain
+the arrangement of $1$ and $-1$ in $\mat{Q}$ was randomly generated as described above. 
+ the initial point $x_0$ was also generated randomly with uniform probability in the domain
   $\Omega = \{ x \in \mathbb{R}^{100} \; | \; -2 \leq x_i \leq 2 \}$.  We call a solution successful if 
   its pattern is exact as given by \eqref{eq:pattern2}.  Table~\ref{tab:success} lists the success rate for different 
   combinations of $\epsilon_{\text{krylov}}$ and $\epsilon_H$. 
 Note that $\epsilon_{\text{krylov}}$ is the tolerance of the Krylov solver introduced in Chapter~\ref{2:krylov}; 
-$\tau$ and $\epsilon_H$ are the tolerances for the predictor and the corrector step as explained in Description~\ref{sec:desp}. 
+$\tau$ and $\epsilon_H$ are the tolerances for the predictor and the corrector phases as explained in Section~\ref{sec:desp}. 
  
 \begin{table}[H]
   \begin{center}
@@ -623,39 +619,35 @@ $\tau$ and $\epsilon_H$ are the tolerances for the predictor and the corrector s
 As can be seen from Table~\ref{tab:success}, the robustness of the algorithm for handling non-convexity 
 is obviously impacted by the tolerances, particularly $\epsilon_{\text{krylov}}$. The results show that 
 $\epsilon_{\text{krylov}}$ has to be below $ 10^{-2}$
-for effective non-convexity handling, and the predictor and corrector linear solve tolerance $\epsilon_H$ 
-plays a smaller role than $\epsilon_{\text{krylov}}$.   
-  
-% \begin{figure}[tbp]
-%  \centering
-%  \includegraphics[clip,width=0.7\columnwidth]{./figs/chap4_test/nonconvex_1000_random.eps}%
-%  \caption{Success Minimizers. \label{fig:nonconvex}}
-%\end{figure}   
-  
-%\textbf{  I would delete 3.6 and this paragraph.  Alternatively, you could have a table that shows the percentage for each failed dimension. (I have never liked Fig. 3.6, probably because the norm of the initial starting point is not very useful predictor). }
-  
-  
-The results show that the optimization method can start from infeasible points, and can handle certain 
-amount of nonconvexity.  Admittedly, this nonconvex test problem is rather simple, with no complexities like bad-scaling, ill-conditioning included. However, the focus is solely to see whether the added regularization from the homotopy term can help 
-Newton's method bypass local maximizers and saddle points.  Further work is needed to determine when the problem demands 
-tighter tolerances and how to detect and handle nonnegative curvature.  
+for effective non-convexity handling, while $\tau$ and $\epsilon_H$ plays a smaller role than $\epsilon_{\text{krylov}}$. 
 
+%The predictor phase tolerance $\tau$ and the corrector phase 
+%tolerance $\epsilon_H$, which is also the inexact-Newton (nonlinear) tolerance,   
+  
+Admittedly, this nonconvex test problem is relatively simple, with no additional complications such as 
+bad-scaling or ill-conditioning. 
+The focus here is solely to see whether the added regularization from the homotopy term can help 
+Newton's method bypass local maximizers and saddle points.  
+The results show that the optimization method can start from infeasible points, and can handle nonconvexity provided the tolerances are sufficiently tight. 
+Further work is needed to automatically detect nonconvex problems and adjust the tolerances as necessary.
 
-Typical optimization convergence plots are provided in Figure~\ref{fig:nc_converg}. Figure~\ref{fig:ncmu} 
+We conclude this chapter by presenting typical optimization convergence plots 
+for this problem; see Figure~\ref{fig:nc_converg}. 
+Figure~\ref{fig:ncmu} 
 shows the absolute optimality, complementarity and feasibility at each homotopy iteration of different $\mu$. 
-Note that for simplicity, only the predictor points are displayed when $\mu \geq \epsilon_{\mu}$, 
+Note that, for simplicity, only the predictor points are displayed when $\mu \geq \epsilon_{\mu}$, 
 while the corrector points are displayed for $\mu < \epsilon_{\mu}$.
-Figure~\ref{fig:nccpu} shows convergence criteria with respect to  CPU time. 
+Figure~\ref{fig:nccpu} shows the convergence criteria with respect to  CPU time. 
 These convergence plots indicate that, at least asymptotically, superlinear convergence is maintained by the algorithm.
 
 \begin{figure}[tbp]
   \centering
-  \subfloat[Convergence vs. $\mu$ \label{fig:ncmu}]{
+  \subfloat[Convergence criteria vs. $\mu$ \label{fig:ncmu}]{
    \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/nonconvex_mu.eps} }
    \hspace{1em}
-   \subfloat[Convergence vs. CPU time \label{fig:nccpu}]{
+   \subfloat[Convergence criteria vs. CPU time \label{fig:nccpu}]{
    \includegraphics[clip,width=0.7\linewidth]{./figs/chap4_test/nonconvex_cpu.eps} }
-   \caption{Typical Convergence Plots in $1000$ Random Cases \label{fig:nc_converg}}
+   \caption{Convergence history from one of the nonconvex cases.  This history is typical of 1000 cases considered \label{fig:nc_converg}}
 \end{figure}
 
 %\begin{remark}

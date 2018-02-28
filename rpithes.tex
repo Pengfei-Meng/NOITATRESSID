@@ -76,6 +76,18 @@
 \newcommand{\comment}[1]{}
 \newcommand{\mat}[1]{\ensuremath{\mathsf{#1}}}
 \newcommand{\nsig}[0]{\ensuremath{n_{\mat{\Sigma}}}}
+
+
+\usepackage{lipsum}
+
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+
 % \PassOptionsToPackage{usenames,dvipsnames}{xcolor}
 
 % \usepackage{colortbl}

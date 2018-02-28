@@ -5,24 +5,40 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
 \specialhead{ABSTRACT}
+This thesis present a matrix-free method for partial differential equation (PDE)
+constrained optimization problems formulated in the reduced space.  When many
+state-based constraints are present in the reduced-space formulation, the
+constraint Jacobian can become prohibitively expensive to compute explicitly,
+because each constraint gradient requires the solution of a distinct adjoint
+PDE.  This leads many practitioners to use constraint aggregation, which can
+produce overly conservative solutions.  To avoid conservative solutions as well
+as the expense of forming the constraint Jacobian, we adopt a matrix-free
+inexact-Krylov optimization framework.  This choice introduces additional
+challenges related to globalization and preconditioning.  To address
+globlization, the proposed method uses a homotopy continuation approach and a
+predictor-corrector algorithm to trace the solution curve.  The predictor and
+corrector linear systems are solved using a Krylov iterative method with the
+necessary matrix-vector products evaluated via second-order adjoints.  To cope
+with the poorly conditioned primal-dual system, a matrix-free preconditioner is
+proposed that uses a low-rank approximation of the Schur complement of the
+primal-dual matrix; the low-rank approximation is constructed using a fixed
+number of iterations of the Lanczos method. The algorithm is verified using
+analytical problems, a subset of CUTEr problems, 
+a stress-constrained mass minimization problem, and an aerodynamic shape optimization problem.  
+The method shows promising performance relative to a state-of-the-art
+matrix-based active-set algorithm, particularly for large numbers of design
+variables.
 
- 
-In the context of PDE-constrained optimization problems, 
-the objective and the constraint functions often depend on both the design and state variables. 
-Gradient-based optimization needs the objective gradient and the constraint Jacobians. 
-The total derivatives of state-based objectives and constraints necessitate an adjoint variable, the solution of which can be as expensive as solving the primal state PDE. In the presence of many state-based constraints, it may not be practical to compute the constraint Jacobian explicitly. In addition, the number of constraints and variables present in some problems can make storage of the constraint Jacobian impractical. In this thesis, a Reduced-Space Newton-Krylov method with Homotopy globalization technique is presented to solve PDE-constrained optimization problems.  
- 
- A matrix-free Newton-Krylov optimization algorithm avoids explicit construction and storage of the Jacobian,
- but presents additional challenges related to globalization, preconditioning, and inequality constraint handling abilities. To address these challenges, this thesis uses a globally convergent homotopy continuation approach to solve the first-order optimality conditions using reduced-space Newton-Krylov methods. It uses a predictor-corrector algorithm to trace the solution curve of the homotopy map that combines the KKT conditions and the homotopy regularization term. During the tracing process, the predictor and corrector linear systems are solved inexactly by Krylov iterative methods. The matrix-vector products of the KKT matrix are approximated using second-order adjoints. To cope with the poorly conditioned KKT system, matrix-free preconditioners based on Lanczos SVD approximation are proposed to accelerate the convergence of the Krylov iterative solver.  
-
-The proposed algorithms are verified and benchmarked on a variety of problems. In particular, the optimization algorithm is applied to a subset of CUTEr test problems to examine its accuracy and robustness, and it is used to solve two PDE-constrained optimization problems. The optimization algorithm proposed in this work is compared 
-with a state-of-the-art matrix-based optimization algorithm.
-
-
-% the results using the algorithm and preconditioners from this work are compared with those using state-of-the-art matrix-based optimization algorithm SNOPT. 
-
-%To verify its globalization ability, an inequality constrained sphere problem is first tested to check whether the new method can bypass local maximum points. Then a constructed high-dimensional quadratic indefinite problem with randomly generated non-convex pattern and random starting points is exercised; the statistical performance of 1000 cases are presented. The scaling performance of the algorithm and the effectiveness of the preconditioner is studied on a series of constructed quadratic problems with increasing dimensions, while the convergence results are compared with those of a popular matrix-based active-set optimization algorithm.
-
-% are tested: the first one is a complex stress-constrained mass-minimization problem, which serves the case as many state-based constraints; the second one is an aerodynamic shape of the NASA Common Research Model wing based on Euler equations. In both cases,
+%%%%%%%%%%%  Version 1  %%%%%%%%%%%% 
+%In the context of PDE-constrained optimization problems, 
+%the objective and the constraint functions often depend on both the design and state variables. 
+%Gradient-based optimization needs the objective gradient and the constraint Jacobians. 
+%The total derivatives of state-based objectives and constraints necessitate an adjoint variable, the solution of which can be as expensive as solving the primal state PDE. In the presence of many state-based constraints, it may not be practical to compute the constraint Jacobian explicitly. In addition, the number of constraints and variables present in some problems can make storage of the constraint Jacobian impractical. In this thesis, a Reduced-Space Newton-Krylov method with Homotopy globalization technique is presented to solve PDE-constrained optimization problems.  
+% 
+% A matrix-free Newton-Krylov optimization algorithm avoids explicit construction and storage of the Jacobian,
+% but presents additional challenges related to globalization, preconditioning, and inequality constraint handling abilities. To address these challenges, this thesis uses a globally convergent homotopy continuation approach to solve the first-order optimality conditions using reduced-space Newton-Krylov methods. It uses a predictor-corrector algorithm to trace the solution curve of the homotopy map that combines the KKT conditions and the homotopy regularization term. During the tracing process, the predictor and corrector linear systems are solved inexactly by Krylov iterative methods. The matrix-vector products of the KKT matrix are approximated using second-order adjoints. To cope with the poorly conditioned KKT system, matrix-free preconditioners based on Lanczos SVD approximation are proposed to accelerate the convergence of the Krylov iterative solver.  
+%
+%The proposed algorithms are verified and benchmarked on a variety of problems. In particular, the optimization algorithm is applied to a subset of CUTEr test problems to examine its accuracy and robustness, and it is used to solve two PDE-constrained optimization problems. The optimization algorithm proposed in this work is compared 
+%with a state-of-the-art matrix-based optimization algorithm.
 
 %%%%%%%%%%%%%%%%%%%%%%% 
