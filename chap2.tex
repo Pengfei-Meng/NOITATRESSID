@@ -463,7 +463,7 @@ is trivial to solve, because $\nabla_q H$ is diagonal when $\mu=1$. % The soluti
 \BlankLine
 Clip $s_0$ if necessary: $s_0 \leftarrow \max(s_0,\tau_s)$  \\
 Set $q_0 = \begin{bmatrix} x_0^T & s_0^T& 0^T & 0^T \end{bmatrix}$, $q  \leftarrow q_0 $  \\
-compute state $u$,  adjoint $\psi$ for $q_0$ \\
+compute state $u$ and  adjoint $\psi$ at $q_0$ \\
 \ShowLn
  solve $\left(\nabla_q H\right)_{k} q_{k}' = - \nabla_\mu H_{k} $ \label{line:tang0}   
  for $q_{k}'$  \label{line:initPred} \\
@@ -562,10 +562,10 @@ To further test the robustness of the globalization, we seeded the algorithm wit
 For our second numerical experiment, we consider the following simple 100-dimensional non-convex optimization problem:
 \begin{equation*}
 \begin{aligned}
-&\underset{x \in R^{100}} {\text{min}}  
-& &\phantom{-} \frac{1}{2}x^T \mat{Q} x \\
-  & {\text{subject to}}
-& &-1 \leq x_i \leq 1 \qquad \forall i = 1,2,\ldots,100, \\
+\underset{x \in R^{100}} {\text{min}}  
+ &\quad \phantom{-} \frac{1}{2}x^T \mat{Q} x \\
+   {\text{subject to}}
+ &\quad -1 \leq x_i \leq 1 \qquad \forall i = 1,2,\ldots,100, \\
 \end{aligned}
 \end{equation*}
 where Q is a diagonal matrix whose entries are $-1$ or $1$ with equal probability, 
@@ -579,8 +579,8 @@ valid minimizers for this problem have the following dependence on Q:
 %where
 \begin{equation}\label{eq:pattern2}
   \begin{gathered}
-  x_i=0  \text{~if~}  \mat{Q}_{ii} = 1,  \\
-  x_i = \pm 1  \text{~if~}  \mat{Q}_{ii} = -1.
+  x_i=0  \quad  \text{~if~}  \mat{Q}_{ii} = 1,  \\
+  x_i = \pm 1 \quad  \text{~if~}  \mat{Q}_{ii} = -1.
   \end{gathered}
 \end{equation}
 
@@ -595,10 +595,10 @@ individual maximums where the gradient of the Lagrangian is zero in that dimensi
 We ran the optimization algorithm on the non-conex problem with 1000 randomly generated Q matrices.
 For each case, 
 the arrangement of $1$ and $-1$ in $\mat{Q}$ was randomly generated as described above. 
- the initial point $x_0$ was also generated randomly with uniform probability in the domain
+ The initial point $x_0$ was also generated randomly with uniform probability in the domain
   $\Omega = \{ x \in \mathbb{R}^{100} \; | \; -2 \leq x_i \leq 2 \}$.  We call a solution successful if 
   its pattern is exact as given by \eqref{eq:pattern2}.  Table~\ref{tab:success} lists the success rate for different 
-  combinations of $\epsilon_{\text{krylov}}$ and $\epsilon_H$. 
+  combinations of $\epsilon_{\text{krylov}}$ and $\tau$, $\epsilon_H$. 
 Note that $\epsilon_{\text{krylov}}$ is the tolerance of the Krylov solver introduced in Chapter~\ref{2:krylov}; 
 $\tau$ and $\epsilon_H$ are the tolerances for the predictor and the corrector phases as explained in Section~\ref{sec:desp}. 
  

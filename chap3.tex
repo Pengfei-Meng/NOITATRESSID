@@ -103,7 +103,7 @@ is no analogous matrix-based preconditioners for the total Jacobian $\nabla_x g$
 in the reduced-space, and, as explained in Chapter~\ref{chap:1}, forming $\nabla_x
 g$ explicitly is not feasible. In the making of this thesis, a Uzawa type 
 preconditioner~\cite{Hu_uzawa} has been investigated but without success. 
-The preconditioner proposed in this thesis is also based on approximate Schur complement decompositions. 
+The preconditioner proposed in this thesis is also based on the approximate Schur complement decompositions. 
 
 
 %Inspired by the domain-decomposed Schur preconditioners  in PDE solvers~\cite{keyes_domain} ,  where approximate subdomain solutions of the mesh field are used as preconditioners for the iterative solver of the PDEs, \cite{DBLP:journals/siamsc/BirosG05} uses approximate state and adjoint solutions in the Schur of the KKT system as the preconditioner for the linear system of the optimization problem. 
@@ -539,9 +539,9 @@ in which we can independently control the size and conditioning of the Hessian
 and constraint Jacobian:
 \begin{equation}\label{eq:quadra}
   \begin{aligned}
-    &\underset{x \in R^n} {\text{min}}  
-    & & \frac{1}{2}x^T \mat{Q} x + g^T x \\
-    &\text{subject to} & & \mat{A}x \geq b.  \\
+    \underset{x \in R^n} {\text{min}}  
+     & \quad \frac{1}{2}x^T \mat{Q} x + g^T x \\
+    \text{subject to}  & \quad \mat{A}x \geq b.  \\
   \end{aligned}.
 \end{equation}
 The vector $g\in \mathbb{R}^{n}$ is randomly sampled from a uniform distribution 

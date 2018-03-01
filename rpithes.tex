@@ -28,6 +28,7 @@
 %\captionsetup{compatibility=false}
 % \usepackage{float}
 % \usepackage{caption}
+
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -41,13 +42,19 @@
 % \usepackage{setspace}
 \usepackage{xspace} % needed for \eg, \ie, \etc
 % hyperref must be last
-\usepackage{hyperref}
-\hypersetup{
-  colorlinks=true,
-  linkcolor=blue,
-  citecolor=blue,
-  urlcolor=blue
-}
+%When submitting your thesis, comment out hyperref
+% -- courtesy of Dan Ibanez
+\usepackage[hidelinks]{hyperref}
+
+\renewcommand*{\UrlNoBreaks}{\do\(\do\[\do\{\do\<\do\:}%
+
+%\usepackage{hyperref}
+%\hypersetup{
+%  colorlinks=true,
+%  linkcolor=blue,
+%  citecolor=blue,
+%  urlcolor=blue
+%}
 \usepackage{multirow}
 \newtheorem{definition}{Definition}[section]
 \newtheorem{theorem}{Theorem}
