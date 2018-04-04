@@ -429,15 +429,33 @@ absolute feasiblity, and absolute complementarity.
    \includegraphics[clip,width=0.85\textwidth]{./figs/chap6_fstopo/medium_thickness_snopt.pdf} }
     \caption{Optimal thickness distribution using Algorithm~\ref{alg:pc} with Preconditioner, without Preconditioner, and SNOPT \label{fig:thick3}}
 \end{figure}
-
-
-
     
 The final optimal thickness distribution on the large mesh obtained using the homotopy-globalized RSNK method with SVD preconditioner is plotted in Figure~\ref{fig:thick}; the distribution obtained without the preconditioner is shown in Figure~\ref{fig:thick_eye}; finally, the thickness distribution obtained using SNOPT is shown in Figure~\ref{fig:thick_snopt}. 
 The thickness distribution pattern in all three plots is qualitatively similar and in agreement with physical
 intuition for this problem. 
 
 However, the solution using the globalized RSNK method with the preconditioner has a sharper resolution than that without the preconditioner. In addition, The thickness distribution using SNOPT is ruffled along the trapezoid edges; this is consistent with the convergence plots of SNOPT in \ref{fig:large} below, which shows that SNOPT is having difficulty converging the large problem. 
+
+To quantitatively measure the differences in the thickness distributions of the three methods, Figure~\ref{fig:fs_slices} 
+selectively show the thickness distributions along horizontal slices at different vertical locations where SNOPT oscillates the most. The y direction goes up, so the lower values of y are in the bottom.  Figure~\ref{fig:fs_slices} also show that the thickness is constant over elements. 
+
+\begin{figure}[tbp]
+  \centering
+   \subfloat[small \label{fig:fs1}]{
+   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/1.eps} } 
+   \subfloat[small \label{fig:fs3}]{
+   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/3.eps} } \\
+  \subfloat[medium \label{fig:25}]{
+   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/25.eps} }
+    \subfloat[medium \label{fig:27}]{
+   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/27.eps} }\\
+    \subfloat[large \label{fig:29}]{
+   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/29.eps} }
+    \subfloat[large \label{fig:32}]{
+   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/32.eps} }
+    \caption{Comparison of thickness distribution along horizontal slices. \label{fig:fs_slices}}
+\end{figure}
+
 
 %*[clip,trim=20 70 0 70, width=1.0\textwidth]
 
@@ -460,6 +478,13 @@ optimization cost increases approximately linearly with $n$ on this
 problem, and the cost is driven primarily by the increasing number of singular values used
 in the preconditioner. 
 
+Last but not least, it is worth noting that, the small amount of regularization $\epsilon_{\mu}=10^{-6}$  
+at the final corrector phase of the RSNK method should have helped with its convergence. In contrast, SNOPT 
+has no regularization. It is thus estimated that linearly dependent constraint Jacobian might exist and regularization 
+can help improve the performance of optimization algorithms. However, 
+the interface of SNOPT makes it not easy to add external regularizations, and attempts have been made 
+but without success.    
+
 \begin{figure}[tbp]
   \centering
    \subfloat[small \label{fig:small}]{
@@ -475,7 +500,6 @@ in the preconditioner.
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
 \section{Aerodynamic Shape Optimization}
 
 The last application is an Euler-based aerodynamic shape optimization problem starting from the NASA Common Research Model (CRM) wing~\cite{crm_wing}. This problem is an invisicid version of a problem defined by
@@ -492,7 +516,7 @@ The origin of the coordinate system is at the leading edge of the wing root, and
 \begin{figure}[tbp]
   \centering
   \includegraphics[clip,width=0.75\textwidth]{./figs/chap7_aso/CRM-wing.png}%
-  \caption{CRM wing \label{fig:crm_wing}}
+  \caption{CRM wing \label{fig:crm_wing} \cite{2015lyu_crm}}
 \end{figure}
 
 
@@ -519,7 +543,7 @@ Figure~\ref{fig:crm_ffd} shows the FFD volume and the control points. For the fo
  \begin{figure}[tbp]
   \centering
   \includegraphics[clip,width=0.8\textwidth]{./figs/chap7_aso/CRM-wing-FFD.png}%
-  \caption{CRM FFD \label{fig:crm_ffd}}
+  \caption{CRM FFD \label{fig:crm_ffd} \cite{2015lyu_crm}}
 \end{figure}
 
 The flow solver used in this study is SUmb~\cite{sumb_pdf}, a finite-volume, cell-centered multi-block structured  flow solver that can model a variety  of problems, including the compressible Euler, laminar Navier-Stokes and Reynolds-Averaged Navier-Stokes (RANS) equations. In this study, the flow was modeled with the compressible Euler equations. The DRP cluster on Rensselaer Polytechnic Institute's CCI was used, consisting of 64 nodes; each node has 128GB of system memory and two eight-core 2.6 GHz Intel Xeon E5-2650 processors. 
@@ -595,9 +619,57 @@ reduction in feasibility and optimality, albeit for the RANS equations.
 Note that in Kona, the $C_L$, and $C_{My}$ inequality constraints do not become feasible 
 very quickly, and they remain infeasible for the first half of the iteration. That could be explained by the stronger influence of the homotopy term on the optimization steps. Toward the start of the second half of the convergence history, the inequality constraints are satisfied.   
 
+Table~\ref{tab:aero_kona} lists the initial and optimal aerodynamic coefficients using Kona method. 
+\begin{table}[tbp]
+  \begin{center}
+    \caption{The initial and optimal aerodynamic coefficients using Kona
+    \label{tab:aero_kona}}
+  \begin{tabular}{ l  c | c c c }
+%       &   \multicolumn{3}{ c }{192}   &   \multicolumn{3}{ c  }{480} &   \multicolumn{3}{ c }{768}   \\
+%       \hline
+         & Size  & $C_D \times 10^4$ & $C_L$ & $C_{My}$   \\         
+    \hline
+    % \rule{0ex}{3ex}%
+ \multicolumn{2}{ l |}{Initial}  &    108.5017 & 0.489247 & -0.195020    \\ 
+  \multirow{ 3}{*}{Optimal} & 192 &  96.1716 & 0.499805 & -0.170138  \\
+                 & 480  & 97.7451 & 0.499907 & -0.170002 \\
+                 & 768  & 99.0509 & 0.499902 & -0.169954  \\  
+      \end{tabular}
+  \end{center}
+\end{table}
+
+
 \subsubsection{SNOPT Results}
 For comparison, Figures~\ref{fig:sn_192}, \ref{fig:sn_480}, and \ref{fig:sn_768} show the SNOPT convergence histories  for the L1 grid with the number of 
 design variables equal to 192, 480 to 768, respectively. 
+
+Table~\ref{tab:aero_snopt} lists the initial and optimal aerodynamic coefficients using SNOPT method. 
+
+\begin{table}[tbp]
+  \begin{center}
+    \caption{The initial and optimal aerodynamic coefficients using SNOPT
+    \label{tab:aero_snopt}}
+  \begin{tabular}{ l  c | c c c }
+%       &   \multicolumn{3}{ c }{192}   &   \multicolumn{3}{ c  }{480} &   \multicolumn{3}{ c }{768}   \\
+%       \hline
+         & Size  & $C_D \times 10^4$ & $C_L$ & $C_{My}$   \\         
+    \hline
+    % \rule{0ex}{3ex}%
+ \multicolumn{2}{ l |}{Initial}  &    108.5025 & 0.489247 & -0.195021    \\ 
+  \multirow{ 3}{*}{Optimal} & 192 &  97.9155 & 0.499997 & -0.169998  \\
+                 & 480  & 98.0529 & 0.499999 & -0.169999 \\
+                 & 768  & 99.0552 & 0.499999 & -0.170000  \\  
+      \end{tabular}
+  \end{center}
+\end{table}
+
+To intuitively see the change of the design variables during the optimization process, Figure~\ref{fig:profile} 
+shows the initial, Kona optimized, and SNOPT optimized wing airfoil profiles at six different span-wise locations, 
+ \begin{figure}[tbp]
+  \centering
+  \includegraphics[clip,width=0.8\textwidth]{./figs/chap7_aso/profiles.pdf}%
+  \caption{Initial, SNOPT optimized, and SNOPT optimized airfoil profiles at different span-wise locations\label{fig:profile}}
+\end{figure}
 
 \begin{figure}[H]
   \centering
@@ -671,6 +743,9 @@ However, its computational performance is disappointing on this problem relative
 Kona's poor performance is largely due to the computational expense of forming the SVD-based 
 preconditioner. This can be explained by the fact that one Lanczos iteration in the preconditioner involves  
 one Jacobian vector product and one vector Jacobian product for both the equality and inequality constraints. This makes the SVD approximation expensive, because it uses 20 Lanczos iterations at each optimization iteration point. In addition, the inequality constraints consist of 750 thickness constraints, 1 volume constraint,  and 2 nonlinear aerodynamic constraints. Thus, the preconditioner is lumping the nonlinear and linear inequality constraints together when computing the Jacobian-vector and vector-Jacobian products, which makes the SVD approximation less effective at approximating the nonlinear part.  Rather than using the SVD to approximate the linear constraints, it would be advantageous to use the explicit linear Jacobians. 
+
+%In addition, in the convergence plots Figure~\ref{fig:kona_192} to \ref{fig:sn_768}, the starting aerodynamic coefficients in SNOPT are slightly smaller than that in Kona, that was found to be because the angle of attack, which is part of the design variables, was set to $2.2^{\circ}$ in SNOPT and $2.5^{\circ}$ in Kona. The geometric design variables are the same between the two. The difference in the initial angle of attack was not intentional and would not change the convergence histories in a big way, except that the aerodynamic coefficients would start the same from 
+%Figure~\ref{fig:kona_192} to \ref{fig:sn_768}. 
 
 %Because the there are only two nonlinear aerodynamic constraints in this problem, $CL$ and $CMy$, while the rest of the inequality constraints are large amount of linear geometric constraints, $750$ thickness constraints, $1$ volume constraint, the preconditioner is lumping the nonlinear and linear inequality constraints together when making SVD approximations.  The parameters used in Kona are listed in Appendix~\ref{tab:param}.  
 

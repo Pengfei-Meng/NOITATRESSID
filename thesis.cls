@@ -265,7 +265,7 @@
       \else
         \clearpage\phantomsection
       \fi
-   \chapter*{\centering\listfigurename  % center it
+    \chapter*{\centering\listfigurename  % center it
       \@mkboth{\MakeUppercase\listfigurename}%
               {\MakeUppercase\listfigurename}}%
     \addcontentsline{toc}{chapter}{\listfigurename}  % add lof to toc
@@ -288,7 +288,7 @@
     \chapter*{\centering\listtablename  % center it
       \@mkboth{\MakeUppercase\listtablename}%
               {\MakeUppercase\listtablename}}%
-\addcontentsline{toc}{chapter}{\listtablename}  % add lot to toc
+    \addcontentsline{toc}{chapter}{\listtablename}  % add lot to toc
         \vskip -1em \begin{singlespace}  % singlespacing
     \@starttoc{lot}%
     \if@restonecol\twocolumn\fi
@@ -306,12 +306,50 @@
 \let\rpicaption\caption
 \let\lrpicaption\caption
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CITATION AND BIBLIOGRAPHY COMMANDS
+%% -- copied from IEEEtran.cls 2015/08/26 version V1.8b
+%%
+%% V1.6 no longer supports the older, nonstandard \shortcite and \citename setup stuff
+%
+%
+% Modify Latex2e \@citex to separate citations with "], ["
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\@citex[#1]#2{%
+  \let\@citea\@empty
+  \@cite{\@for\@citeb:=#2\do
+    {\@citea\def\@citea{], [}%
+     \edef\@citeb{\expandafter\@firstofone\@citeb\@empty}%
+     \if@filesw\immediate\write\@auxout{\string\citation{\@citeb}}\fi
+     \@ifundefined{b@\@citeb}{\mbox{\reset@font\bfseries ?}%
+       \G@refundefinedtrue
+       \@latex@warning
+         {Citation `\@citeb' on page \thepage \space undefined}}%
+       {\hbox{\csname b@\@citeb\endcsname}}}}{#1}}
+
+% V1.6 we create hooks for the optional use of Donald Arseneau's
+% cite.sty package. cite.sty is "smart" and will notice that the
+% following format controls are already defined and will not
+% redefine them. The result will be the proper sorting of the
+% citation numbers and auto detection of 3 or more entry "ranges" -
+% all in IEEE style:  [1], [2], [5]--[7], [12]
+% This also allows for an optional note, i.e., \cite[mynote]{..}.
+% If the \cite with note has more than one reference, the note will
+% be applied to the last of the listed references. It is generally
+% desired that if a note is given, only one reference is listed in
+% that \cite.
+% Thanks to Mr. Arseneau for providing the required format arguments
+% to produce the IEEE style.
+\def\citepunct{], [}
+\def\citedash{]--[}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  BIBLIOGRAPHY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RPI def: for use in making an unnumbered bibliography with hanging indents
-\def\bibentry{\vskip10pt\par\noindent\hangindent=40pt\frenchspacing}
+%\def\bibentry{\vskip10pt\par\noindent\hangindent=40pt\frenchspacing}
 
 % report definition modified for no automatic heading and use ragged right
 \newcommand{\bibalign}{\raggedright}
@@ -349,7 +387,7 @@
  \def\coprojadviser#1{\gdef\@coprojadviser{#1}} \coprojadviser{*}
  \def\cocothadviser#1{\gdef\@cocothadviser{#1}} \cocothadviser{*}
  \def\cocoprojadviser#1{\gdef\@cocoprojadviser{#1}} \cocoprojadviser{*} 
- \def\doctype{\if \@projadviser *Dissertation \else Thesis \fi}
+ \def\doctype{\if \@projadviser *Thesis \else Project \fi}
  \def\adviser{\if \@projadviser *\@thadviser \else \@projadviser\fi}
  \def\coadviser{\if \@coprojadviser *\@cothadviser\else \@coprojadviser\fi}
  \def\cocoadviser{\if \@cocoprojadviser *\@cocothadviser\else \@cocoprojadviser\fi}
@@ -362,13 +400,28 @@
  \def\copyrightyear#1{\gdef\@copyrightyear{#1}} \copyrightyear{\the\year}
  \def\submitdate#1{\gdef\@submitdate{#1}}
 
-% Format signature lines on title page
 \newcount\numcount
 \def\sigblock{
+ \ifnum\numcomm > 0 
+   \ifnum\numcomm < 4  % master's thesis or project
+     \vskip .8in plus 24pt minus 24pt
+     \leftline{Approved: \hfil}\vskip 48pt plus 2pt minus 10pt
+     \hrule width 2.6in\hfil \vskip -6pt
+     \leftline{\adviser, \doctype Adviser\hfil}
+     \if \coadviser * % no co-adviser
+       \else \vskip 36pt plus 6pt minus 2pt \hrule width 2.6in\hfil \vskip -6pt        
+       \leftline{\coadviser, \doctype Adviser\hfil}
+     \fi
+     \if \cocoadviser * % no coco-adviser 
+       \else \vskip 36pt plus 6pt minus 2pt \hrule width 2.6in\hfil \vskip -6pt
+      \leftline{\cocoadviser, \doctype Adviser\hfil}
+     \fi   
+     \vskip 6pt 
+   \else  % PhD thesis
       \numcount=\numcomm
-      %\leftline{Approved by the\hfil}
+      \leftline{Approved by the\hfil}
       \leftline{Examining Committee:\hfil}
-      \vskip 28pt \vfil 
+      \vskip 28pt \vfil
       \hrule width 2.8in \hfil \vskip -3pt
       \leftline{\adviser, \doctype Adviser\hfil} 
       \advance \numcount by -1
@@ -377,12 +430,11 @@
         \leftline{\coadviser, \doctype Adviser\hfil}
         \advance \numcount by -1
       \fi
-      \ifnum\numcount > 0 %
       \vskip 19pt\vfil\hrule width 2.8in\hfil\vskip -3pt
-      \leftline{\@memberone, Member\hfil} \fi %
-      \advance \numcount by -1 \ifnum\numcount > 0 %
+      \leftline{\@memberone, Member\hfil}
+      \advance \numcount by -1
       \vskip 19pt\vfil\hrule width 2.8in\hfil\vskip -3pt
-      \leftline{\@membertwo, Member\hfil} \fi %
+      \leftline{\@membertwo, Member\hfil}
       \advance \numcount by -1 \ifnum\numcount > 0
       \vskip 19pt\vfil\hrule width 2.8in\hfil\vskip -3pt
       \leftline{\@memberthree, Member\hfil}  \fi
@@ -395,7 +447,45 @@
       \advance \numcount by -1 \ifnum\numcount > 0
       \vskip 19pt\vfil\hrule width 2.8in\hfil\vskip -3pt
       \leftline{\@membersix, Member\hfil} \fi
-} 
+    \fi
+  \fi} 
+
+ \def\sigblockabs{%
+   \ifnum\numcomm < 4  % master's thesis or project
+     \vskip 1.8in plus 24pt minus 24pt
+     \leftline{Approved: \hfil}\vskip 24pt plus 2pt minus 10pt
+     \leftline{\adviser, \doctype Adviser\hfil}
+     \if \coadviser * % no co-adviser
+       \else \vskip 8pt plus 6pt minus 2pt         
+       \leftline{\coadviser, \doctype Adviser\hfil}
+     \fi
+     \if \cocoadviser * % no coco-adviser 
+       \else \vskip 8pt plus 6pt minus 2pt 
+      \leftline{\cocoadviser, \doctype Adviser\hfil}
+     \fi 
+ %    \vglue 24pt 
+  \else  % PhD thesis
+    \numcount=\numcomm
+    \leftline{Examining Committee: \hfil}
+    \begin{quote}   
+      \adviser, \doctype Adviser\\[4pt]  \advance \numcount by -1
+      \if \coadviser * \else 
+        \coadviser, \doctype Adviser\\[4pt]    \advance\numcount by -1
+      \fi
+      \@memberone, Member\\[4pt] \advance \numcount by -1
+      \ifnum\numcount > 0
+      \@membertwo, Member\\[4pt] \advance \numcount by -1 \fi
+      \ifnum\numcount > 0
+      \@memberthree, Member\\[4pt] \advance \numcount by -1 \fi
+      \ifnum\numcount > 0
+      \@memberfour, Member\\[4pt] \advance \numcount by -1  \fi
+      \ifnum\numcount > 0
+      \@memberfive, Member\\[4pt]\advance \numcount by -1  \fi
+      \ifnum\numcount > 0
+      \@membersix, Member\\[4pt] \advance \numcount by -1\fi
+    \end{quote}
+  \fi  
+ }
 
  \def\titlepage{%
      \pagenumbering{roman}
@@ -413,13 +503,47 @@
          in Partial Fulfillment of the\\ [8pt]
          Requirements for the Degree of\\ [8pt]
          \uppercase\expandafter{\@degree}\\ [8pt]
-         Major Subject:~~\uppercase\expandafter{\@department}\\ 
+         Major Subject:~~\uppercase\expandafter{\@department}\\ [8pt]
          \ifnum\numcomm < 7 \vskip 32pt \else \vskip 24pt \fi
          \sigblock 
          \ifnum \numcomm < 7 \vskip 32pt \else \vskip 24pt \fi
          Rensselaer Polytechnic Institute\\
          Troy, New York\\ [14pt]
          \ifnum\numcomm>6 \vskip -8pt \fi
+         \@submitdate
+     \end{center}
+     \end{singlespace}
+     \newpage
+     \pagestyle{plain}
+%    \pagenumbering{roman}
+%    \setcounter{page}{2}
+}
+ 
+ \def\abstitlepage{%
+     \if@twoside\thispagestyle{empty}\cleardoublepage\fi
+     \pagenumbering{roman}
+     \thispagestyle{empty}
+     \ifnum\numcomm<4 \vglue .5in \fi  % masters
+     \begin{singlespace}
+     \begin{center}
+         \parindent=0pt
+         \vglue 24pt plus 24pt minus 12pt
+         {\large\uppercase\expandafter{\@thesistitle}}\\ [11pt]
+         By \\ [11pt]
+         \@author\\ [11pt]
+         An Abstract of a Thesis Submitted to the Graduate Faculty\\ [7pt]
+         of Rensselaer Polytechnic Institute\\ [7pt]
+         in Partial Fulfillment of the\\ [7pt]
+         Requirements for the Degree of\\ [7pt]
+         \uppercase\expandafter{\@degree}\\ [7pt]
+         Major Subject:~~\uppercase\expandafter{\@department}\\  [7pt]
+         The original of the complete thesis is on file\\
+         in the Rensselaer Polytechnic Institute Library\\
+       \vfill
+       \sigblockabs 
+       \vskip 36pt plus 2pt minus 12pt 
+        Rensselaer Polytechnic Institute\\
+        Troy, New York\\ [12pt]
          \@submitdate
      \end{center}
      \end{singlespace}
@@ -651,8 +775,9 @@
 \markboth{}{}           % Do not include chapter titles in headers;
 \pagestyle{myheadings}  % include just page numbers in upper right
 
-\renewcommand{\bibalign}{\raggedright}  %  bibliography is ragged right
-% for fully justified bibliography: \renewcommand{\bibalign}{}
+%\renewcommand{\bibalign}{\raggedright}  %  bibliography is ragged right
+% for fully justified bibliography:
+\renewcommand{\bibalign}{}
 
 \endinput
 %% 

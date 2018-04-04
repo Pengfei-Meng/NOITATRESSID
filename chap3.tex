@@ -35,7 +35,7 @@ sequence of matrix-vector products using a generalized form of Arnoldi's
 method~\cite{saad:2003}.  Starting with $v_{1} = b/\|b\|$, the generalized
 Arnoldi's method produces the following relation at the $i$th iteration:
 \begin{equation}\label{eq:arnoldi}
-  (\nabla_q F) \mat{Z}_{i} = \mat{V}_{i+1} \bar{\mat{H}}_{i},
+  (\nabla_q H) \mat{Z}_{i} = \mat{V}_{i+1} \bar{\mat{H}}_{i},
 \end{equation}
 where $\mat{V}_{i+1} \in \mathbb{R}^{N\times (i+1)}$ has orthogonal columns and
 $\bar{\mat{H}}_{i} \in \mathbb{R}^{(i+1)\times i}$ is upper Hessenberg.  The
@@ -48,10 +48,10 @@ vectors are related to the vectors in $\mat{V}_{i+1}$ by
 where $P_j(\cdot)$ denotes the preconditioning operation at iteration $j$.    
 
 The FGMRES solution is given by $x_{i} = \mat{Z}_{i} y_{i}$, where $y_{i}$ is
-chosen to minimize the 2-norm of the residual, $r_i \equiv b -  (\nabla_q F) x_i = b -  (\nabla_q F)\mat{Z}_i y_i$. The solution to this minimization problem is 
+chosen to minimize the 2-norm of the residual, $r_i \equiv b -  (\nabla_q H) x_i = b -  (\nabla_q H)\mat{Z}_i y_i$. The solution to this minimization problem is 
 \begin{align*}
   y_{i} = \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
-  \lVert b -  (\nabla_q F) \mat{Z}_i y \| 
+  \lVert b -  (\nabla_q H) \mat{Z}_i y \| 
   &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
   \lVert \mat{V}_{i+1} (\|b\| e_1 - \bar{\mat{H}}_{i} y) \| \\
   &= \underset{y \in \mathbb{R}^i}{\textrm{argmin}}
@@ -63,11 +63,11 @@ identity. The least-squares minimization problem on the final line is inexpensiv
 in our applications,  since $i$ is usually less than 100.
 
 Like most Krylov iterative methods, the FGMRES algorithm described above does
-not require the Jacobian $(\nabla_q F)$ explicitly.  From the user's
+not require the Jacobian $(\nabla_q H)$ explicitly.  From the user's
 perspective, the algorithm only requires matrix-vector products and
 preconditioning operations.  In this work, matrix-vector products involving
-$(\nabla_q F)$ are computed using second-order adjoints~\cite{wang:1992,
-  hicken:inexact2014}.  Briefly, each product with $(\nabla_q F)$ requires the
+$(\nabla_q H)$ are computed using second-order adjoints~\cite{wang:1992,
+  hicken:inexact2014}.  Briefly, each product with $(\nabla_q H)$ requires the
 solution of two discretized linear PDEs: a linear forward problem and a linear
 adjoint problem.  See \cite{dener:scitech2015} for further details regarding
 second-order adjoints in the context of reduced-space problems with state
@@ -477,6 +477,13 @@ To use the above factorization in~\eqref{eq:schur_equ2}, we have to consider two
 $ \bar{\mu} = \max(\mu, \tau_\mu) $ 
 to prevent $\mu$ from being too small in the preconditioner. We use $\tau_{\mu} = 10^{-4}$ for all the numerical experiments in this work. With this safeguard,  \eqref{eq:schur_inv} can still be used as a preconditioner.
 \end{enumerate}
+
+\begin{remark}
+The choice $\tau_{\mu} = 10^{-4}$ is made based on numerical experiences. Theoretically, smaller values such as 
+$\tau_{\mu} = 10^{-6}, 10^{-7}, 10^{-8}$ will make the preconditioner linear system resemble the original linear system better but also make it more ill-conditioned as in the original system. In contrast, larger values such as 
+$\tau_{\mu} = 10^{-1}, 10^{-2}$ will help with the conditioning of the preconditioner system but will reduce the effectiveness of the preconditioner. Choosing $\tau_{\mu} = 10^{-4}$ can balance the trade-off between the aforementioned scenarios. 
+\end{remark}
+
 To summarize, in the general constrained case, $v_x$ and $v_h$ can be obtained as follows:
 \begin{equation}\label{eq:core_equ}
 \begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
@@ -580,7 +587,7 @@ Consequently, based on this construction, the condition number of $\mat{A}$ is $
 
 For this study we set $\kappa = \nu = 9$, which gives condition numbers of  
 $ \text{cond} (\mat{Q} )= 9$,  $ \text{cond} (\mat{A}) = 81$. 
-While these are modest, even small condition numbers, we emphasize that the conditioning of the KKT matrix $\nabla_q F$ remains high, between $10^4$ and $10^9$.
+While these are modest, even small condition numbers, we emphasize that the conditioning of the KKT matrix $\nabla_q H$ remains high, between $10^4$ and $10^9$.
 
 %The modest condition number of 
 %$\mat{Q} $ and $\mat{A}$ is benefit to our study in that we can shift 
@@ -605,7 +612,7 @@ histories versus CPU time.
 The predictor-corrector algorithm is applied both with and without the preconditioner.  
 In addition, the plots include the results
 from SNOPT~\cite{gill:2002}, a well-validated active-set SQP
-optimization library.
+optimization library. See Section 4.1 for further details about the convergence criteria and SNOPT.
 
 Without the preconditioner, the predictor-corrector algorithm is not competitive
 and does not converge within the time shown.  This illustrates the need for preconditioning Newton-Krylov
