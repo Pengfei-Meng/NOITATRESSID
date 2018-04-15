@@ -268,7 +268,7 @@ matrix $\mat{C}_{\mu}$.  Assuming strict complementarity, as $\mu\rightarrow 0$
 we have two situations:
 \begin{enumerate}
 \item If the $i$th constraint is inactive at the solution, then $\lambda_{g,i} = 0$ and
-  $\lim_{\mu\rightarrow 0} \left[\mat{C}_\mu^{-1} \mat{\Lambda}_\mu \right]_{ii}
+  \\ $\lim_{\mu\rightarrow 0} \left[\mat{C}_\mu^{-1} \mat{\Lambda}_\mu \right]_{ii}
   = 0$.  This has the effective of eliminating the corresponding constraint from
   the reduced system \eqref{eq:schur}.
 
@@ -359,12 +359,12 @@ singular values in the truncated SVD, \ie $\nsig$, is sufficiently small that we
 can invert this matrix explicitly using an $LU$ factorization.
 
 In summary, to approximately solve \eqref{eq:schur} we evaluate
-\begin{equation}\label{eq:vx}
-  v_x = \left[\mat{B}_\mu^{-1} - \mat{B}_\mu^{-1} \mat{U}  \left(  \mat{I}_{\nsig} +  \mat{\Sigma} \mat{V}^{T} 
-  \mat{B}_\mu^{-1} \mat{U} \right)^{-1} \mat{\Sigma} \mat{V}^{T} \mat{B}_\mu^{-1} \right]
-  \left\{ u_x - \mat{A}_\mu^T \mat{C}_{\mu}^{-1} \left[(1-\mu) u_s -
+\begin{align}\label{eq:vx}
+  v_x = &\left[\mat{B}_\mu^{-1} - \mat{B}_\mu^{-1} \mat{U}  \left(  \mat{I}_{\nsig} +  \mat{\Sigma} \mat{V}^{T} 
+  \mat{B}_\mu^{-1} \mat{U} \right)^{-1} \mat{\Sigma} \mat{V}^{T} \mat{B}_\mu^{-1} \right]  \notag \\
+  &\left\{ u_x - \mat{A}_\mu^T \mat{C}_{\mu}^{-1} \left[(1-\mu) u_s -
   \mat{\Lambda}_\mu u_g \right]\right\}.
-\end{equation}
+\end{align}
 After obtaining $v_x$, we use it in \eqref{eq:vs_and_vlam} to
 find $v_s$ and $v_\lambda$;
 \begin{align}
@@ -485,26 +485,26 @@ $\tau_{\mu} = 10^{-1}, 10^{-2}$ will help with the conditioning of the precondit
 \end{remark}
 
 To summarize, in the general constrained case, $v_x$ and $v_h$ can be obtained as follows:
-\begin{equation}\label{eq:core_equ}
+\begin{align}\label{eq:core_equ}
 \begin{bmatrix} v_x \\ v_h  \end{bmatrix} 
 =
 \begin{bmatrix}
 I & 0 \\
 \frac{1}{\bar{\mu}} \mat{A}_{h,\mu}  &  I 
-\end{bmatrix}
+\end{bmatrix} & 
 \begin{bmatrix}
 \left(\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
-+ \frac{1}{\bar{\mu}}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} \right)^{-1}    & 0 \\
++ \frac{1}{\bar{\mu}}  \mat{A}_{h,\mu}^T \mat{A}_{h,\mu} \right)^{-1}    & 0  \notag \\
 0  &  -\frac{1}{\bar{\mu}}\mat{I} 
-\end{bmatrix}
-\begin{bmatrix}
+\end{bmatrix} \\
+& \begin{bmatrix}
 I  & \frac{1}{\bar{\mu}} \mat{A}_{h,\mu}^T  \\
 0  &  I
 \end{bmatrix}
 \begin{bmatrix}
 \hat{u}_{x} \\ u_h
 \end{bmatrix},
-\end{equation}
+\end{align}
 where $\hat{u}_x$ denotes the $x$-component of the right-hand side of~\eqref{eq:schur_equ2}.  The most involved operation in~\eqref{eq:core_equ} is the application of the inverse Schur complelement:
 \begin{equation}
 \left(\mat{W}_\mu +  \mat{A}_{g,\mu}^T  \mat{C}_\mu^{-1} \mat{\Lambda}_\mu  \mat{A}_{g,\mu}  
@@ -633,7 +633,7 @@ decreases once when the correct set of active constraints are determined. It is 
    \caption{Convergence histories for the scalable quadratic problem with $n=200$ and
   $n=500$. The results for the proposed algorithm, with and without
   preconditioning, are plotted together with the results from
-  SNOPT.\label{fig:quad_hist}}
+  SNOPT \label{fig:quad_hist}}
 \end{figure}
 
 To further explore the scalability of the proposed algorithm, we ran 100 random cases for 
@@ -648,7 +648,7 @@ the problem size increases. As can be seen, the new method exhibits good scalabi
   \centering
   \includegraphics[clip,width=1.0\textwidth]{./figs/chap4_test/random_100_color.eps}%
   \caption{CPU cost versus number of design variables for the quadratic
-    optimization problem.\label{fig:quad_scale}}
+    optimization problem \label{fig:quad_scale}}
 \end{figure}
 
 We should emphasize that the proposed SVD preconditioner is particularly effective for this synthetic problem, because it is designed in such a way that the constraint Jacobian can be approiximated effectively using the Lanzcos-based SVD approximation.

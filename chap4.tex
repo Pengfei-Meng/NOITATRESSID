@@ -170,7 +170,7 @@ for problems whose inequality constraint Jacobian contain certain structures, \e
 
 \begin{landscape}
 \begin{longtable}{l | l |  l  |  >{\footnotesize}p{3cm} | l | l | l    }      %\toprule      % |  >{\centering}m{3.5cm}
-\caption{Subsets of Cuter Problem Results}\label{tab:cuter} \\
+\caption{Subsets of CUTEr problem results}\label{tab:cuter} \\
  \hline 
 Name      &  n,  $m_{\text{CUTEr}}$, l,  m        &     Origin      &\textbf{$\alpha_0$},  $\delta_{\text{targ}}$, $\phi^{\circ}_{\text{targ}}$,  $n_{\mat{\Sigma}}$      & $ f_{\text{kona}} $   & $ f_{\text{snopt}} $ &$ f^*$    \\ \hline
 AIRPORT    &  84,  42, 0, 210  &    &  0.05, 20, 20, 40 & 47952.976  & 47952.702  & 47952.696   \\ \hline
@@ -403,7 +403,7 @@ The KKT system is most ill-conditioned at the final corrector step, so this part
   \centering
   \includegraphics[width=1.0\textwidth]{./figs/chap6_fstopo/tiny_svd_ranks.eps}
   \caption{Impact of $\nsig$, the rank of the approximate SVD in
-    Algorithm~\ref{alg:precond}, on the Krylov iterative method.
+    Algorithm~\ref{alg:precond}, on the Krylov iterative method
   \label{fig:svdrank}}
 \end{figure}
 
@@ -442,18 +442,18 @@ selectively show the thickness distributions along horizontal slices at differen
 \begin{figure}[tbp]
   \centering
    \subfloat[small \label{fig:fs1}]{
-   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/1.eps} } 
+   \includegraphics[clip,width=0.5\textwidth]{./figs/chap6_fstopo/1.eps} } 
    \subfloat[small \label{fig:fs3}]{
-   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/3.eps} } \\
+   \includegraphics[clip,width=0.5\textwidth]{./figs/chap6_fstopo/3.eps} } \\
   \subfloat[medium \label{fig:25}]{
-   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/25.eps} }
+   \includegraphics[clip,width=0.5\textwidth]{./figs/chap6_fstopo/25.eps} }
     \subfloat[medium \label{fig:27}]{
-   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/27.eps} }\\
+   \includegraphics[clip,width=0.5\textwidth]{./figs/chap6_fstopo/27.eps} }\\
     \subfloat[large \label{fig:29}]{
-   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/29.eps} }
+   \includegraphics[clip,width=0.5\textwidth]{./figs/chap6_fstopo/29.eps} }
     \subfloat[large \label{fig:32}]{
-   \includegraphics[clip,width=0.52\textwidth]{./figs/chap6_fstopo/32.eps} }
-    \caption{Comparison of thickness distribution along horizontal slices. \label{fig:fs_slices}}
+   \includegraphics[clip,width=0.5\textwidth]{./figs/chap6_fstopo/32.eps} }
+    \caption{Comparison of thickness distribution along horizontal slices \label{fig:fs_slices}}
 \end{figure}
 
 
@@ -488,15 +488,15 @@ but without success.
 \begin{figure}[tbp]
   \centering
    \subfloat[small \label{fig:small}]{
-   \includegraphics[clip,width=0.8\textwidth]{./figs/chap6_fstopo/tiny_color.eps} }
-  \hspace{1em}
+   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/tiny_color.eps} } \\
+%  \hspace{1em}
   \subfloat[medium \label{fig:med}]{
-   \includegraphics[clip,width=0.8\textwidth]{./figs/chap6_fstopo/small_color.eps} }
-  \hspace{1em}
+   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/small_color.eps} } \\
+%  \hspace{1em}
     \subfloat[large \label{fig:large}]{
-   \includegraphics[clip,width=0.8\textwidth]{./figs/chap6_fstopo/medium_color.eps} }
+   \includegraphics[clip,width=0.75\textwidth]{./figs/chap6_fstopo/medium_color.eps} }
     \caption{Convergence histories for the three sizes of the structural
-      optimization problem. \label{fig:struct2}}
+      optimization problem \label{fig:struct2}}
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -671,7 +671,7 @@ shows the initial, Kona optimized, and SNOPT optimized wing airfoil profiles at 
   \caption{Initial, SNOPT optimized, and SNOPT optimized airfoil profiles at different span-wise locations\label{fig:profile}}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[tbp]
   \centering
    \subfloat[\label{fig:kona192opt}]{   %[clip,trim=20 70 0 70, width=1.0\textwidth]
    \includegraphics[clip,trim=0 0 0 30, width=1.0\textwidth]{./figs/chap7_aso/kona/L1_192_comp_opt_feas.eps} }  \\
@@ -682,7 +682,7 @@ shows the initial, Kona optimized, and SNOPT optimized wing airfoil profiles at 
    \caption{Convergence histories for L1 grid, no. of design 192 \label{fig:kona_192}}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[tbp]
   \centering
    \subfloat[\label{fig:kona480opt}]{
    \includegraphics[clip,trim=0 0 0 30,width=1.0\textwidth]{./figs/chap7_aso/kona/L1_480_comp_opt_feas.eps} }  \\
@@ -692,7 +692,7 @@ shows the initial, Kona optimized, and SNOPT optimized wing airfoil profiles at 
   % \hspace{1em}
    \caption{Convergence histories for L1 grid, no. of design 480 \label{fig:kona_480}}
 \end{figure}
-\begin{figure}[H]
+\begin{figure}[tbp]
   \centering
    \subfloat[\label{fig:kona768opt}]{
    \includegraphics[clip,trim=0 0 0 30,width=1.0\textwidth]{./figs/chap7_aso/kona/L1_768_comp_opt_feas.eps} } \\
@@ -704,7 +704,7 @@ shows the initial, Kona optimized, and SNOPT optimized wing airfoil profiles at 
 \end{figure}
 
 
-\begin{figure}[H]
+\begin{figure}[tbp]
   \centering
    \subfloat[\label{fig:sn192opt}]{
    \includegraphics[clip,trim=0 0 0 30,width=1.0\textwidth]{./figs/chap7_aso/snopt/L1_192_opt_feas.eps} }\\
@@ -715,7 +715,7 @@ shows the initial, Kona optimized, and SNOPT optimized wing airfoil profiles at 
    \caption{Convergence histories for L1 grid, no. of design 192 \label{fig:sn_192}}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[tbp]
   \centering
    \subfloat[\label{fig:sn480opt}]{
    \includegraphics[clip,trim=0 0 0 30,width=1.0\textwidth]{./figs/chap7_aso/snopt/L1_480_opt_feas.eps} }\\
@@ -725,7 +725,7 @@ shows the initial, Kona optimized, and SNOPT optimized wing airfoil profiles at 
   % \hspace{1em}
    \caption{Convergence histories for L1 grid, no. of design 480 \label{fig:sn_480}}
 \end{figure}
-\begin{figure}[H]
+\begin{figure}[tbp]
   \centering
    \subfloat[\label{fig:sn768opt}]{
    \includegraphics[clip,trim=0 0 0 30,width=1.0\textwidth]{./figs/chap7_aso/snopt/L1_768_opt_feas.eps}}\\

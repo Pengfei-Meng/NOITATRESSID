@@ -39,7 +39,7 @@ Figure~\ref{fig:1_mot} shows two examples of PDE-constrained design problems: th
 \subfloat[Topology Optimization~\cite{topo_opt}]{ %
   \includegraphics[clip,width=0.6\columnwidth]{./figs/chap1_intro/1_topo.png}\label{fig:B}
 }
-\caption{Large-Scale PDE-constrained Optimization}
+\caption{Large-scale PDE-constrained optimization}
 \label{fig:1_mot}
 \end{figure}
 
@@ -51,7 +51,7 @@ As shown in Figure~\ref{fig:outflow}, a typical optimization iteration begins wi
  \begin{figure}[H]
   \centering
   \includegraphics[clip, width=1.0\columnwidth]{./figs/chap1_intro/1_optFlow2.pdf}%  
-  \caption{Schematic Process of PDE-constrained Optimization\label{fig:outflow}}
+  \caption{Schematic process of PDE-constrained optimization\label{fig:outflow}}
 \end{figure}
 
 Computational cost is an important consideration in PDE-constrained optimization.  
@@ -148,7 +148,7 @@ Of course, the reduced-space approach is not without difficulties.  If conventio
 %%%%%%%%%
 %The challenges include globalization, which refers to the ability to bypass local minimizers, and nonconvexity handling, which involves bypassing maximizers. The first challenge is addressed in Chapter~\ref{chap:homotopy} and the second in Chapter~\ref{chap:linsys}. 
 
-\subsection{Reduced-Space Inexact-Newton Methods}
+\subsection{Reduced-space Inexact-Newton Methods}
 One alternative to using conventional (matrix-based) optimization algorithms 
 to solve the reduced-space KKT conditions \eqref{eq:opt00x} 
 is to apply inexact-Newton methods~\cite{dembo:1982},
@@ -213,7 +213,7 @@ problems, because,  as already mentioned above,
 they do not require the constraint Jacobian to be form explicitly and, thus, avoid the scaling issue described earlier.  For instance, \cite{dener:idf2017} applied a matrix-free NK algorithm to a class of equality-constrained optimization problems that arise in multidisciplinary design optimization and would otherwise be intractable with conventional matrix-based algorithms.
 
 
-\subsection{Challenges in Using Reduced-Space Newton-Krylov Methods}
+\subsection{Challenges in Using Reduced-space Newton-Krylov Methods}
 Motivated by its success in the unconstrained and equality-constrained cases, this thesis aims to extend the Newton Krylov methodology to more general, equality and inequality constrained problems. 
 This extension of the reduced-space NK algorithm encounters two fundamental challenges that must be addressed.
 

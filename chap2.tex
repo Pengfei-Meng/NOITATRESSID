@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
  
 \chapter{HOMOTOPY-BASED GLOBALIZATION}\label{chap:homotopy}
-\blfootnote{Portions of this chapter previously appeared as: \cite{mengpf_2018}.}
+\blfootnote{Portions of this chapter previously appeared as: P. Meng, A. Dener, J. Hicken, and G. Kennedy, ``Matrix-free algorithm for reduced-space PDE-governed optimization with inequality constraints", unpublished.}
 
 
 \section{Homotopy-based Globalization}\label{sec:homotopy}
@@ -90,10 +90,10 @@ those that begin near the maximizer $x=0$.
   \caption{Solution curves of $H(x,x_0,\mu) = 0$ (left side of figure) for
     different values of $x_0$.  The paths begin at $\mu=1$ and converge to the
     local minimizers at $\mu=0$.  The function to be minimized is plotted on the
-    right-side of the figure.\label{fig:zc}}
+    right-side of the figure\label{fig:zc}}
 \end{figure}
 
-\subsection{Review of convergence theory for homotopy methods}
+\subsection{Review of Convergence Theory for Homotopy Methods}
 
 The path-following process described above, while intuitive, is not guaranteed
 to succeed.  In particular, it is not clear that $\nabla_q H$ remains
@@ -157,7 +157,7 @@ Despite the potential difficulty of guaranteeing the assumptions of
 Theorem~\ref{thm:homotopy}, the theorem hints at the robustness of the homotopy
 approach, and this is corroborated by our experience.
 
-\subsection{Homotopy map for constrained optimization}\label{sec:map}
+\subsection{Homotopy Map for Constrained Optimization}\label{sec:map}
 
 For this work we use the convex homotopy defined by \eqref{eq:homotopy},
 therefore we need only define $G(q,q_0)$.  Similar to the unconstrained case, we
@@ -254,7 +254,7 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
   \subfloat[inexact solves\label{fig:inexact_pc}]{
   \includegraphics[width=0.6\linewidth]{figs/chap2/inexact_pc.png}
   }
- \caption{ Figure~\ref{fig:exact_pc} illustrates the predictor-corrector algorithm in the case that exact solves are used, while Figure~\ref{fig:inexact_pc} depicts the situation when inexact solves are used. \label{fig:pc}}   
+ \caption{ Figure~\ref{fig:exact_pc} illustrates the predictor-corrector algorithm in the case that exact solves are used, while Figure~\ref{fig:inexact_pc} depicts the situation when inexact solves are used \label{fig:pc}}   
 \end{figure}
 
 
@@ -342,7 +342,7 @@ In practice, the linear and nonlinear subproblems cannot be solved exactly.  Thu
 \end{remark}
 
 
-\subsection{Adaptive step-size control}\label{sec:step}
+\subsection{Adaptive Step-Size Control}\label{sec:step}
 
 The step length $\alpha$ along the tangent direction is calculated using the
 asymptotic expansion method \cite{allgower3}, which we briefly review here.
@@ -388,7 +388,7 @@ allowable step $\alpha_{\max}$.
   dependent.
 \end{remark}
 
-\subsection{Safeguards on the slacks and inequality multipliers}\label{sec:fraction}
+\subsection{Safeguards On The Slacks and Inequality Multipliers}\label{sec:fraction}
 One of the differences between solving \eqref{eq:opt00x} and solving a generic
 nonlinear system of equations is that the slacks and inequality multipliers must
 remain nonnegative and nonpositive, respectively.  To cope with this additional
@@ -445,7 +445,8 @@ in Algorithm~\ref{alg:pc}.  The solution of the tangent step,
 line~\ref{line:tang}, and the solution of the Newton step, line
 \ref{line:newton}, are the only components of the algorithm that require further
 explanation.  Note that the initial tangent step on line~\ref{line:tang0} is a linear system that 
-is trivial to solve, because $\nabla_q H$ is diagonal when $\mu=1$. % The solution of these linear systems is detailed in the next chapter.
+is trivial to solve, because $\nabla_q H$ is diagonal when $\mu=1$. 
+% The solution of these linear systems is detailed in the next chapter.
 \\
 \LinesNumberedHidden
 \begin{algorithm}[H]\setstretch{1.35}
@@ -604,7 +605,7 @@ $\tau$ and $\epsilon_H$ are the tolerances for the predictor and the corrector p
  
 \begin{table}[H]
   \begin{center}
-    \caption{Success Rate with Different Parameters \label{tab:success}}
+    \caption{Success rate with different parameters \label{tab:success}}
   \begin{tabular}{ c   c   c   c  c  c  c  c }
   %\hline
  & \multicolumn{7}{  c   }{ $\epsilon_{\text{krylov}}$  } \\  \hline
